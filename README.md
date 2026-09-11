@@ -3,7 +3,8 @@
 - Rig 1: RTX 3060 12GB + i7-12700, 128 GB RAM
 - Rig 2: RTX 3090 24GB + Ryzen 7 5700X, 32 GB RAM - Qwen3.6-35B-A3B benchmarked ([rig2-3090.md](rig2-3090.md))
 
-Tested (Rig 1): 2026-09-10, build b10818-27c54b4bb (branch `perf`).
+Tested (Rig 1): 2026-09-10, build b10818-27c54b4bb (branch `perf` of the
+[Codacus fork](https://github.com/thecodacus/llama.cpp)).
 Measurement methodology and env-var reference: [methodology.md](methodology.md).
 Known issues and gotchas: [issues.md](issues.md).
 

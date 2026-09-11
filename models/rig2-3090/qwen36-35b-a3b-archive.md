@@ -37,5 +37,6 @@ The winner in the table is the Codacus fork cache+MTP variant (ncmoe 12 + 64 slo
 (bpw 4.4-4.8 vs IQ4's ~4.2) - never tested, unverified.
 
 Note: the fork's cache experiment on this rig has an extra setup step - the fork's
-libggml-cuda.so needs the CUDA 12 runtime (`LD_LIBRARY_PATH=/home/harshith/cuda12-libs`).
+libggml-cuda.so needs the CUDA 12 runtime (staged via `LD_LIBRARY_PATH`, see
+[rig2-3090.md](../../rig2-3090.md)).
 Rejected VRAM-over-cap configs: ncmoe 8 @ 262144 (22779 MiB, with or without cache).

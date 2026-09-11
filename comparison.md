@@ -20,8 +20,8 @@ fewer tokens; 256k loads but is unusable in practice).
 | UD-Q4_K_M 21.1G | stock | on | 99 | 370.3 | 32.5 | acceptance 0.63-0.73 |
 | UD-Q4_K_M 21.1G | Codacus fork | on | 99 | 268.6 | 38.8 | acceptance 0.59-0.72, cache 40 slots |
 
-"binary" column: stock = upstream llama-server (/usr/local/bin/llama-server, no fork
-features); Codacus fork = this repo's build (thecodacus/llama.cpp, branch `perf`) with
+"binary" column: stock = upstream llama-server (no fork
+features); Codacus fork = this repo's build ([thecodacus/llama.cpp](https://github.com/thecodacus/llama.cpp), branch `perf`) with
 prefill env vars on. The stock binary cannot run the expert cache, so MTP-only stock
 rows show n/a for slots.
 n/m = prefill line not captured for that run.

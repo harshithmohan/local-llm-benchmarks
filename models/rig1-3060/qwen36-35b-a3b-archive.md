@@ -10,7 +10,7 @@ Models:
 - `UD-Q6_K.gguf` (27.94 GiB, separate gate/up/down)
 - `UD-Q4_K_M.gguf` (21.10 GiB, separate gate/up/down)
 
-Routing profiles in `/models/moe-cache-profiles/`: `qwen36-udq6-merged.csv` (traced at
+Routing profiles in the models root's `moe-cache-profiles/` folder: `qwen36-udq6-merged.csv` (traced at
 ncmoe 34), `qwen36-udq4km-merged.csv` (traced at ncmoe 26). Both made with
 `llama-moe-trace`, code + chat prompts. The IQ4 trace exists but is unused (cache incompatible).
 
@@ -74,7 +74,7 @@ Findings:
 
 ## Stock (upstream) llama-server baseline vs Codacus fork
 
-Stock binary: `/usr/local/bin/llama-server` (upstream v0.4.0-dev 30b6a75), running the
+Stock binary: upstream llama-server (upstream v0.4.0-dev 30b6a75), running the
 config.yaml commands (c 262144, q8_0 KV incl. draft, threads 12, MTP
 `--spec-draft-n-max 2`, single ~770-tok prompt + 512 generated):
 

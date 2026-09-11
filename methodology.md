@@ -5,6 +5,9 @@ Unless a page says otherwise, all results in this folder were measured on Rig 1.
 
 ## Codacus fork features used (env vars / flags, all off by default)
 
+All fork-specific features below come from the [Codacus fork](https://github.com/thecodacus/llama.cpp)
+of llama.cpp (branch `perf`).
+
 - `GGML_CUDA_REGISTER_HOST=1` - pin CPU expert weights, faster DMA upload (prefill)
 - `GGML_SCHED_PREFETCH_EXPERTS=1` - overlap expert uploads with compute on a second stream (prefill, also helps decode on the 177B model)
 - `LLAMA_ARG_MOE_CACHE_PROFILE=<csv>` + `LLAMA_ARG_MOE_CACHE_SLOTS=<n>` - VRAM-resident hot-expert cache (decode); also usable as CLI flags `--moe-cache-profile` / `--moe-cache-slots`

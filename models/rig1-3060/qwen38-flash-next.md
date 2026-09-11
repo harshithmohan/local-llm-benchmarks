@@ -42,11 +42,11 @@ equivalent within single-run noise on decode and prefill, for ~1 GB less headroo
 not worth it (ncmoe 46 OOMs with the draft context):
 
     GGML_CUDA_REGISTER_HOST=1 \
-    llama-server -m /models/Qwen3.8-Flash-Next-UD-IQ3_XXS-00001-of-00003.gguf \
+    llama-server -m <models>/Qwen3.8-Flash-Next-UD-IQ3_XXS-00001-of-00003.gguf \
       -ngl 99 --n-cpu-moe 99 -fa on \
       -c 230400 -ctk q8_0 -ctv q8_0 -b 512 -ub 512 \
       --load-mode mmap -fit off -np 1 \
-      -md /models/mtp-Qwen3.8-Flash-Next-shared-Q8_0.gguf \
+      -md <models>/mtp-Qwen3.8-Flash-Next-shared-Q8_0.gguf \
       -ngld 0 --spec-type draft-mtp --spec-draft-n-max 2
 
 -> 18.1 t/s @ 230400 (acceptance 0.90-0.94; prefill 157.1), ~860 MB free - the
@@ -57,7 +57,7 @@ practical ceiling (256k loads but is not usable in practice, see the archive).
 Same config as the measured table plus one env var (zero VRAM cost, +183% prefill):
 
     GGML_CUDA_REGISTER_HOST=1 \
-    llama-server -m /models/Qwen3.8-Flash-Next-AD-4.27bpw-Q4_K_M-M64-00001-of-00033.gguf \
+    llama-server -m <models>/Qwen3.8-Flash-Next-AD-4.27bpw-Q4_K_M-M64-00001-of-00033.gguf \
       --n-cpu-moe 99 --ctx-size 230400 -ngl 999 \
       --cache-type-k q8_0 --cache-type-v q8_0 --flash-attn on \
       --load-mode mmap -fit off --threads 6 --parallel 1 \

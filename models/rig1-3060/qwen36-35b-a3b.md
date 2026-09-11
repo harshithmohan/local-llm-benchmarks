@@ -38,7 +38,7 @@ Reading:
 Stock binary + MTP, at full 256k:
 
     llama-server --port PORT \
-      -m /models/Qwen3.6-35B-A3B-IQ4_XS-4.19bpw.gguf \
+      -m <models>/Qwen3.6-35B-A3B-IQ4_XS-4.19bpw.gguf \
       --n-cpu-moe 28 --ctx-size 262144 -ngl 999 \
       --cache-type-k q8_0 --cache-type-v q8_0 --flash-attn on \
       --load-mode none --no-mmproj-offload --threads 12 --parallel 1 \
@@ -56,12 +56,12 @@ Codacus fork + expert cache + MTP, at full 256k (at ub 512 the draft context and
 pack coexist; the old ub 2048 protocol could only fit 20 slots, which made MTP pointless):
 
     GGML_CUDA_REGISTER_HOST=1 GGML_SCHED_PREFETCH_EXPERTS=1 \
-    llama-server -m /models/Qwen3.6-35B-A3B-UD-Q4_K_M.gguf \
+    llama-server -m <models>/Qwen3.6-35B-A3B-UD-Q4_K_M.gguf \
       --n-cpu-moe 99 --ctx-size 262144 -ngl 999 \
       --cache-type-k q8_0 --cache-type-v q8_0 --flash-attn on \
       --load-mode none --no-mmproj-offload --threads 12 --parallel 1 \
       --reasoning-preserve -b 512 -ub 512 \
-      --moe-cache-profile /models/moe-cache-profiles/qwen36-udq4km-merged.csv \
+      --moe-cache-profile <models>/moe-cache-profiles/qwen36-udq4km-merged.csv \
       --moe-cache-slots 40 \
       --spec-type draft-mtp --spec-draft-n-max 2 \
       --cache-type-k-draft q8_0 --cache-type-v-draft q8_0

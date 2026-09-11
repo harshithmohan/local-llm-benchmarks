@@ -25,7 +25,7 @@ Why it wins on this rig:
 
 ## Best config
 
-    llama-server -m /home/harshith/llama-swap/models/Qwen3.6-35B-A3B-UD-IQ4_XS.gguf \
+    llama-server -m <models>/Qwen3.6-35B-A3B-UD-IQ4_XS.gguf \
       --n-cpu-moe 0 --ctx-size 262144 -ngl 999 \
       --cache-type-k q8_0 --cache-type-v q8_0 --flash-attn on \
       --load-mode none --no-mmproj-offload --threads 8 --parallel 1 \
