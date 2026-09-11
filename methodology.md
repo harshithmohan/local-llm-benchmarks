@@ -45,7 +45,7 @@ qwen4exp arch - see issues.md).
 
 Exception: the ~116K messy-code refactor prompt (test-prompts.md) is deliberately
 near-repetitive because it is realistic text; it is used for large-prompt stability
-checks and output-quality comparison at large ctx. A crash on it is a recorded finding
+checks and speed measurement at large ctx. A crash on it is a recorded finding
 (issues.md), not a prompt defect. Timed re-sends need a fresh slot or a nonce (KV
 prefix cache would otherwise fake a near-zero prefill).
 

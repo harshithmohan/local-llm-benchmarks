@@ -11,13 +11,12 @@ Outputs (into --out-dir, default .):
   prompt-messy-flash.json     - /completion payload, Flash-Next sampling
 
 Sampling mode (see test-prompts.md):
-  --sampling quality (default) - temperature 0.0, n_predict 32768 (bound, expected
-                                 not to truncate); for stability checks and saved-
-                                 output quality comparisons.
-  --sampling timing            - the models' recommended sampling (temp 1.0,
-                                 top_p 0.95, top_k 20, min_p 0.0, presence
-                                 penalty 1.5 for 35B / 0.0 for Flash-Next),
-                                 n_predict 512; for prefill/decode timing runs.
+  --sampling timing (default) - the models' recommended sampling (temp 1.0,
+                                top_p 0.95, top_k 20, min_p 0.0, presence
+                                penalty 1.5 for 35B / 0.0 for Flash-Next),
+                                n_predict 512; for prefill/decode timing runs.
+                                Only speed is measured with this prompt - no
+                                output-quality evaluation passes.
 """
 
 import argparse
@@ -244,19 +243,15 @@ def build_prompt(target_repeats):
     return INSTRUCTION_PREFIX + build_messy_code(target_repeats) + INSTRUCTION_SUFFIX
 
 
-def sampling_params(family, mode):
-    if mode == "quality":
-        params = {"temperature": 0.0, "n_predict": 32768}
-    else:
-        params = {
-            "temperature": 1.0,
-            "top_p": 0.95,
-            "top_k": 20,
-            "min_p": 0.0,
-            "presence_penalty": 1.5 if family == "35b" else 0.0,
-            "n_predict": 512,
-        }
-    return params
+def sampling_params(family):
+    return {
+        "temperature": 1.0,
+        "top_p": 0.95,
+        "top_k": 20,
+        "min_p": 0.0,
+        "presence_penalty": 1.5 if family == "35b" else 0.0,
+        "n_predict": 512,
+    }
 
 
 def main():
@@ -267,7 +262,6 @@ def main():
         default=153,
         help="entity-template repeats (153 ~ 116K tokens)",
     )
-    ap.add_argument("--sampling", choices=["quality", "timing"], default="quality")
     ap.add_argument("--out-dir", default=".")
     args = ap.parse_args()
 
@@ -278,14 +272,14 @@ def main():
 
     for family in ("35b", "flash"):
         payload: dict = {"prompt": prompt}
-        payload.update(sampling_params(family, args.sampling))
+        payload.update(sampling_params(family))
         name = f"prompt-messy-{family}.json"
         with open(args.out_dir + "/" + name, "w") as f:
             json.dump(payload, f)
 
     print(
         f"wrote full_prompt.txt ({len(prompt)} chars) + 2 payload JSONs "
-        f"({args.sampling} sampling) to {args.out_dir}",
+        f"(timing sampling) to {args.out_dir}",
         file=sys.stderr,
     )
 
