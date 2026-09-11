@@ -43,6 +43,12 @@ React/TypeScript (the owner's main languages): see [test-prompts.md](test-prompt
 All server prompts are non-repetitive by construction (repeated text crashes the
 qwen4exp arch - see issues.md).
 
+Exception: the ~116K messy-code refactor prompt (test-prompts.md) is deliberately
+near-repetitive because it is realistic text; it is used for large-prompt stability
+checks and output-quality comparison at large ctx. A crash on it is a recorded finding
+(issues.md), not a prompt defect. Timed re-sends need a fresh slot or a nonce (KV
+prefix cache would otherwise fake a near-zero prefill).
+
 ## Trace methodology (routing profiles)
 
 Profiles made with `llama-moe-trace -ngl 99 -ncmoe N -fa 1 -c 4096 -n 512`, using the
