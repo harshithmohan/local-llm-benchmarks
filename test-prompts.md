@@ -84,6 +84,18 @@ Measurement rules specific to this prompt:
   evaluation passes.
 - Build the payload JSONs on the host with the script (python heredoc / scp), not by
   hand-escaping JSON through nested ssh/docker quoting.
+- One timed pass per session (single-run protocol): no warm-up pass for this prompt.
+  Existing two-pass 35B messy numbers predate this rule and will be redone single-pass
+  later - the two conventions are not directly comparable (prefill differs by NVMe
+  page-in of the weights).
+- Flash-Next (qwen4exp) emits EOS as its very first token on this prompt over raw
+  /completion (stop_type eos, 1 predicted token, empty output) - even after the
+  trailing closed fence is neutralized with a nonce, so it is not the 35B-era
+  fence-at-end trigger. Timing runs need `ignore_eos: true` in the payload; with it
+  the model decodes the full n_predict normally with real output and normal
+  acceptance. Decode timing from a KV-hit nonce re-send is valid (decode cost does not
+  depend on how the KV cache got there) - use it to measure decode alone after a
+  prefill pass.
 
 ## Notes
 

@@ -70,6 +70,37 @@ Its only argument might be quantization quality (bpw 4.27 vs IQ3_XXS's 3.06) - n
 tested, treat as an unverified alternative. On speed it loses to IQ3_XXS in every
 measured config on this rig.
 
+## Messy-code refactor benchmark (real-task ~116K prompt, single-pass)
+
+One-time real-task stability/speed test of the messy-code refactor prompt (see
+[test-prompts.md](../../test-prompts.md), 116,226 prompt tokens, IQ3_XXS winner
+config, q8_0 KV, cold load, ONE timed pass - no warm-up, per the single-run
+messy-prompt protocol), decoded with `ignore_eos: true` (gotcha below):
+
+| Quant | MTP | ignore_eos | prefill t/s | decode t/s |
+| --- | --- | --- | --- | --- |
+| UD-IQ3_XXS | on | yes | 82.89 | 3.33 |
+
+- Prefill 82.89 vs the 157.1 headline (-47%): the cold single-pass includes first-pass
+  NVMe page-in of the 76 GiB weight set (mmap lazy-loads - the server start itself is
+  fast, the page-in lands inside the first prefill) plus the known first-request MTP
+  slowness (issues.md). This is the single-pass convention going forward; the two-pass
+  headline above is not directly comparable.
+- Decode 3.33 vs the 18.1 headline (-82%), MTP acceptance 0.854 (mean len 2.70) vs
+  0.90-0.94 headline: attention cost over ~116K cached KV tokens is far heavier on
+  this hybrid arch than on the 35B at the same prompt (which only lost ~30% decode,
+  30.3 vs 49.4).
+- Immediate-EOS gotcha: raw /completion returns 1 token with stop_type eos on this
+  prompt - twice, including after the trailing closed ``` fence was neutralized with
+  a nonce, so it is not the 35B-era fence trigger. Timing runs need
+  `ignore_eos: true`; with it the model decoded the full 512 tokens of real refactor
+  output. See issues.md. Decode-only follow-up passes via a KV-hit nonce re-send are
+  valid (the 3.33 above came from such a re-send: 512 tokens over ~116K cached KV,
+  4-token prefill).
+- No crash: the qwen4exp PLE n-gram path did not fire on the near-repetitive prompt.
+  VRAM 10867 MiB at load, ~1.4 GB under the 12 GB cap. Server log for the run:
+  /tmp/srv-messy-flash.log on Rig 1 (host-local, ephemeral).
+
 ## Key arch notes
 
 - The compute buffer scales with `-ub` on this arch (indexer): ub 2048 needs ~3.5x the

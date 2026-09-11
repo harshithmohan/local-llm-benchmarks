@@ -63,6 +63,14 @@ required to match the Codacus fork's README methodology.
 - Repeated/repetitive prompt text can crash llama-server with
   "CUDA error: the requested functionality is not supported" (PLE n-gram graph path).
   Varied prompts, llama-cli interactive, and llama-bench are fine.
+- The ~116K messy-code refactor prompt (test-prompts.md) does NOT crash (the PLE
+  n-gram path above did not fire) but makes the server stop immediately with EOS on
+  raw /completion: stop_type eos, 1 predicted token, empty output. It still does this
+  after a nonce removes the trailing closed fence from the prompt end, so the
+  documented 35B-era fence trigger is NOT the cause. Workaround: `ignore_eos: true`
+  in the payload - then the full n_predict decodes with real output and normal MTP
+  acceptance (0.854 on the messy prompt). Timing-only runs are unaffected in
+  interpretation: prefill/decode t/s and acceptance are valid under ignore_eos.
 - Shard 1 header lists 0 tensors (unusual for llama.cpp split GGUFs) but loads correctly;
   llama.cpp reads the tensor list from the shards.
 - The compute buffer scales with `-ub` on this arch (indexer): at c 204800, ub 2048 would
