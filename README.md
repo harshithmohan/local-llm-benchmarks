@@ -3,6 +3,8 @@
 Benchmark reports for running local LLMs on two consumer GPUs, using two builds
 of [llama.cpp](https://github.com/ggml-org/llama.cpp): the
 [Codacus fork](https://github.com/thecodacus/llama.cpp) (branch `perf`) and upstream.
+One Rig 2 model also has a
+[vLLM](https://github.com/syv-ai/qwen38-27b-rtx3090) container stack.
 
 ## Rigs
 
@@ -18,7 +20,8 @@ Known issues and gotchas: [issues.md](issues.md).
 
 ## Inference engines
 
-Two **llama.cpp** builds are used across both rigs, labeled as such throughout these pages:
+Two **llama.cpp** builds plus one **vLLM** stack are used across the rigs, labeled as such
+throughout these pages:
 
 - **Codacus fork** ([thecodacus/llama.cpp](https://github.com/thecodacus/llama.cpp), branch `perf`,
   build b10818-27c54b4bb) - adds the prefill patches (`GGML_CUDA_REGISTER_HOST=1`,
@@ -29,9 +32,15 @@ Two **llama.cpp** builds are used across both rigs, labeled as such throughout t
   Rig 1: v0.4.0-dev 30b6a75; Rig 2: v0.4.0-dev build 10809 (5266f24da7). No fork features
   (no expert cache; the fork env vars are no-ops). The config of choice where the fork has
   nothing to add - e.g. every Rig 2 config at ncmoe 0, and IQ4_XS at 256k on Rig 1.
+- **vLLM** ([syv-ai/qwen38-27b-rtx3090](https://github.com/syv-ai/qwen38-27b-rtx3090),
+  vLLM 0.28.0) - the Rig 2 Qwen3.8-27B W4A16 stack, MTP with two KV modes: fp8 at 150000
+  (4 drafts) and KVarN 4/2-bit at 250000 (slower decode), both with pinned pools. Its
+  DFlash2 profile is archived. Engine labels are per-row on the model pages - llama.cpp and
+  vLLM results are not interchangeable.
 
-Both builds support MTP speculative decode. Timings are read from `llama-server` request
-logs; `llama-bench` covered the initial prefill/decode sweeps.
+The llama.cpp builds support MTP speculative decode; the vLLM stack runs MTP.
+Timings are read from `llama-server` request logs (llama.cpp) or vLLM's Prometheus metrics
+(vLLM); `llama-bench` covered the initial prefill/decode sweeps.
 
 ## Contents
 
@@ -62,12 +71,13 @@ is not validated.
 | Qwen3.8-Flash-Next | AD-Q4_K_M-M64 | 230400 practical | 154.7 | **13.1** | Add REGISTER_HOST for prefill; MTP off |
 | KAT-Coder-V2.5-Dev | APEX-I-Compact | 262144 | 338.5 | **47.7** | qwen35moe; ncmoe 28 (hard floor with MTP); MTP on; ~517 t/s prefill on a 116K prompt |
 
-## Headline results (Rig 2, t/s, q8_0 KV, 22 GB cap)
+## Headline results (Rig 2, t/s, 22 GB cap)
 
 Headline tables list only usable configs (full context, no rejected/OOM setups). All
 tested quants - including archived ones - are in the model pages: [Contents](#contents) above.
 YaRN-extended rows raise context past the native window; answer quality at those lengths
-is not validated.
+is not validated. llama.cpp rows use q8_0 KV under the 22 GB cap; both vLLM rows pin their
+KV pool by bytes to stay under the cap.
 
 | Model | Quant | ncmoe | ctx | Prefill t/s | Decode t/s | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -75,7 +85,8 @@ is not validated.
 | Qwen3.6-35B-A3B | UD-IQ4_XS | 6 | 524288 (YaRN 2x) | 1656.7 | 89.9 | Extended; MTP off |
 | Qwen3.6-35B-A3B | UD-IQ4_XS | 15 | 786432 (YaRN 3x) | 1181.9 | 65.2 | Extended; MTP off |
 | Qwen3.6-35B-A3B | UD-IQ4_XS | 25 | 1048576 (YaRN 4x) | 871.8 | 49.4 | Extended max (1M); MTP off |
-| Qwen3.8-27B | UD-Q4_K_S | n/a (dense) | 155648 | 1019.7 | 61.6 | Max ctx under the 22 GB cap (native 262144 too big); dense so stock only; MTP n-max 2 |
+| Qwen3.8-27B | W4A16-AutoRound-fast | n/a (vLLM) | 150000 | 1124 | 113 | vLLM 0.28.0 + MTP 4 drafts, fp8 KV, pinned pool (`MAX_LEN=150000`, `MAX_SEQS=4`); 22289 MiB |
+| Qwen3.8-27B | W4A16-AutoRound-fast | n/a (vLLM) | 250000 | 960 | 86 | vLLM 0.28.0 + MTP, KVarN 4/2-bit KV, pinned pool (`CTX=huge`, `MAX_LEN=250000`); 22340 MiB; ~2.3x slower decode at 116K |
 
 ## Headline takeaways
 

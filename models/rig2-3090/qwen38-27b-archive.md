@@ -1,15 +1,17 @@
 # Qwen3.8-27B (Rig 2) - experiment archive
 
-Measurements behind [qwen38-27b.md](qwen38-27b.md) (main file: UD-Q4_K_S at c 155648).
-Protocol identical: coding prompts C#+React averaged, second-pass prefill, recommended
-sampling, cold load, q8_0 KV, `--threads 8 --threads-batch 16`, 22 GB VRAM cap
-(22 GB +- 250 MB, desktop reserve). Methodology in [methodology](../../methodology.md);
-gotchas in [issues](../../issues.md).
+Measurements behind [qwen38-27b.md](qwen38-27b.md). The llama.cpp `UD-Q4_K_S` quant is
+retired - dominated by the vLLM `W4A16-AutoRound-fast` stack on the main page (same VRAM,
+~1.8x faster short-context decode, ~2.4x at 116K, and 250000 vs 155648 context) - so its
+full log lives here. llama.cpp protocol: coding prompts C#+React averaged, second-pass
+prefill, recommended sampling, cold load, q8_0 KV, `--threads 8 --threads-batch 16`,
+22 GB VRAM cap (22 GB +- 250 MB, desktop reserve). Methodology in
+[methodology](../../methodology.md); gotchas in [issues](../../issues.md).
 Model card: [unsloth/Qwen3.8-27B-GGUF](https://huggingface.co/unsloth/Qwen3.8-27B-GGUF).
 
 Quants:
 
-- `UD-Q4_K_S` (15.36 GB, ~4.55 bpw) - the only quant tested
+- `UD-Q4_K_S` (15.36 GB, ~4.55 bpw) - the only llama.cpp quant tested (retired)
 
 Routing profiles: none - dense model, no MoE layers, so the fork's
 `--moe-cache-profile`/`--moe-cache-slots` have nothing to work on.
@@ -167,11 +169,13 @@ discarded, per the cold-load-then-second-pass convention.
 
 ## Conclusions
 
-- UD-Q4_K_S at c 155648 with MTP n-max 2 is the recommended config: 61.6 t/s decode
-  (prefill 1019.7, acceptance 0.703), 22127 MiB.
+- UD-Q4_K_S was the best llama.cpp config at c 155648 (MTP n-max 2): 61.6 t/s decode
+  (prefill 1019.7, acceptance 0.703), 22127 MiB. It is now retired - the vLLM
+  `W4A16-AutoRound-fast` stack on the main page beats it on decode (~1.8x short, ~2.4x at
+  116K) at the same VRAM and reaches 250000 via KVarN.
 - Stock only. Dense model - the Codacus fork's MoE-specific features do not apply.
-- 155648 is the context ceiling (native 262144 does not fit); `-ngld 0` does not buy
-  more.
+- 155648 is the llama.cpp context ceiling (native 262144 does not fit); `-ngld 0` does not
+  buy more.
 - `--threads-batch` is irrelevant here (GPU-bound); MTP n-max 2 is the decode peak.
 - `--threads` 6/8/12 is likewise flat, and `-b`/`-ub` above the default 512 does not fit
   under the cap at 155648. The defaults are already the practical optimum.
