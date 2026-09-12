@@ -49,11 +49,10 @@ Timings are read from `llama-server` request logs (llama.cpp) or vLLM's Promethe
 - [rig1-3060.md](rig1-3060.md) - Rig 1 hardware and build info
 - [rig2-3090.md](rig2-3090.md) - Rig 2 hardware and build info
 - [issues.md](issues.md) - Codacus fork/tool-level issues found during testing
-- [models/rig1-3060/qwen36-35b-a3b.md](models/rig1-3060/qwen36-35b-a3b.md) - Qwen3.6-35B-A3B on Rig 1; full experiment log in [models/rig1-3060/qwen36-35b-a3b-archive.md](models/rig1-3060/qwen36-35b-a3b-archive.md)
-- [models/rig1-3060/qwen38-flash-next.md](models/rig1-3060/qwen38-flash-next.md) - Qwen3.8-Flash-Next on Rig 1; full experiment log in [models/rig1-3060/qwen38-flash-next-archive.md](models/rig1-3060/qwen38-flash-next-archive.md)
-- [models/rig1-3060/katcoder-v2.5-dev.md](models/rig1-3060/katcoder-v2.5-dev.md) - KAT-Coder-V2.5-Dev on Rig 1; full experiment log in [models/rig1-3060/katcoder-v2.5-dev-archive.md](models/rig1-3060/katcoder-v2.5-dev-archive.md)
-- [models/rig2-3090/qwen36-35b-a3b.md](models/rig2-3090/qwen36-35b-a3b.md) - Qwen3.6-35B-A3B on Rig 2 (22 GB cap); full experiment log in [models/rig2-3090/qwen36-35b-a3b-archive.md](models/rig2-3090/qwen36-35b-a3b-archive.md)
-- [models/rig2-3090/qwen38-27b.md](models/rig2-3090/qwen38-27b.md) - Qwen3.8-27B on Rig 2 (22 GB cap); full experiment log in [models/rig2-3090/qwen38-27b-archive.md](models/rig2-3090/qwen38-27b-archive.md)
+- [models/rig1-3060/](models/rig1-3060/) - Rig 1 model pages (best configs per model)
+- [models/rig2-3090/](models/rig2-3090/) - Rig 2 model pages (best configs per model)
+
+Each model page carries its full experiment log in the matching `-archive.md` alongside it.
 
 ## Headline results (Rig 1, t/s, q8_0 KV)
 
