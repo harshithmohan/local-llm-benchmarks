@@ -1,6 +1,10 @@
 # KAT-Coder-V2.5-Dev (Rig 1) - experiment archive
 
-All measurements behind [katcoder-v2.5-dev.md](katcoder-v2.5-dev.md). Model card:
+This archive holds supporting measurements and experiments not on the main card
+([katcoder-v2.5-dev.md](katcoder-v2.5-dev.md)): rejected configs, sweeps, superseded
+quants, and old-protocol baselines. Where a table reproduces a main-card headline
+result, the archive mirrors it; the main card remains authoritative.
+Model card:
 [gbuzhf/KAT-Coder-V2.5-Dev-MTP-GGUF](https://huggingface.co/gbuzhf/KAT-Coder-V2.5-Dev-MTP-GGUF).
 Methodology in [methodology](../../methodology.md); model-specific issues in
 [issues](../../issues.md).

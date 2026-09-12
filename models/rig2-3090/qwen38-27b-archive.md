@@ -1,9 +1,10 @@
 # Qwen3.8-27B (Rig 2) - experiment archive
 
-Measurements behind [qwen38-27b.md](qwen38-27b.md). The llama.cpp `UD-Q4_K_S` quant is
-retired - dominated by the vLLM `W4A16-AutoRound-fast` stack on the main page (same VRAM,
-~1.8x faster short-context decode, ~2.4x at 116K, and 250000 vs 155648 context) - so its
-full log lives here. llama.cpp protocol: coding prompts C#+React averaged, second-pass
+This archive holds supporting measurements and experiments not on the main card
+([qwen38-27b.md](qwen38-27b.md)); it covers the retired llama.cpp `UD-Q4_K_S` quant log. The
+quant is retired - dominated by the vLLM `W4A16-AutoRound-fast` stack on the main page (same
+VRAM, ~1.8x faster short-context decode, ~2.4x at 116K, and 250000 vs 155648 context) - so
+its full log lives here. llama.cpp protocol: coding prompts C#+React averaged, second-pass
 prefill, recommended sampling, cold load, q8_0 KV, `--threads 8 --threads-batch 16`,
 22 GB VRAM cap (22 GB +- 250 MB, desktop reserve). Methodology in
 [methodology](../../methodology.md); gotchas in [issues](../../issues.md).

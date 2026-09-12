@@ -1,8 +1,9 @@
 # Qwen3.8-Flash-Next (Rig 1) - experiment archive
 
-All measurements behind [qwen38-flash-next.md](qwen38-flash-next.md) (main file covers
-230400 with MTP; this archive holds the rest). Methodology in
-[methodology](../../methodology.md); model-specific issues in [issues](../../issues.md).
+This archive holds supporting measurements and experiments not on the main card
+([qwen38-flash-next.md](qwen38-flash-next.md)): rejected configs, sweeps, superseded
+quants, and old-protocol baselines. Headline numbers live on the main card only.
+Methodology in [methodology](../../methodology.md); model-specific issues in [issues](../../issues.md).
 Model cards: [unsloth/Qwen3.8-Flash-Next-GGUF](https://huggingface.co/unsloth/Qwen3.8-Flash-Next-GGUF)
 (`UD-*` quants); [AtomicChat/Qwen3.8-Flash-Next-GGUF](https://huggingface.co/AtomicChat/Qwen3.8-Flash-Next-GGUF) (`AD-*`).
 
@@ -134,6 +135,9 @@ Findings:
 
 - Best Flash-Next config on this rig: UD-IQ3_XXS + MTP at 230400 (14.69 t/s), 204800 if
   more headroom is wanted (15.78).
+- The main card's 18.1 t/s headline (acceptance 0.90-0.94) is newer than this archive's
+  logged 14.69 t/s (acceptance 0.62-0.92, same temp-1.0 sampling); the difference is MTP
+  acceptance variance between runs, not a protocol change.
 - AD-Q4_K_M-M64 is the quality alternative (bpw 4.27 vs 3.06, untested) - slower in
   every measured config, no MTP.
 - UD-Q3_K_XL never wins at large ctx; its cache win is small-ctx only.

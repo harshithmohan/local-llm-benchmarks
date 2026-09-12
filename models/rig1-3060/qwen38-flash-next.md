@@ -28,8 +28,6 @@ top_p 0.95, top_k 20, min_p 0.0, presence_penalty 0.0); cold load. ncmoe 99 clam
 48 (the model's total MoE layer count) - same behavior. MTP acceptance at the
 recommended temperature: 0.90-0.94.
 
-
-
 ## Best config per quant
 
 ### UD-IQ3_XXS - winner (fastest Flash-Next quant)
@@ -93,8 +91,8 @@ messy-prompt protocol), decoded with `ignore_eos: true` (gotcha below):
   headline above is not directly comparable.
 - Decode 3.33 vs the 18.1 headline (-82%), MTP acceptance 0.854 (mean len 2.70) vs
   0.90-0.94 headline: attention cost over ~116K cached KV tokens is far heavier on
-  this hybrid arch than on the 35B at the same prompt (which only lost ~30% decode,
-  30.3 vs 49.4).
+  this hybrid arch than on the 35B at the same prompt (which only lost ~34% decode,
+  32.63 vs 49.4).
 - Immediate-EOS gotcha: raw /completion returns 1 token with stop_type eos on this
   prompt - twice, including after the trailing closed ``` fence was neutralized with
   a nonce, so it is not the 35B-era fence trigger. Timing runs need

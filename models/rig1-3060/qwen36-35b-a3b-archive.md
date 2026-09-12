@@ -1,8 +1,10 @@
 # Qwen3.6-35B-A3B (Rig 1) - experiment archive
 
-All measurements behind [qwen36-35b-a3b.md](qwen36-35b-a3b.md) (headline configs cover
-262144; the extended-context YaRN section is on the main page, with the full probes
-below). Lower-context points
+This archive holds supporting measurements and experiments not on the main card
+([qwen36-35b-a3b.md](qwen36-35b-a3b.md)): rejected configs, sweeps, superseded quants,
+and old-protocol baselines. Headline configs cover 262144; the extended-context YaRN
+summary is on the main page, with the full probes below, and the headline numbers live
+on the main card only. Lower-context points
 (4096 / 131072 / 204800) appear only inside the sweep tables below. Methodology in [methodology](../../methodology.md); gotchas in [issues](../../issues.md).
 Model cards: [unsloth/Qwen3.6-35B-A3B-MTP-GGUF](https://huggingface.co/unsloth/Qwen3.6-35B-A3B-MTP-GGUF)
 (`UD-*` quants); [byteshape/Qwen3.6-35B-A3B-MTP-GGUF](https://huggingface.co/byteshape/Qwen3.6-35B-A3B-MTP-GGUF) (`IQ4_XS-4.19bpw`).
@@ -112,7 +114,8 @@ Fork, ncmoe 99, cache + MTP (c 262144, q8_0 KV incl. draft, prefill env vars on)
 | 262144 | 20 | 38.1 | acceptance 0.69, mean draft len 2.38, 11677 used |
 
 - MTP acceptance on this model is ~0.69-0.77 (vs 0.92 on Flash-Next) - moderate.
-- Q4_K_M + cache + MTP (38.1) does NOT beat IQ4_XS + MTP on stock (51.4): the 256k KV +
+- Q4_K_M + cache + MTP (38.1) does NOT beat IQ4_XS + MTP on stock (49.4 on the current
+  protocol; 51.4 was the old-protocol baseline): the 256k KV +
   draft context starve the pack (20 slots = weak coverage), and all-CPU layers lose the
   14 GPU-expert layers IQ4 keeps at ncmoe 28.
 - Small-ctx cache+MTP stacking (the Codacus fork README's 74.2 t/s class) was not
@@ -240,8 +243,9 @@ c 262144):
 
 ## Conclusions
 
-- Final verdict at large ctx: IQ4_XS via stock llama-server + MTP (51.4 t/s @ 262144)
-  is the fastest config.
+- Final verdict at large ctx: IQ4_XS via stock llama-server + MTP, 49.4 t/s @ 262144 on
+  the current protocol, is the fastest config (the 51.4 t/s in the stock-baseline table
+  was the old-protocol baseline).
 - The Codacus fork's role for the 35B family: UD-Q4_K_M's cache at mid-ctx
   (40.5 @ 131072 without MTP) and its prefill patches for short-ctx/cold prefill -
   not the 256k decode crown.

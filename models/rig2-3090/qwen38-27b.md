@@ -85,8 +85,7 @@ Rig 2 llama.cpp protocol (second-pass prefill, cold load, q8_0 KV) - see
 
     docker run --gpus all --ipc host \
       --env-file <env> \
-      -v <models>:/app/models -v qwen-cache:/cache \
-      -p 18020:18020 \
+      -v <models>:/app/models \
       ghcr.io/syv-ai/qwen38-27b-rtx3090:latest single
 
     # env: CTX=long  MAX_LEN=150000  GPU_UTIL=0.88
@@ -131,7 +130,7 @@ switches to KVarN 4/2-bit KV. Both pools are pinned by bytes
   ~2.4x at 116K) at the same VRAM and reaches 250000 via KVarN. Retired in favour of vLLM;
   full log in [qwen38-27b-archive.md](qwen38-27b-archive.md).
 
-## Messy-code refactor benchmark
+## Messy-code refactor benchmark (real-task ~116K prompt, single-pass)
 
 A deliberately messy ~116K-token refactor prompt, single run:
 
@@ -144,8 +143,8 @@ A deliberately messy ~116K-token refactor prompt, single run:
   69.3 at ~116K (-39%), KVarN to 30.4 (its 250k ceiling) from an 86 t/s short baseline.
 - The decode hit is larger than the 35B-A3B's on the same task (-37%): every token here
   runs ~27B dense params against a 116K context, while the MoE only wakes ~3B.
-- Both ran the full 512 (`ignore_eos: true`), no crash or early EOS; acceptance 0.41 (fp8)
-  / 0.44 (KVarN).
+- Both ran the full 512 (`ignore_eos: true`); no crash or EOS quirk - see
+  [issues.md](../../issues.md). Acceptance 0.41 (fp8) / 0.44 (KVarN).
 - The archived llama.cpp UD-Q4_K_S run read 809.8 / 28.9 here - prefill on par, decode
   ~2.4x slower.
 

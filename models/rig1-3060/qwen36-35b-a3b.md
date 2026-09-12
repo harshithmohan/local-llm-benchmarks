@@ -16,7 +16,7 @@ underlying probes are in the archive.
 | --- | --- | --- | --- | --- | --- | --- |
 | IQ4_XS | stock | on | 28 | n/a | 525.7 | **49.4** |
 
-The row uses the current protocol: coding prompts (C# + React, ~308 tokens each) averaged,
+The row uses the current protocol: coding prompts (C# ~192 tokens, React ~155 tokens) averaged,
 second-pass measurement (first pass warms mmap page cache, discarded), recommended
 sampling (temp 1.0, top_p 0.95, top_k 20, min_p 0.0; presence_penalty 1.5), cold load.
 Prefill is prompt-size-bound: compare rows to each other, not to llama-bench pp numbers or
@@ -48,8 +48,7 @@ weights leave ~7 experts on GPU (ncmoe 34); at 736K all experts must go to CPU (
   (36.3 with MTP vs 37.1 without), so every extended row here is MTP-off.
 - Ceiling: ~736K usable, 752K loads (~170 MiB free, unmeasured), 768K OOM; the larger
   quants do not reach this far (fuller sweep in the archive).
-- Long-range retrieval quality under YaRN was **not validated** (needs a >262144-token
-  needle and a slow full prefill), so extended-context answer quality is unproven.
+- Long-range retrieval quality under YaRN was **not validated** - see [methodology.md](../../methodology.md).
 
 ## Best config per quant
 
@@ -100,9 +99,7 @@ Maximum reach, 753664 (all experts on CPU):
       --reasoning-preserve -b 512 -ub 512
 
 -> 32.3 t/s decode @ 753664 (prefill 282.0), 11525 MiB at load - edge (~370 MiB free).
-704K-752K sit between; 752K loads tight, 768K OOMs at context creation. Long-range
-retrieval quality under YaRN was **not validated** - that needs a >262144-token needle
-and a slow full prefill.
+704K-752K sit between; 752K loads tight, 768K OOMs at context creation.
 
 ## Alternatives (archived)
 
@@ -137,9 +134,9 @@ in test-prompts.md):
   12 GB cap), /v1/chat/completions. No crash: the near-repetitive prompt is safe on
   qwen35moe (the PLE n-gram crash risk is qwen4exp-only). No EOS quirk either - the
   qwen35moe arch decodes normally on /completion and /v1/chat/completions.
-- Decode is 32.63 t/s at 256K vs the 49.4 headline on 308-token prompts, with MTP
-  acceptance normal: the gap is attention cost over 116K cached KV tokens, not an MTP
-  failure. The 308-token prompt protocol stays unchanged for headline numbers.
+- Decode is 32.63 t/s at 256K vs the 49.4 headline on the ~192/~155-token coding prompts,
+  with MTP acceptance normal: the gap is attention cost over 116K cached KV tokens, not an
+  MTP failure. The coding-prompt protocol stays unchanged for headline numbers.
 - Chat-endpoint gotchas vs the raw /completion protocol: a closed ``` fence at prompt end
   makes the model emit EOS immediately in raw /completion (end-of-turn); n_predict is
   ignored by /v1/chat/completions (use max_tokens).

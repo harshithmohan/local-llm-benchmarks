@@ -2,21 +2,24 @@
 """Generates the messy-code refactor prompt (real-task long-context benchmark).
 
 Adapted from Qwen3.8-vLLM-KVarN-MTP-Arc-Experiments (scripts/generate_messy.py +
-build_prompt.py). Deterministic: seed 42, so every run/regeneration produces the
-byte-identical prompt (153 repeats ~ 116K tokens on the Qwen tokenizer family).
+build_prompt.py). Deterministic: seed 42, so every run/regeneration reproduces the
+same prompt text (153 repeats ~ 116K tokens on the Qwen tokenizer family; recorded
+token counts still vary slightly across models/tokenizers).
 
 Outputs (into --out-dir, default .):
   full_prompt.txt             - instruction wrapper + messy code (the prompt text)
   prompt-messy-35b.json       - /completion payload, 35B family sampling
-  prompt-messy-flash.json     - /completion payload, Flash-Next sampling
+  prompt-messy-flash.json     - /completion payload, Flash-Next sampling,
+                                ignore_eos: true (required; see test-prompts.md)
 
-Sampling mode (see test-prompts.md):
-  --sampling timing (default) - the models' recommended sampling (temp 1.0,
-                                top_p 0.95, top_k 20, min_p 0.0, presence
-                                penalty 1.5 for 35B / 0.0 for Flash-Next),
-                                n_predict 512; for prefill/decode timing runs.
-                                Only speed is measured with this prompt - no
-                                output-quality evaluation passes.
+Flags:
+  --repeats N     entity-template repeats (default 153, ~116K tokens)
+  --out-dir DIR   output directory (default .)
+
+Sampling: the generated payloads use the models' recommended sampling (temp 1.0,
+top_p 0.95, top_k 20, min_p 0.0, presence penalty 1.5 for 35B / 0.0 for Flash-Next),
+n_predict 512, for prefill/decode timing runs. Only speed is measured with this
+prompt - no output-quality evaluation passes.
 """
 
 import argparse
@@ -244,7 +247,7 @@ def build_prompt(target_repeats):
 
 
 def sampling_params(family):
-    return {
+    params = {
         "temperature": 1.0,
         "top_p": 0.95,
         "top_k": 20,
@@ -252,6 +255,12 @@ def sampling_params(family):
         "presence_penalty": 1.5 if family == "35b" else 0.0,
         "n_predict": 512,
     }
+    if family == "flash":
+        # qwen4exp emits EOS as its first token on this prompt, so a run without
+        # ignore_eos stops after 1 predicted token (see test-prompts.md / issues.md).
+        # Required for Flash-Next timing runs to decode the full n_predict.
+        params["ignore_eos"] = True
+    return params
 
 
 def main():

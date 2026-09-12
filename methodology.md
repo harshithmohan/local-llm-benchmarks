@@ -9,7 +9,7 @@ All fork-specific features below come from the [Codacus fork](https://github.com
 of llama.cpp (branch `perf`).
 
 - `GGML_CUDA_REGISTER_HOST=1` - pin CPU expert weights, faster DMA upload (prefill)
-- `GGML_SCHED_PREFETCH_EXPERTS=1` - overlap expert uploads with compute on a second stream (prefill, also helps decode on the 177B model)
+- `GGML_SCHED_PREFETCH_EXPERTS=1` - overlap expert uploads with compute on a second stream (prefill, also helps decode on Flash-Next, 176.94B)
 - `LLAMA_ARG_MOE_CACHE_PROFILE=<csv>` + `LLAMA_ARG_MOE_CACHE_SLOTS=<n>` - VRAM-resident hot-expert cache (decode); also usable as CLI flags `--moe-cache-profile` / `--moe-cache-slots`
 
 The upstream README's mention of legacy `GGML_MOE_CACHE_*` env vars for llama-bench is
@@ -74,3 +74,6 @@ but leave less headroom OOM on the first large prompt.
   several prefill flukes (page-cache-warm sessions) that re-verified 20-30% lower cold.
 - Absolute numbers are not directly comparable across sessions written at different times;
   treat comparisons within one page as valid, across pages as approximate.
+- Extended-context (YaRN) configs were validated for throughput only; long-range retrieval
+  quality at extended context was not independently validated. This is the canonical home
+  of that caveat - model pages defer here.

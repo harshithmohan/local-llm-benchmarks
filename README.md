@@ -24,10 +24,8 @@ Two **llama.cpp** builds plus one **vLLM** stack are used across the rigs, label
 throughout these pages:
 
 - **Codacus fork** ([thecodacus/llama.cpp](https://github.com/thecodacus/llama.cpp), branch `perf`,
-  build b10818-27c54b4bb) - adds the prefill patches (`GGML_CUDA_REGISTER_HOST=1`,
-  `GGML_SCHED_PREFETCH_EXPERTS=1`) and the VRAM-resident expert cache
-  (`--moe-cache-profile` / `--moe-cache-slots`). Feature details in
-  [methodology.md](methodology.md).
+  build b10818-27c54b4bb) - adds prefill patches and a VRAM-resident expert cache;
+  env vars and flags are defined in [methodology.md](methodology.md).
 - **Upstream (stock)** ([ggml-org/llama.cpp](https://github.com/ggml-org/llama.cpp)) -
   Rig 1: v0.4.0-dev 30b6a75; Rig 2: v0.4.0-dev build 10809 (5266f24da7). No fork features
   (no expert cache; the fork env vars are no-ops). The config of choice where the fork has
@@ -45,7 +43,7 @@ Timings are read from `llama-server` request logs (llama.cpp) or vLLM's Promethe
 ## Contents
 
 - [methodology.md](methodology.md) - env vars, measurement methods, VRAM headroom rule, caveats
-- [test-prompts.md](test-prompts.md) - the actual prompt texts used for timing runs and traces (C#, React/TS, C++)
+- [test-prompts.md](test-prompts.md) - the actual prompt texts used for timing runs and traces (C# and React/TS timing prompts; a C++ prompt for routing-trace tests)
 - [rig1-3060.md](rig1-3060.md) - Rig 1 hardware and build info
 - [rig2-3090.md](rig2-3090.md) - Rig 2 hardware and build info
 - [issues.md](issues.md) - Codacus fork/tool-level issues found during testing
@@ -58,8 +56,8 @@ Each model page carries its full experiment log in the matching `-archive.md` al
 
 Headline tables list only usable configs (full context, no rejected/OOM setups). All
 tested quants - including archived ones - are in the model pages: [Contents](#contents) above.
-YaRN-extended rows raise context past the native window; answer quality at those lengths
-is not validated.
+YaRN-extended rows raise context past the native window; see the YaRN caveat in
+[methodology.md](methodology.md).
 
 | Model | Quant | Full-ctx support | Prefill t/s | Decode t/s | Notes |
 | --- | --- | --- | --- | --- | --- |
@@ -74,9 +72,9 @@ is not validated.
 
 Headline tables list only usable configs (full context, no rejected/OOM setups). All
 tested quants - including archived ones - are in the model pages: [Contents](#contents) above.
-YaRN-extended rows raise context past the native window; answer quality at those lengths
-is not validated. llama.cpp rows use q8_0 KV under the 22 GB cap; both vLLM rows pin their
-KV pool by bytes to stay under the cap.
+YaRN-extended rows raise context past the native window (see the YaRN caveat in
+[methodology.md](methodology.md)). llama.cpp rows use q8_0 KV under the 22 GB cap; both
+vLLM rows pin their KV pool by bytes to stay under the cap.
 
 | Model | Quant | ncmoe | ctx | Prefill t/s | Decode t/s | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -89,10 +87,12 @@ KV pool by bytes to stay under the cap.
 
 ## Headline takeaways
 
-1. Prefill patches (`GGML_CUDA_REGISTER_HOST=1` + `GGML_SCHED_PREFETCH_EXPERTS=1`) are the
-   single biggest win everywhere: +104-137% on the 35B, +183-656% on Flash-Next.
-2. The expert cache is a strong win for the 35B models (+25-45% decode), weak or a net
-   loss for Flash-Next at 12 GB VRAM (512 experts, flat routing traffic).
+1. Prefill patches are the single biggest win everywhere: +104-137% on the 35B, and
+   ~+55-63% on the recommended Flash-Next quant (UD-IQ3_XXS); the wider range (+183% AD,
+   +656% archived Q3_K_XL) is other Flash-Next quants.
+2. The expert cache is a strong win for the 35B models (+26% decode on the traced 256k
+   row), weak or a net loss for Flash-Next at 12 GB VRAM (512 experts, flat routing
+   traffic).
 3. KV cache at q8_0 is cheap on both arches (10.6 KiB/token on the 35B, 4.9 on Flash-Next);
    context is limited by compute buffers, which scale with `-ub` on Flash-Next.
 4. For coding use (opencode via llama-swap), the recommended setup on the 35B is IQ4_XS

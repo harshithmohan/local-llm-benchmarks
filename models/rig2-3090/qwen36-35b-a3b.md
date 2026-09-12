@@ -48,8 +48,8 @@ point (MTP-on rows in the archive).
   prefill). Acceptance is higher with MTP but does not convert.
 - Decode and prefill each fall ~25-28% per context step (89.9 -> 65.2 -> 49.4) while VRAM
   stays flat (21.9-22.2 GB) - each step offloads more experts to make room for KV.
-- Long-range retrieval quality under YaRN was **not validated** (needs a >262144-token
-  needle and a slow full prefill).
+- Long-range retrieval quality under YaRN was **not validated** - see
+  [methodology.md](../../methodology.md).
 
 ## Best config per quant
 
@@ -113,10 +113,8 @@ seed 42, 116,235 prompt tokens), winner config, q8_0 KV, cold load, single-run p
 - Decode 104.27 vs the 165.1 headline (-37%), MTP acceptance 0.781 (mean len 2.56) vs 0.70
   on the short prompts: the drop is per-step attention cost over ~116K cached KV tokens,
   not an MTP failure - acceptance is actually higher on this prompt.
-- No crash and no EOS quirk on qwen35moe: the near-repetitive prompt ran clean, and
-  /v1/chat/completions with `ignore_eos: true` decoded the full 512 tokens
-  (finish_reason "length"). VRAM 22065 MiB at load, same as the short-prompt winner (KV
-  is preallocated for 262144).
+- No crash or EOS quirk on this arch - see [issues.md](../../issues.md). VRAM 22065 MiB at
+  load, same as the short-prompt winner (KV is preallocated for 262144).
 
 ## Key arch notes
 

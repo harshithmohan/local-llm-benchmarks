@@ -1,6 +1,8 @@
 # Qwen3.6-35B-A3B (Rig 2) - experiment archive
 
-Measurements behind [qwen36-35b-a3b.md](qwen36-35b-a3b.md) (main file: UD-IQ4_XS only).
+This archive holds the supporting measurements and experiments that are not on the main
+card ([qwen36-35b-a3b.md](qwen36-35b-a3b.md)): rejected configs, sweeps, superseded quants,
+and old-protocol baselines. Headline numbers live on the main card only.
 Protocol identical: coding prompts C#+React averaged, second-pass prefill, recommended
 sampling, cold load, q8_0 KV, `--threads 8`, 22 GB VRAM cap (22 GB +- 250 MB, desktop
 reserve). Methodology in [methodology](../../methodology.md); gotchas in
