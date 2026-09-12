@@ -65,7 +65,6 @@ YaRN-extended rows raise context past the native window; see the YaRN caveat in
 | Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | 524288 (YaRN 2x) | 332.5 | 37.1 | Extended; MTP off, ncmoe 34 (7 GPU experts) |
 | Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | 753664 (YaRN 2.875x) | 282.0 | 32.3 | Extended max; MTP off, ncmoe 99 |
 | Qwen3.8-Flash-Next | UD-IQ3_XXS | 230400 practical | 157.1 | **18.1** | Fastest Flash-Next quant; MTP on |
-| Qwen3.8-Flash-Next | AD-Q4_K_M-M64 | 230400 practical | 154.7 | **13.1** | Add REGISTER_HOST for prefill; MTP off |
 | KAT-Coder-V2.5-Dev | APEX-I-Compact | 262144 | 338.5 | **47.7** | qwen35moe; ncmoe 28 (hard floor with MTP); MTP on; ~517 t/s prefill on a 116K prompt |
 
 ## Headline results (Rig 2, t/s, 22 GB cap)

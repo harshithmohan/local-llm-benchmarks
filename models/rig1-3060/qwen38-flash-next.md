@@ -5,18 +5,16 @@ Different model family from Qwen3.6-35B-A3B: arch `qwen4exp` (Codacus fork cache
 Mamba2 + attention (1 full-attn layer per 4). Full experiment log:
 [qwen38-flash-next-archive.md](qwen38-flash-next-archive.md). Methodology in
 [methodology](../../methodology.md); model-specific issues in [issues](../../issues.md).
-Model cards: [unsloth/Qwen3.8-Flash-Next-GGUF](https://huggingface.co/unsloth/Qwen3.8-Flash-Next-GGUF)
-(`UD-*` quants); [AtomicChat/Qwen3.8-Flash-Next-GGUF](https://huggingface.co/AtomicChat/Qwen3.8-Flash-Next-GGUF) (`AD-*`).
+Model card: [unsloth/Qwen3.8-Flash-Next-GGUF](https://huggingface.co/unsloth/Qwen3.8-Flash-Next-GGUF)
+(`UD-*` quants).
 
-Quants tested: `UD-IQ3_XXS` (76.32 GiB, 3 shards) - the recommended one;
-`AD-4.27bpw-Q4_K_M-M64` (88.02 GiB, 33 shards).
+Quants tested: `UD-IQ3_XXS` (76.32 GiB, 3 shards) - the recommended one.
 
 ## Measured results at c 230400 (llama-server, coding prompts C#+React averaged, second-pass, + 512 gen, q8_0 KV, Codacus fork)
 
 | Quant | MTP | ncmoe | prefill t/s | decode t/s | VRAM free after req |
 | --- | --- | --- | --- | --- | --- |
 | UD-IQ3_XXS | on | 99 | 157.1 | **18.1** | ~860 MB |
-| AD-Q4_K_M-M64 | off | 99 | 154.7 | 13.1 | ~770 MB |
 
 204800 was measured and dropped from this table: same speed class but 25k fewer tokens
 of window for zero cost - 230400 is the recommended setting (256k loads but is not
@@ -49,29 +47,14 @@ practical ceiling (256k loads but is not usable in practice, see the archive).
 `--threads 12` (llama.cpp's default on this CPU) is the tested best; 6 and 8 lose
 ~7-10% decode with identical acceptance (see the archive's threads sweep).
 
-### AD-Q4_K_M-M64
-
-Same config as the measured table plus one env var (zero VRAM cost, +183% prefill):
-
-    GGML_CUDA_REGISTER_HOST=1 \
-    llama-server -m <models>/Qwen3.8-Flash-Next-AD-4.27bpw-Q4_K_M-M64-00001-of-00033.gguf \
-      --n-cpu-moe 99 --ctx-size 230400 -ngl 999 \
-      --cache-type-k q8_0 --cache-type-v q8_0 --flash-attn on \
-      --load-mode mmap -fit off --threads 6 --parallel 1 \
-      -b 512 -ub 512
-
--> 13.1 t/s @ 230400 (prefill 154.7), ~770 MB free - the practical ceiling (256k loads
-but is not usable in practice). `--threads 6` is as originally run; the IQ3_XXS threads
-sweep below suggests 12 is faster, but it was not re-tested for AD.
-
-Its only argument might be quantization quality (bpw 4.27 vs IQ3_XXS's 3.06) - never
-tested, treat as an unverified alternative. On speed it loses to IQ3_XXS in every
-measured config on this rig.
-
 ## Alternatives (archived)
 
-UD-Q3_K_XL was dropped from this page: at large ctx it never beats the other two
-(ties at 204800) - see the archive for its full history.
+- UD-Q3_K_XL was dropped from this page: at large ctx it never beats the other two
+  (ties at 204800) - see the archive for its full history.
+- AD-Q4_K_M-M64 was dropped from this page: it loses to IQ3_XXS in every measured config
+  on this rig, and has no MTP (an AD + shared MTP head accepted only ~0.71 and decoded
+  slower than no-MTP). Its only argument is quantization quality (bpw 4.27 vs 3.06) -
+  never tested. Full config and numbers in the archive.
 
 ## Messy-code refactor benchmark (real-task ~116K prompt, single-pass)
 

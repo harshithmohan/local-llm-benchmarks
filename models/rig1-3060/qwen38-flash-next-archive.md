@@ -2,7 +2,9 @@
 
 This archive holds supporting measurements and experiments not on the main card
 ([qwen38-flash-next.md](qwen38-flash-next.md)): rejected configs, sweeps, superseded
-quants, and old-protocol baselines. Headline numbers live on the main card only.
+quants, and old-protocol baselines. Where a table reproduces a main-card headline result,
+the archive mirrors it; the main card remains authoritative, while archived-out quants
+(e.g. AD-Q4_K_M-M64) have their results recorded here only.
 Methodology in [methodology](../../methodology.md); model-specific issues in [issues](../../issues.md).
 Model cards: [unsloth/Qwen3.8-Flash-Next-GGUF](https://huggingface.co/unsloth/Qwen3.8-Flash-Next-GGUF)
 (`UD-*` quants); [AtomicChat/Qwen3.8-Flash-Next-GGUF](https://huggingface.co/AtomicChat/Qwen3.8-Flash-Next-GGUF) (`AD-*`).
@@ -10,7 +12,8 @@ Model cards: [unsloth/Qwen3.8-Flash-Next-GGUF](https://huggingface.co/unsloth/Qw
 Quants:
 
 - `UD-IQ3_XXS` (76.32 GiB, 3 shards) - the recommended one
-- `AD-4.27bpw-Q4_K_M-M64` (88.02 GiB, 33 shards)
+- `AD-4.27bpw-Q4_K_M-M64` (88.02 GiB, 33 shards) - archived from the main card: loses to
+  IQ3_XXS in every measured config
 - `UD-Q3_K_XL` (83.80 GiB, 3 shards) - dropped from the main page: at large ctx it never
   beats the other two (ties at 204800), kept here in full
 
@@ -78,6 +81,26 @@ Findings:
 - ncmoe 43 at c 131072 on IQ3 fails at compute-pp buffer alloc even with ub 512
   (5 GPU-expert layers eat the room); 46 fits.
 
+## AD-Q4_K_M-M64 (archived from main card)
+
+Best config (REGISTER_HOST on - zero VRAM cost, +183% prefill):
+
+    GGML_CUDA_REGISTER_HOST=1 \
+    llama-server -m <models>/Qwen3.8-Flash-Next-AD-4.27bpw-Q4_K_M-M64-00001-of-00033.gguf \
+      --n-cpu-moe 99 --ctx-size 230400 -ngl 999 \
+      --cache-type-k q8_0 --cache-type-v q8_0 --flash-attn on \
+      --load-mode mmap -fit off --threads 6 --parallel 1 \
+      -b 512 -ub 512
+
+-> 13.1 t/s @ 230400 (prefill 154.7), ncmoe 99, MTP off, ~770 MB free - the practical
+ceiling (256k loads but is not usable in practice).
+
+- `--threads 6` is as originally run; the IQ3_XXS threads sweep suggests 12 is faster,
+  but it was not re-tested for AD.
+- Archived from the main card: it loses to IQ3_XXS in every measured config on this rig
+  and has no MTP (an AD + shared MTP head accepted only ~0.71 and decoded slower than
+  no-MTP). Its only argument is quantization quality (bpw 4.27 vs 3.06) - never tested.
+
 ## Expert cache verdicts
 
 - UD-Q3_K_XL: the only quant where the cache paid off - 32 slots -> 14.54 t/s at c 4096
@@ -138,8 +161,8 @@ Findings:
 - The main card's 18.1 t/s headline (acceptance 0.90-0.94) is newer than this archive's
   logged 14.69 t/s (acceptance 0.62-0.92, same temp-1.0 sampling); the difference is MTP
   acceptance variance between runs, not a protocol change.
-- AD-Q4_K_M-M64 is the quality alternative (bpw 4.27 vs 3.06, untested) - slower in
-  every measured config, no MTP.
+- AD-Q4_K_M-M64 was archived from the main card: slower in every measured config, no
+  MTP, and its only argument (quantization quality, bpw 4.27 vs 3.06) is untested.
 - UD-Q3_K_XL never wins at large ctx; its cache win is small-ctx only.
 - Context is capped by compute buffers (not KV) on this arch; -ub 512 is mandatory for
   large ctx.
