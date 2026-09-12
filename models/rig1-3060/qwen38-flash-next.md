@@ -5,6 +5,8 @@ Different model family from Qwen3.6-35B-A3B: arch `qwen4exp` (Codacus fork cache
 Mamba2 + attention (1 full-attn layer per 4). Full experiment log:
 [qwen38-flash-next-archive.md](qwen38-flash-next-archive.md). Methodology in
 [methodology](../../methodology.md); model-specific issues in [issues](../../issues.md).
+Model cards: [unsloth/Qwen3.8-Flash-Next-GGUF](https://huggingface.co/unsloth/Qwen3.8-Flash-Next-GGUF)
+(`UD-*` quants); [AtomicChat/Qwen3.8-Flash-Next-GGUF](https://huggingface.co/AtomicChat/Qwen3.8-Flash-Next-GGUF) (`AD-*`).
 
 Quants tested: `UD-IQ3_XXS` (76.32 GiB, 3 shards) - the recommended one;
 `AD-4.27bpw-Q4_K_M-M64` (88.02 GiB, 33 shards).
@@ -40,12 +42,14 @@ not worth it (ncmoe 46 OOMs with the draft context):
     llama-server -m <models>/Qwen3.8-Flash-Next-UD-IQ3_XXS-00001-of-00003.gguf \
       -ngl 99 --n-cpu-moe 99 -fa on \
       -c 230400 -ctk q8_0 -ctv q8_0 -b 512 -ub 512 \
-      --load-mode mmap -fit off -np 1 \
+      --load-mode mmap -fit off -np 1 --threads 12 \
       -md <models>/mtp-Qwen3.8-Flash-Next-shared-Q8_0.gguf \
       -ngld 0 --spec-type draft-mtp --spec-draft-n-max 2
 
 -> 18.1 t/s @ 230400 (acceptance 0.90-0.94; prefill 157.1), ~860 MB free - the
 practical ceiling (256k loads but is not usable in practice, see the archive).
+`--threads 12` (llama.cpp's default on this CPU) is the tested best; 6 and 8 lose
+~7-10% decode with identical acceptance (see the archive's threads sweep).
 
 ### AD-Q4_K_M-M64
 
@@ -59,7 +63,8 @@ Same config as the measured table plus one env var (zero VRAM cost, +183% prefil
       -b 512 -ub 512
 
 -> 13.1 t/s @ 230400 (prefill 154.7), ~770 MB free - the practical ceiling (256k loads
-but is not usable in practice).
+but is not usable in practice). `--threads 6` is as originally run; the IQ3_XXS threads
+sweep below suggests 12 is faster, but it was not re-tested for AD.
 
 Its only argument might be quantization quality (bpw 4.27 vs IQ3_XXS's 3.06) - never
 tested, treat as an unverified alternative. On speed it loses to IQ3_XXS in every

@@ -42,28 +42,40 @@ logs; `llama-bench` covered the initial prefill/decode sweeps.
 - [issues.md](issues.md) - Codacus fork/tool-level issues found during testing
 - [models/rig1-3060/qwen36-35b-a3b.md](models/rig1-3060/qwen36-35b-a3b.md) - Qwen3.6-35B-A3B on Rig 1; full experiment log in [models/rig1-3060/qwen36-35b-a3b-archive.md](models/rig1-3060/qwen36-35b-a3b-archive.md)
 - [models/rig1-3060/qwen38-flash-next.md](models/rig1-3060/qwen38-flash-next.md) - Qwen3.8-Flash-Next on Rig 1; full experiment log in [models/rig1-3060/qwen38-flash-next-archive.md](models/rig1-3060/qwen38-flash-next-archive.md)
-- [models/rig2-3090/qwen36-35b-a3b.md](models/rig2-3090/qwen36-35b-a3b.md) - Qwen3.6-35B-A3B on Rig 2 (22 GB cap)
+- [models/rig1-3060/katcoder-v2.5-dev.md](models/rig1-3060/katcoder-v2.5-dev.md) - KAT-Coder-V2.5-Dev on Rig 1; full experiment log in [models/rig1-3060/katcoder-v2.5-dev-archive.md](models/rig1-3060/katcoder-v2.5-dev-archive.md)
+- [models/rig2-3090/qwen36-35b-a3b.md](models/rig2-3090/qwen36-35b-a3b.md) - Qwen3.6-35B-A3B on Rig 2 (22 GB cap); full experiment log in [models/rig2-3090/qwen36-35b-a3b-archive.md](models/rig2-3090/qwen36-35b-a3b-archive.md)
+- [models/rig2-3090/qwen38-27b.md](models/rig2-3090/qwen38-27b.md) - Qwen3.8-27B on Rig 2 (22 GB cap); full experiment log in [models/rig2-3090/qwen38-27b-archive.md](models/rig2-3090/qwen38-27b-archive.md)
 
 ## Headline results (Rig 1, t/s, q8_0 KV)
 
 Headline tables list only usable configs (full context, no rejected/OOM setups). All
 tested quants - including archived ones - are in the model pages: [Contents](#contents) above.
+YaRN-extended rows raise context past the native window; answer quality at those lengths
+is not validated.
 
 | Model | Quant | Full-ctx support | Prefill t/s | Decode t/s | Notes |
 | --- | --- | --- | --- | --- | --- |
-| Qwen3.6-35B-A3B | UD-Q4_K_M | 262144 (with cache) | 268.6 | **38.8** | Cache + MTP stack at 256k (40 slots at ub 512); quality vs IQ4 untested |
 | Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | 262144 | 525.7 | **49.4** | Fastest plain decoder; MTP on (stock); cache incompatible (fused gate_up) |
+| Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | 524288 (YaRN 2x) | 332.5 | 37.1 | Extended; MTP off, ncmoe 34 (7 GPU experts) |
+| Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | 753664 (YaRN 2.875x) | 282.0 | 32.3 | Extended max; MTP off, ncmoe 99 |
 | Qwen3.8-Flash-Next | UD-IQ3_XXS | 230400 practical | 157.1 | **18.1** | Fastest Flash-Next quant; MTP on |
 | Qwen3.8-Flash-Next | AD-Q4_K_M-M64 | 230400 practical | 154.7 | **13.1** | Add REGISTER_HOST for prefill; MTP off |
+| KAT-Coder-V2.5-Dev | APEX-I-Compact | 262144 | 338.5 | **47.7** | qwen35moe; ncmoe 28 (hard floor with MTP); MTP on; ~517 t/s prefill on a 116K prompt |
 
 ## Headline results (Rig 2, t/s, q8_0 KV, 22 GB cap)
 
 Headline tables list only usable configs (full context, no rejected/OOM setups). All
 tested quants - including archived ones - are in the model pages: [Contents](#contents) above.
+YaRN-extended rows raise context past the native window; answer quality at those lengths
+is not validated.
 
 | Model | Quant | ncmoe | ctx | Prefill t/s | Decode t/s | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | Qwen3.6-35B-A3B | UD-IQ4_XS | 0 | 262144 | 2375.8 | **165.1** | Full ctx at 22065 MiB; MTP on (stock); cache-compatible if ever needed |
+| Qwen3.6-35B-A3B | UD-IQ4_XS | 6 | 524288 (YaRN 2x) | 1656.7 | 89.9 | Extended; MTP off |
+| Qwen3.6-35B-A3B | UD-IQ4_XS | 15 | 786432 (YaRN 3x) | 1181.9 | 65.2 | Extended; MTP off |
+| Qwen3.6-35B-A3B | UD-IQ4_XS | 25 | 1048576 (YaRN 4x) | 871.8 | 49.4 | Extended max (1M); MTP off |
+| Qwen3.8-27B | UD-Q4_K_S | n/a (dense) | 155648 | 1019.7 | 61.6 | Max ctx under the 22 GB cap (native 262144 too big); dense so stock only; MTP n-max 2 |
 
 ## Headline takeaways
 
@@ -73,5 +85,6 @@ tested quants - including archived ones - are in the model pages: [Contents](#co
    loss for Flash-Next at 12 GB VRAM (512 experts, flat routing traffic).
 3. KV cache at q8_0 is cheap on both arches (10.6 KiB/token on the 35B, 4.9 on Flash-Next);
    context is limited by compute buffers, which scale with `-ub` on Flash-Next.
-4. For coding use (opencode via llama-swap), the recommended setup is UD-Q4_K_M at
-   `-c 131072..262144` with 80/52 cache slots - see the model pages for exact commands.
+4. For coding use (opencode via llama-swap), the recommended setup on the 35B is IQ4_XS
+   (stock, MTP on) - it beats every quant tested at every context; the larger quants and
+   the expert cache are archived. See the model pages for exact commands.

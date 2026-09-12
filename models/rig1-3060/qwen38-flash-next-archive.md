@@ -3,6 +3,8 @@
 All measurements behind [qwen38-flash-next.md](qwen38-flash-next.md) (main file covers
 230400 with MTP; this archive holds the rest). Methodology in
 [methodology](../../methodology.md); model-specific issues in [issues](../../issues.md).
+Model cards: [unsloth/Qwen3.8-Flash-Next-GGUF](https://huggingface.co/unsloth/Qwen3.8-Flash-Next-GGUF)
+(`UD-*` quants); [AtomicChat/Qwen3.8-Flash-Next-GGUF](https://huggingface.co/AtomicChat/Qwen3.8-Flash-Next-GGUF) (`AD-*`).
 
 Quants:
 
@@ -102,6 +104,31 @@ Findings:
   (16.07 vs 15.78) and prefill - not worth the headroom.
 - AD + shared MTP head: acceptance only ~0.71 and decode slower than no-MTP -> skipped;
   no MTP for AD.
+
+## Threads sweep (UD-IQ3_XXS, c 230400)
+
+Method: greedy fixed prompts (temp 0.0, seed 1234, identical nonces across configs) so
+every config decodes exactly the same tokens; a warm pair is discarded and the second
+(measure) pair is quoted. Same load shape throughout (IQ3_XXS, ncmoe 99, c 230400,
+ub 512, shared Q8_0 draft, n-max 2).
+
+| threads | C# decode | React decode | avg decode | acceptance (C# / React) | prefill (C# / React) |
+| --- | --- | --- | --- | --- | --- |
+| 6 | 14.39 | 14.58 | 14.49 | 0.718 / 0.720 | 107.7 / 100.0 |
+| 8 | 14.42 | 14.79 | 14.61 | 0.713 / 0.726 | 108.5 / 93.0 |
+| 12 | 15.46 | 15.28 | 15.37 | 0.713 / 0.726 | 104.6 / 98.4 |
+| 12 (re-run) | 15.98 | 16.14 | 16.06 | 0.713 / 0.726 | 111.4 / 101.5 |
+
+Findings:
+
+- 12 threads beats 6/8 by ~7-10% decode. Acceptance is identical across rows (fixed
+  greedy prompts), so the gap is the thread count, not sampling luck.
+- Prefill is flat (93-111 t/s on these short ~160-200 token prompts) - decode here is
+  dominated by the 48 all-CPU expert layers, which is where more threads pay off.
+- One t8 C# pass read 11.28 t/s; discarded as a transient (the immediate re-run read
+  14.42). Run-to-run decode spread at fixed threads is roughly ±0.7 t/s.
+- This resolves the config discrepancy: the winner command omitted `--threads` (which
+  is the default 12 on this CPU) while the AD command used `--threads 6`; 12 is correct.
 
 ## Conclusions
 
