@@ -14,6 +14,8 @@ Rig details and setup: [../../rig2-3090.md](../../rig2-3090.md). Methodology:
 [../../methodology.md](../../methodology.md). Full experiment log:
 [qwen38-27b-archive.md](qwen38-27b-archive.md).
 Model card: [unsloth/Qwen3.8-27B-GGUF](https://huggingface.co/unsloth/Qwen3.8-27B-GGUF).
+vLLM weights: [dbirks/Qwen3.8-27B-W4A16-AutoRound](https://huggingface.co/dbirks/Qwen3.8-27B-W4A16-AutoRound)
+(the container requantizes the lm_head/embeddings/MTP in place on first boot).
 
 The vLLM rows use the Rig 2 coding prompts (C#+React averaged) and recommended sampling
 (temp 1.0, top_p 0.95, top_k 20, min_p 0.0, presence_penalty 1.5) but a single pass

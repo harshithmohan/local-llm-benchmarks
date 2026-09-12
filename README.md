@@ -99,3 +99,12 @@ KV pool by bytes to stay under the cap.
 4. For coding use (opencode via llama-swap), the recommended setup on the 35B is IQ4_XS
    (stock, MTP on) - it beats every quant tested at every context; the larger quants and
    the expert cache are archived. See the model pages for exact commands.
+
+## References
+
+External repositories referenced on these pages.
+
+- [ggml-org/llama.cpp](https://github.com/ggml-org/llama.cpp) - upstream (`stock`)
+- [thecodacus/llama.cpp](https://github.com/thecodacus/llama.cpp) - Codacus fork, branch `perf`
+- [syv-ai/qwen38-27b-rtx3090](https://github.com/syv-ai/qwen38-27b-rtx3090) - vLLM 0.28.0 container stack (Rig 2 Qwen3.8-27B W4A16)
+- [da3dsoul/Qwen3.8-vLLM-KVarN-MTP-Arc-Experiments](https://github.com/da3dsoul/Qwen3.8-vLLM-KVarN-MTP-Arc-Experiments) - source of the messy-code refactor prompt
