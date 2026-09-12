@@ -3,7 +3,17 @@
 Measurements behind [qwen36-35b-a3b.md](qwen36-35b-a3b.md) (main file: UD-IQ4_XS only).
 Protocol identical: coding prompts C#+React averaged, second-pass prefill, recommended
 sampling, cold load, q8_0 KV, `--threads 8`, 22 GB VRAM cap (22 GB +- 250 MB, desktop
-reserve).
+reserve). Methodology in [methodology](../../methodology.md); gotchas in
+[issues](../../issues.md).
+
+Quants:
+
+- `UD-IQ4_XS` - the winner (separate gate/up/down, cache-compatible)
+- `IQ4_XS-4.19bpw` - faster at reduced ctx, cache incompatible (fused gate_up)
+- `UD-Q4_K_M` - cache-compatible
+
+Routing profiles at `<models>/moe-cache-profiles/` (the same `*-merged.csv` files as
+Rig 1, made with `llama-moe-trace`).
 
 ## Rejected configs (VRAM over the cap)
 
@@ -36,7 +46,15 @@ The winner in the table is the Codacus fork cache+MTP variant (ncmoe 12 + 64 slo
 119.3, +27% over this stock row). Q4_K_M's only argument might be quantization quality
 (bpw 4.4-4.8 vs IQ4's ~4.2) - never tested, unverified.
 
-Note: the fork's cache experiment on this rig has an extra setup step - the fork's
-libggml-cuda.so needs the CUDA 12 runtime (staged via `LD_LIBRARY_PATH`, see
-[rig2-3090.md](../../rig2-3090.md)).
 Rejected VRAM-over-cap configs: ncmoe 8 @ 262144 (22779 MiB, with or without cache).
+
+## Conclusions
+
+- Final verdict: UD-IQ4_XS at ncmoe 0 + MTP (165.1 t/s @ 262144) is the config of
+  choice - the only quant that holds full ctx within the 22 GB cap.
+- IQ4_XS-4.19bpw is the max-speed option if a reduced window is acceptable
+  (178.1 @ 230400); it can never use the expert cache (fused gate_up).
+- UD-Q4_K_M's cache+MTP variant (119.3, +27% over its stock row) is the quality
+  alternative - never tested, unverified.
+- No prefill-patch, context-ladder, or MTP sweep tables were run on this rig; at
+  ncmoe 0 the fork's cache and prefill patches have nothing to add (see the main page).

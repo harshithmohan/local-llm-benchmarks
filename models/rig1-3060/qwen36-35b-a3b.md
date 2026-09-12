@@ -70,6 +70,8 @@ pack coexist; the old ub 2048 protocol could only fit 20 slots, which made MTP p
 cache-bound (~45% below stock+MTP) in exchange for possibly higher quality (never
 tested). Stock + MTP without the cache is 32.5 - the cache is worth +19% decode here.
 
+## Alternatives (archived)
+
 UD-Q6_K was dropped from this page: it is the weakest 35B quant at large ctx in every
 measured config (see the archive for its full history).
 
@@ -95,9 +97,8 @@ single-run protocol (ONE timed pass, no warm-up; /v1/chat/completions, max_token
   12 GB cap), /v1/chat/completions. No crash: the near-repetitive prompt is safe on
   qwen35moe (the PLE n-gram crash risk is qwen4exp-only). No EOS quirk either - the
   qwen35moe arch decodes normally on /completion and /v1/chat/completions.
-- UD-Q4_K_M: MTP acceptance 0.806 (mean len 2.61), VRAM 10061 MiB, logs
-  `/tmp/srv-messy-iq4-single.log` / `/tmp/srv-messy-udq4-single.log` (host-local,
-  ephemeral). Earlier two-pass history: first attempt was aborted by a power loss;
+- UD-Q4_K_M: MTP acceptance 0.806 (mean len 2.61), VRAM 10061 MiB.
+  Earlier two-pass history: first attempt was aborted by a power loss;
   the re-run produced matching pass-1 numbers - the config is reproducible.
 - Decode is ~31-32.6 t/s vs the 49.4/38.8 headlines on 308-token prompts, with MTP
   acceptance normal: the gap is attention cost over 116K cached KV tokens, not an MTP
@@ -107,9 +108,7 @@ single-run protocol (ONE timed pass, no warm-up; /v1/chat/completions, max_token
 - Chat-endpoint gotchas vs the raw /completion protocol: a closed ``` fence at prompt end
   makes the model emit EOS immediately in raw /completion (end-of-turn); n_predict is
   ignored by /v1/chat/completions (use max_tokens).
-- Launch gotcha: bare `llama-server` in the llama-swap container resolves to the STOCK
-  binary, which rejects `--moe-cache-profile` (fork-only flag) - use
-  `/llama-codacus/llama-server` explicitly for the fork config.
-- The fork server ignored SIGTERM while a 116K request was in flight; kill it while
-  idle (it dies cleanly then), or use `kill -9` as a last resort - that takes the
-  llama-swap container down with it (restart policy `always`).
+
+## Key arch notes
+
+None specific to this model - general notes in [methodology.md](../../methodology.md).

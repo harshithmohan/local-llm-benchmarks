@@ -1,4 +1,4 @@
-# Qwen3.8-Flash-Next (177B MoE) - experiment archive
+# Qwen3.8-Flash-Next (Rig 1) - experiment archive
 
 All measurements behind [qwen38-flash-next.md](qwen38-flash-next.md) (main file covers
 230400 with MTP; this archive holds the rest). Methodology in

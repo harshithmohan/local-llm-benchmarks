@@ -1,16 +1,16 @@
-# Qwen3.6-35B-A3B - experiment archive
+# Qwen3.6-35B-A3B (Rig 1) - experiment archive
 
 All measurements behind [qwen36-35b-a3b.md](qwen36-35b-a3b.md) (main file covers 262144
 only). Lower-context points (4096 / 131072 / 204800) appear only inside the sweep tables
 below. Methodology in [methodology](../../methodology.md); gotchas in [issues](../../issues.md).
 
-Models:
+Quants:
 
 - `IQ4_XS-4.19bpw.gguf` (17.32 GiB, fused gate_up experts - cache incompatible)
 - `UD-Q6_K.gguf` (27.94 GiB, separate gate/up/down)
 - `UD-Q4_K_M.gguf` (21.10 GiB, separate gate/up/down)
 
-Routing profiles in the models root's `moe-cache-profiles/` folder: `qwen36-udq6-merged.csv` (traced at
+Routing profiles at `<models>/moe-cache-profiles/`: `qwen36-udq6-merged.csv` (traced at
 ncmoe 34), `qwen36-udq4km-merged.csv` (traced at ncmoe 26). Both made with
 `llama-moe-trace`, code + chat prompts. The IQ4 trace exists but is unused (cache incompatible).
 
@@ -74,8 +74,8 @@ Findings:
 
 ## Stock (upstream) llama-server baseline vs Codacus fork
 
-Stock binary: upstream llama-server (upstream v0.4.0-dev 30b6a75), running the
-config.yaml commands (c 262144, q8_0 KV incl. draft, threads 12, MTP
+Stock binary: upstream llama-server (upstream v0.4.0-dev 30b6a75), running the same
+commands (c 262144, q8_0 KV incl. draft, threads 12, MTP
 `--spec-draft-n-max 2`, single ~770-tok prompt + 512 generated):
 
 | Quant / ncmoe | binary | env | prefill t/s | decode t/s |
@@ -96,8 +96,8 @@ Findings:
 - Prefill at 256k is attention-bound: the prefill patches add nothing measurable here
   (663.9 vs 686.5 - noise). Their gain was measured on pure prefill at short ctx
   (1121 -> 2307 t/s on IQ4, see the prefill table above).
-- The config.yaml Q6 entry (ncmoe 34 + MTP) OOMs at 262144 on the stock binary; ncmoe 36
-  works (verified at ncmoe 36). Fix: ncmoe 36+, lower ctx, or drop MTP for the Q6 entry.
+- UD-Q6_K at ncmoe 34 + MTP OOMs at 262144 on the stock binary; ncmoe 36 works.
+  Suggested config: ncmoe 36+, lower ctx, or drop MTP.
 
 ## UD-Q4_K_M + MTP at full context
 

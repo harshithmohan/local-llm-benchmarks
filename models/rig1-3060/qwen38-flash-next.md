@@ -6,13 +6,8 @@ Mamba2 + attention (1 full-attn layer per 4). Full experiment log:
 [qwen38-flash-next-archive.md](qwen38-flash-next-archive.md). Methodology in
 [methodology](../../methodology.md); model-specific issues in [issues](../../issues.md).
 
-Quants tested:
-
-- `UD-IQ3_XXS` (76.32 GiB, 3 shards) - the recommended one
-- `AD-4.27bpw-Q4_K_M-M64` (88.02 GiB, 33 shards)
-
-UD-Q3_K_XL was dropped from this page: at large ctx it never beats the other two
-(ties at 204800) - see the archive for its full history.
+Quants tested: `UD-IQ3_XXS` (76.32 GiB, 3 shards) - the recommended one;
+`AD-4.27bpw-Q4_K_M-M64` (88.02 GiB, 33 shards).
 
 ## Measured results at c 230400 (llama-server, coding prompts C#+React averaged, second-pass, + 512 gen, q8_0 KV, Codacus fork)
 
@@ -33,7 +28,7 @@ recommended temperature: 0.90-0.94.
 
 
 
-## Best configs
+## Best config per quant
 
 ### UD-IQ3_XXS - winner (fastest Flash-Next quant)
 
@@ -70,6 +65,11 @@ Its only argument might be quantization quality (bpw 4.27 vs IQ3_XXS's 3.06) - n
 tested, treat as an unverified alternative. On speed it loses to IQ3_XXS in every
 measured config on this rig.
 
+## Alternatives (archived)
+
+UD-Q3_K_XL was dropped from this page: at large ctx it never beats the other two
+(ties at 204800) - see the archive for its full history.
+
 ## Messy-code refactor benchmark (real-task ~116K prompt, single-pass)
 
 One-time real-task stability/speed test of the messy-code refactor prompt (see
@@ -98,8 +98,7 @@ messy-prompt protocol), decoded with `ignore_eos: true` (gotcha below):
   valid (the 3.33 above came from such a re-send: 512 tokens over ~116K cached KV,
   4-token prefill).
 - No crash: the qwen4exp PLE n-gram path did not fire on the near-repetitive prompt.
-  VRAM 10867 MiB at load, ~1.4 GB under the 12 GB cap. Server log for the run:
-  /tmp/srv-messy-flash.log on Rig 1 (host-local, ephemeral).
+  VRAM 10867 MiB at load, ~1.4 GB under the 12 GB cap.
 
 ## Key arch notes
 

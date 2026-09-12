@@ -82,8 +82,6 @@ Measurement rules specific to this prompt:
 - Timing runs use the `--sampling timing` payloads: the models' recommended sampling
   and n_predict 512. Only speed is measured with this prompt - no output-quality
   evaluation passes.
-- Build the payload JSONs on the host with the script (python heredoc / scp), not by
-  hand-escaping JSON through nested ssh/docker quoting.
 - One timed pass per session (single-run protocol): no warm-up pass for this prompt.
   Existing two-pass 35B messy numbers predate this rule and will be redone single-pass
   later - the two conventions are not directly comparable (prefill differs by NVMe

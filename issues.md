@@ -3,8 +3,13 @@
 Issues discovered during benchmarking, covering the Codacus fork, upstream llama-server,
 and the test harness.
 Applies to this build (b10818-27c54b4bb, branch `perf`) unless noted otherwise.
+Each item is tagged with the engine(s) it affects: **Codacus fork**, **stock**
+(upstream llama.cpp), or both named explicitly. Never assume a new engine shares an
+issue - check the tags.
 
 ## 1. IQ4_XS quant incompatible with expert cache
+
+Applies: **Codacus fork** (the expert cache is a fork-only feature; stock has no cache).
 
 `Qwen3.6-35B-A3B-IQ4_XS-4.19bpw.gguf` stores fused `ffn_gate_up_exps.weight` (plus separate
 gate/up/down patterns in the header). The cache requires separate gate/up/down expert tensors,
@@ -25,6 +30,9 @@ which is invisible in llama-cli's chat UI and llama-server's default logs. Run w
 
 ## 2. llama-bench cannot test the expert cache (any model)
 
+Applies: **Codacus fork** (the cache is fork-only, so stock's llama-bench is unaffected
+by this gap; the missing `-c` flag affects **Codacus fork + stock**).
+
 `tools/llama-bench/llama-bench.cpp` has no moe-cache support and ignores both
 `GGML_MOE_CACHE_*` and `LLAMA_ARG_MOE_CACHE_*` env vars. This is a tool limitation, not a
 model one - it applies to every model, including the cache-compatible quants. It also has
@@ -37,28 +45,34 @@ at 12 GB VRAM (see model pages).
 
 ## 3. Slot sizing OOM trap
 
+Applies: **Codacus fork** (expert-cache packs only).
+
 80 slots loaded fine but OOMed on the first ~770-token prompt (VRAM 11879/11911 MiB).
 The pack must leave headroom for compute buffers that grow with ctx. Rule used here:
 keep ~900+ MB free after the pack + KV + compute reservation. 72 slots was stable.
 
-## 4. pkill footgun in containers
+## 4. llama-bench default batch under-reports prefill
 
-`pkill -f llama-server` matches your own `sh -c` wrapper (killed the launcher instead of the
-server). Use `pkill -x llama-server`.
-
-## 5. llama-bench default batch under-reports prefill
+Applies: **Codacus fork + stock** (llama-bench is shared, though the README methodology
+referenced is the fork's).
 
 Default llama-bench batch (ub 512) severely under-reports prefill: `-b 2048 -ub 2048`
 required to match the Codacus fork's README methodology.
 
-## 6. Display quirks (harmless)
+## 5. Display quirks (harmless)
+
+Applies: **Codacus fork + stock** for llama-bench labels; **model-side** (any engine) for
+the GGUF metadata quirk.
 
 - llama-bench may show `(guessed) all F32` or a wrong quant label in the model column -
   display quirk only, quants load and run correctly.
 - The Qwen3.8-Flash-Next GGUF metadata says size_label `512x56B`, but the model is
   176.94B params (512 experts, ~3B active).
 
-## 7. Qwen3.8-Flash-Next specific
+## 6. Qwen3.8-Flash-Next specific
+
+Applies: **Codacus fork + stock** unless marked - these are model/arch issues, not fork
+features. Items that involve fork-only knobs are tagged inline.
 
 - Repeated/repetitive prompt text can crash llama-server with
   "CUDA error: the requested functionality is not supported" (PLE n-gram graph path).
@@ -75,13 +89,9 @@ required to match the Codacus fork's README methodology.
   llama.cpp reads the tensor list from the shards.
 - The compute buffer scales with `-ub` on this arch (indexer): at c 204800, ub 2048 would
   need ~6 GB compute; ub 512 needs ~2.1 GB. This is what caps context, not KV.
-- With `GGML_SCHED_PREFETCH_EXPERTS=1`, the prefetch stream costs VRAM and caps ncmoe
-  ~2 layers below the no-prefetch max (measured on the Q4_K_M quant).
+- With `GGML_SCHED_PREFETCH_EXPERTS=1` (**Codacus fork only**), the prefetch stream costs
+  VRAM and caps ncmoe ~2 layers below the no-prefetch max (measured on the Q4_K_M quant).
 - First-request prompt eval is slow with MTP active (~14 t/s for 81 tokens); it recovers
-  afterwards, but prefill-heavy workloads may prefer no-MTP + env vars.
-
-## 8. config.yaml review note
-
-A reviewed llama-swap config.yaml had 35B and KAT-Coder models running with MTP spec
-decode but without the prefill env vars - adding `GGML_CUDA_REGISTER_HOST=1`
-(+ `GGML_SCHED_PREFETCH_EXPERTS=1` where VRAM allows) is free prefill speed for them.
+  afterwards, but prefill-heavy workloads may prefer no-MTP + env vars
+  (**Codacus fork + stock** - MTP is supported by stock too; the "+ env vars" part is
+  fork-only).
