@@ -42,6 +42,13 @@ Rig 2 llama.cpp protocol (second-pass prefill, cold load, q8_0 KV) - see
   5.4 GiB) -> 150,769 tokens (1.01x at 150k). `MAX_SEQS=4` is required: at the default 8 the
   4-draft spec buffers push the pool below 150k and the engine refuses to boot. See the KVarN
   section for why the pool is pinned.
+- **This profile can reach 170000 on the same int4 build, but only just:** raising the pin
+  to 6.5 GB (`MAX_LEN=170000`, pool 170,776) boots and served a 164,553-token prompt
+  (prefill 655.7 t/s, decode 83.1 t/s, acceptance 0.625, coherent output). The catch is
+  headroom: a near-full request pushed steady VRAM to 22,515 MiB, ~13 MiB under the
+  22,528 cap, so 170k is a documented capability rather than a comfortable default - keep
+  150000 for normal use. The 170k ceiling is unlocked by the int4 `-fast` head/drafter
+  (the int8 base would not even fit 150000 here).
 - Warm runs, +-10% on decode: C# 115 / 0.55, React 112 / 0.53; vs stock llama.cpp
   UD-Q4_K_S (1019.7 / 61.6) prefill +10% / decode +83%. MTP trades short-context decode for
   context (DFlash2 is 37 t/s faster at short prompts but 30k shorter - see Alternatives;
