@@ -1,8 +1,9 @@
 # local-llm-benchmarks
 
-Benchmark reports for running local LLMs on two consumer GPUs, using two builds
+Benchmark reports for running local LLMs on two consumer GPUs, using three builds
 of [llama.cpp](https://github.com/ggml-org/llama.cpp): the
-[Codacus fork](https://github.com/thecodacus/llama.cpp) (branch `perf`) and upstream.
+[Codacus fork](https://github.com/thecodacus/llama.cpp) (branch `perf`),
+upstream llama.cpp, and [ik-llama.cpp](https://github.com/ikawrakow/ik_llama.cpp).
 One Rig 2 model also has a
 [vLLM](https://github.com/syv-ai/qwen38-27b-rtx3090) container stack.
 
@@ -20,7 +21,7 @@ Known issues and gotchas: [issues.md](issues.md).
 
 ## Inference engines
 
-Two **llama.cpp** builds plus one **vLLM** stack are used across the rigs, labeled as such
+Three **llama.cpp** builds plus one **vLLM** stack are used across the rigs, labeled as such
 throughout these pages:
 
 - **Codacus fork** ([thecodacus/llama.cpp](https://github.com/thecodacus/llama.cpp), branch `perf`,
@@ -30,6 +31,13 @@ throughout these pages:
   Rig 1: v0.4.0-dev 30b6a75; Rig 2: v0.4.0-dev build 10809 (5266f24da7). No fork features
   (no expert cache; the fork env vars are no-ops). The config of choice where the fork has
   nothing to add - e.g. every Rig 2 config at ncmoe 0, and IQ4_XS at 256k on Rig 1.
+- **ik-llama.cpp** ([ikawrakow/ik_llama.cpp](https://github.com/ikawrakow/ik_llama.cpp),
+  build 3bb386e, Rig 1) - Ilya Kawrakow's performance fork; so far tested on the Rig 1
+  Qwen3.6-35B-A3B IQ4_XS quant. Loses to stock at the native 256k window, wins decode at
+  YaRN-extended context (+10.5% at 512K, +7.4% at 736K) and extends the usable ceiling to
+  ~852K (stock ~736K). Results live in each model's page
+  ([models/rig1-3060/qwen36-35b-a3b.md](models/rig1-3060/qwen36-35b-a3b.md));
+  llama.cpp and ik results are not interchangeable - engine labels are per-row.
 - **vLLM** ([syv-ai/qwen38-27b-rtx3090](https://github.com/syv-ai/qwen38-27b-rtx3090),
   vLLM 0.28.0) - the Rig 2 Qwen3.8-27B W4A16 stack, MTP with two KV modes: fp8 at 150000
   (4 drafts) and KVarN 4/2-bit at 250000 (slower decode), both with pinned pools. Its
@@ -63,8 +71,9 @@ YaRN-extended rows raise context past the native window; see the YaRN caveat in
 | Model | Quant | Full-ctx support | Prefill t/s | Decode t/s | Notes |
 | --- | --- | --- | --- | --- | --- |
 | Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | 262144 | 525.7 | **49.4** | Fastest plain decoder; MTP on (stock); cache incompatible (fused gate_up) |
-| Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | 524288 (YaRN 2x) | 332.5 | 37.1 | Extended; MTP off, ncmoe 34 (7 GPU experts) |
-| Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | 753664 (YaRN 2.875x) | 282.0 | 32.3 | Extended max; MTP off, ncmoe 99 |
+| Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | 524288 (YaRN 2x) | 322.0 | **41.0** | Extended; MTP off, ncmoe 28 (ik-llama.cpp) |
+| Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | 753664 (YaRN 2.875x) | 262.4 | **34.7** | Extended; MTP off, ncmoe 36 (ik-llama.cpp) |
+| Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | 851968 (YaRN 3.25x) | 240.2 | 32.4 | Extended max on this rig; MTP off, ncmoe 41 (ik-llama.cpp) |
 | Qwen3.8-Flash-Next | UD-IQ3_XXS | 230400 practical | 157.1 | **18.1** | Fastest Flash-Next quant; MTP on |
 | KAT-Coder-V2.5-Dev | APEX-I-Compact | 262144 | 338.5 | **47.7** | qwen35moe; ncmoe 28 (hard floor with MTP); MTP on; ~517 t/s prefill on a 116K prompt |
 
@@ -96,8 +105,9 @@ vLLM rows pin their KV pool by bytes to stay under the cap.
 3. KV cache at q8_0 is cheap on both arches (10.6 KiB/token on the 35B, 4.9 on Flash-Next);
    context is limited by compute buffers, which scale with `-ub` on Flash-Next.
 4. For coding use (opencode via llama-swap), the recommended setup on the 35B is IQ4_XS
-   (stock, MTP on) - it beats every quant tested at every context; the larger quants and
-   the expert cache are archived. See the model pages for exact commands.
+   (stock, MTP on) at 256k - it beats every quant and engine tested there; past the
+   native window, ik-llama.cpp takes over (faster decode at every extended context and
+   ~115K more usable reach, 852K vs 736K). See the model pages for exact commands.
 
 ## References
 
@@ -105,5 +115,6 @@ External repositories referenced on these pages.
 
 - [ggml-org/llama.cpp](https://github.com/ggml-org/llama.cpp) - upstream (`stock`)
 - [thecodacus/llama.cpp](https://github.com/thecodacus/llama.cpp) - Codacus fork, branch `perf`
+- [ikawrakow/ik_llama.cpp](https://github.com/ikawrakow/ik_llama.cpp) - ik-llama.cpp performance fork
 - [syv-ai/qwen38-27b-rtx3090](https://github.com/syv-ai/qwen38-27b-rtx3090) - vLLM 0.28.0 container stack (Rig 2 Qwen3.8-27B W4A16)
 - [da3dsoul/Qwen3.8-vLLM-KVarN-MTP-Arc-Experiments](https://github.com/da3dsoul/Qwen3.8-vLLM-KVarN-MTP-Arc-Experiments) - source of the messy-code refactor prompt and of the tuning experiments tested in [experiments/](experiments/)

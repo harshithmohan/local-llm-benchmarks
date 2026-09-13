@@ -16,6 +16,21 @@ The upstream README's mention of legacy `GGML_MOE_CACHE_*` env vars for llama-be
 wrong for this build. The working env names for llama-server AND llama-cli are
 `LLAMA_ARG_MOE_CACHE_*` (they go through the common arg parser).
 
+## ik-llama.cpp notes
+
+[ik-llama.cpp](https://github.com/ikawrakow/ik_llama.cpp) results (Rig 1) were measured
+with the same protocol as the llama.cpp builds; engine-specific differences:
+
+- Binary `ik-llama-server`; MTP flag syntax is canonical: `--spec-type mtp:n_max=2`
+  with draft KV `-ctkd/-ctvd`. Stock's `--spec-type draft-mtp` is not accepted. `-fa`
+  takes a value on this build (`-fa (auto|on|off|0|1)`, default on) - bare `-fa`
+  errors out with usage text.
+- No Codacus fork features (no `--load-mode`, no `GGML_CUDA_REGISTER_HOST`,
+  `GGML_SCHED_PREFETCH_EXPERTS`, or `--moe-cache-profile`); no `--reasoning-preserve`.
+- A `--cache-ram` prompt cache is on by default; protocol payloads pass
+  `cache_prompt: false`, so the second-pass rule is still required for the page-in of
+  weights but slot KV reuse never fires.
+
 ## Measurement methods
 
 - Prefill/decode bench: `llama-bench -ngl 99 -fa 1 -p 2048 -n 512 -b 2048 -ub 2048 -r 3`

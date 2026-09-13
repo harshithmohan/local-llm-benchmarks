@@ -1,10 +1,10 @@
 # Issues found
 
 Issues discovered during benchmarking, covering the Codacus fork, upstream llama-server,
-and the test harness.
+ik-llama.cpp, and the test harness.
 Applies to this build (b10818-27c54b4bb, branch `perf`) unless noted otherwise.
 Each item is tagged with the engine(s) it affects: **Codacus fork**, **stock**
-(upstream llama.cpp), or both named explicitly. Never assume a new engine shares an
+(upstream llama.cpp), or **ik-llama.cpp**. Never assume a new engine shares an
 issue - check the tags.
 
 ## 1. IQ4_XS quant incompatible with expert cache
@@ -95,3 +95,22 @@ features. Items that involve fork-only knobs are tagged inline.
   afterwards, but prefill-heavy workloads may prefer no-MTP + env vars
   (**Codacus fork + stock** - MTP is supported by stock too; the "+ env vars" part is
   fork-only).
+
+## 7. ik-llama.cpp specific
+
+Applies: **ik-llama.cpp** (build 3bb386e).
+
+- A log line `draft size 2 exceeds max 1, truncating` appears with MTP on the 35B and
+  is benign - MTP still runs with normal acceptance (0.81-0.84 at 256k).
+- MTP + deep GPU expert packs fails at init (256k): the draft context needs a ~489 MiB
+  CUDA buffer that does not fit alongside the pack (ncmoe 18/24 + MTP both fail; the
+  256k MTP ceiling is ncmoe 28). At extended ctx the picture differs from stock: ik MTP
+  fits at 512K on the lean split (ncmoe 34) but OOMs at the best split (ncmoe 28 - the
+  draft context eats the KV headroom) and at 736K even all-CPU (ncmoe 41: per-step
+  recurrent speculative checkpoint init, 782 MiB main KV alloc fails); stock fits MTP
+  at 512K but loses (draft context evicts the GPU expert layers, 36.3 vs 37.1).
+- Extended-context ceiling failure mode: past the usable limit (~852K), the next
+  config (917504) LOADS fine but crashes on the first request with a runtime CUDA OOM
+  in the decode cublas path - unlike stock, where an over-ceiling config OOMs cleanly
+  at init/context creation. Loads-fine is not proof of serviceability near the ik
+  ceiling.
