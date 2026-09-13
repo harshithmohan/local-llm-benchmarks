@@ -12,10 +12,15 @@ llama.cpp `UD-Q4_K_S` quant and the DFlash2 profile are archived (see Alternativ
 
 Rig details and setup: [../../rig2-3090.md](../../rig2-3090.md). Methodology:
 [../../methodology.md](../../methodology.md). Full experiment log:
-[qwen38-27b-archive.md](qwen38-27b-archive.md).
+[qwen38-27b-archive.md](qwen38-27b-archive.md). Low-level knob transferability
+study: [../../experiments/qwen38-27b-da3dsoul-arc-transfer.md](../../experiments/qwen38-27b-da3dsoul-arc-transfer.md).
 Model card: [unsloth/Qwen3.8-27B-GGUF](https://huggingface.co/unsloth/Qwen3.8-27B-GGUF).
 vLLM weights: [dbirks/Qwen3.8-27B-W4A16-AutoRound](https://huggingface.co/dbirks/Qwen3.8-27B-W4A16-AutoRound)
-(the container requantizes the lm_head/embeddings/MTP in place on first boot).
+(the container requantizes the lm_head/embeddings/MTP in place on first boot: the base
+checkpoint to int8, the `-fast` variant to int4-GPTQ. On this 3090 the int4 widths are
+what let a 150k-context boot fit the 22.5 GB cap at all - the int8 base loads ~0.9 GiB
+heavier and lands over it - and int4 leaves enough headroom to raise the pool pin and
+boot at MAX_LEN=170000, a ceiling not yet wired into the configs below.)
 
 The vLLM rows use the Rig 2 coding prompts (C#+React averaged) and recommended sampling
 (temp 1.0, top_p 0.95, top_k 20, min_p 0.0, presence_penalty 1.5) but a single pass
@@ -43,8 +48,9 @@ Rig 2 llama.cpp protocol (second-pass prefill, cold load, q8_0 KV) - see
 - React stops at 1 token on raw completion without `ignore_eos: true`; the guard is used
   for the timed runs (see the messy section, same convention).
 - Long-context prefill (7369-token React x24): 1274 t/s; a 139,686-token prompt prefills at
-  708 t/s. Prefix caching is on but inert here (`cached=0` on re-sends), so these are real
-  prefills.
+  708 t/s. These are first-send prefills (single pass); a re-send of the same prompt hits the
+  prefix cache (`cached=138,224`, prefill collapses to ~2.8 s), so follow-up turns are cheap
+  while every cold measurement stays a real prefill.
 
 ## Measured results at c 250000 (vLLM, KVarN 4/2-bit KV, pinned pool, coding prompts C#+React averaged, single pass, + 512 gen)
 
@@ -95,9 +101,18 @@ Rig 2 llama.cpp protocol (second-pass prefill, cold load, q8_0 KV) - see
     # long-context profile (KVarN 4/2-bit KV, pinned pool, slower decode):
     # env: CTX=huge  MAX_LEN=250000  GPU_UTIL=0.88
     #      EXTRA_ARGS=--kv-cache-memory=4200000000
+    #
+    # prefill-optimized add-on (W4A8 int8 Marlin activations; decode -9%):
+    # env: INT8_ACT=int8
 
 -> 113 t/s decode @ c 150000 (prefill 1124, acceptance ~0.54), 22289 MiB.
 -> 86 t/s decode @ c 250000 (prefill 960, acceptance ~0.58), 22340 MiB.
+
+Adding `INT8_ACT=int8` to the `CTX=long` env trades ~9% short-context decode for a
+large prefill win: short C#+React prefill 1095 -> 2006 t/s (+83%) and a 139,686-token
+prompt 699 -> 973 t/s (+39%), at the same pool (150,769) and +0.4 GiB VRAM (21,517 MiB);
+acceptance holds (~0.5) and output stays coherent. `INT8_LAYERS=mlp` is a smaller middle
+point (1,615 / 878); `PREFILL_ATTN=int8` adds nothing on top.
 
 Built from [syv-ai/qwen38-27b-rtx3090](https://github.com/syv-ai/qwen38-27b-rtx3090):
 W4A16 AutoRound weights with 4 chained MTP drafts. `CTX=long` selects fp8 KV; `CTX=huge`
@@ -124,6 +139,12 @@ switches to KVarN 4/2-bit KV. Both pools are pinned by bytes
   short decode 143.2 and 116K prefill 886.8 look good, but idle sat at 22177 MiB, steady use
   at 22647 MiB, and a load transient at 23443 MiB. The drafter+speculator overhead leaves no
   room at a useful context, so DFlash2 stays retired.
+
+- **KVarN `g64` / `k4v4` tiles** (`CTX=huge`, same 3.91 GiB pin): tested `k4v4_g128`,
+  `k4v2_g64`, `k4v4_g64` against the default `k4v2_g128`. All are within noise on
+  prefill/decode and none recover MTP acceptance; every one costs KV capacity, forcing
+  MAX_LEN down (`k4v4` stores 2x V bytes: ~24-26% fewer pool tokens, ~192-200k ceiling;
+  `g64` doubles scale overhead for ~5%). The default tile is the only one worth serving.
 
 - **UD-Q4_K_S** (stock llama.cpp, GGUF): 155648 was the largest context under the 22 GB cap
   (1019.7 / 61.6 short; 809.8 / 28.9 at 116K), but vLLM beats it on decode (~1.8x short,

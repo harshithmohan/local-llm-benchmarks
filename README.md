@@ -49,6 +49,7 @@ Timings are read from `llama-server` request logs (llama.cpp) or vLLM's Promethe
 - [issues.md](issues.md) - Codacus fork/tool-level issues found during testing
 - [models/rig1-3060/](models/rig1-3060/) - Rig 1 model pages (best configs per model)
 - [models/rig2-3090/](models/rig2-3090/) - Rig 2 model pages (best configs per model)
+- [experiments/](experiments/) - transferability studies of low-level inference knobs (engine/arch-specific tuning evaluated against the recommended stacks)
 
 Each model page carries its full experiment log in the matching `-archive.md` alongside it.
 
@@ -105,4 +106,4 @@ External repositories referenced on these pages.
 - [ggml-org/llama.cpp](https://github.com/ggml-org/llama.cpp) - upstream (`stock`)
 - [thecodacus/llama.cpp](https://github.com/thecodacus/llama.cpp) - Codacus fork, branch `perf`
 - [syv-ai/qwen38-27b-rtx3090](https://github.com/syv-ai/qwen38-27b-rtx3090) - vLLM 0.28.0 container stack (Rig 2 Qwen3.8-27B W4A16)
-- [da3dsoul/Qwen3.8-vLLM-KVarN-MTP-Arc-Experiments](https://github.com/da3dsoul/Qwen3.8-vLLM-KVarN-MTP-Arc-Experiments) - source of the messy-code refactor prompt
+- [da3dsoul/Qwen3.8-vLLM-KVarN-MTP-Arc-Experiments](https://github.com/da3dsoul/Qwen3.8-vLLM-KVarN-MTP-Arc-Experiments) - source of the messy-code refactor prompt and of the tuning experiments tested in [experiments/](experiments/)
