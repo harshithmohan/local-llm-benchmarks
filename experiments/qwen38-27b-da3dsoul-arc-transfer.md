@@ -29,12 +29,14 @@ else is a no-op or a rejection:
   acceptance gain**.
 
 The one net configuration change that came out of this work is unlocked by the shipped
-int4 head/drafter: it frees enough VRAM to raise the pool pin and fit **MAX_LEN=170000
-instead of 150000** (+13.3%) under the cap (a boot measurement, not yet wired into the
-recommended config). Note this is a **local finding from the container's own int4
-build**, not something the reference repo suggested — the repo's contribution was the
-fp8 idea we rejected. The broader lesson is that low-bit tuning here is bounded by the
-**sm86 int8/int4 path**, not the fp8 path the reference hardware measured.
+int4 head/drafter: it frees enough VRAM to raise the pool pin and serve **up to 170k
+context instead of 150k** (+13.3%), verified end-to-end with a 164,553-token request —
+though a near-full request lands ~13 MiB under the cap, so this is a documented
+capability, not a comfortable default. Note this is a **local finding from the
+container's own int4 build**, not something the reference repo suggested — the repo's
+contribution was the fp8 idea we rejected. The broader lesson is that low-bit tuning here
+is bounded by the **sm86 int8/int4 path**, not the fp8 path the reference hardware
+measured.
 
 ## Setup and baselines
 
@@ -126,6 +128,12 @@ first request after each boot discarded.
   fits **MAX_LEN=170000 / pool 170,776** under the cap — **+13.3% context (150k→170k)**
   versus the int8-limited baseline. A 180k attempt refused (needs 6.35 GiB, only
   6.05 available; est. max 171,296).
+- **End-to-end check of the 170k ceiling:** served a 164,553-token prompt (above the
+  150k limit) cleanly — prefill 655.7 t/s, decode 83.1 t/s, acceptance 0.625, coherent
+  output. Boot idle sat at 21,389 MiB, but **steady VRAM during that near-full request
+  reached 22,515 MiB — only ~13 MiB under the 22,528 cap**. The ceiling is real but
+  marginal: a request actually filling 170k has essentially no headroom, so 170k should
+  be treated as a documented capability rather than a comfortable default.
 - **Drafter-only knobs** (the container's `prepare/quant_mtp.py`): `--bits 4` and
   `--keep-fc`. The `--keep-fc` option (leave `mtp.fc` in BF16, the exclusion Qwen's own
   FP8 export and NVIDIA ModelOpt both make) is only meaningful on top of a
@@ -135,9 +143,10 @@ first request after each boot discarded.
   cap at CTX=long, so these were not promoted to boots.
 - **Verdict:** keep the shipped **int4 fast** head/embed/MTP quantization as the
   CTX=long default — it is not merely faster, it is the *only* one of the two that fits
-  the 22,528 MiB cap, and it is what unlocks 170k context. Do not run the fp8 surgery on
-  this hardware. The determinant is the sm86 int8/int4 path, not the fp8 path the
-  reference measured.
+  the 22,528 MiB cap, and it is what opens the door to 170k context (verified, but within
+  ~13 MiB of the cap at a near-full request). Do not run the fp8 surgery on this
+  hardware. The determinant is the sm86 int8/int4 path, not the fp8 path the reference
+  measured.
 
 ### 3. int8 Marlin activation stack (`INT8_ACT` / `INT8_LAYERS` / `PREFILL_ATTN`) — works (prefill), adopt `INT8_ACT=int8`
 

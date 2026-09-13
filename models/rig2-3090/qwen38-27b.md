@@ -20,7 +20,8 @@ vLLM weights: [dbirks/Qwen3.8-27B-W4A16-AutoRound](https://huggingface.co/dbirks
 checkpoint to int8, the `-fast` variant to int4-GPTQ. On this 3090 the int4 widths are
 what let a 150k-context boot fit the 22.5 GB cap at all - the int8 base loads ~0.9 GiB
 heavier and lands over it - and int4 leaves enough headroom to raise the pool pin and
-boot at MAX_LEN=170000, a ceiling not yet wired into the configs below.)
+serve up to 170000 (verified with a 164,553-token request, though a near-full one sits
+~13 MiB under the cap).)
 
 The vLLM rows use the Rig 2 coding prompts (C#+React averaged) and recommended sampling
 (temp 1.0, top_p 0.95, top_k 20, min_p 0.0, presence_penalty 1.5) but a single pass
