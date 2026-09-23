@@ -58,6 +58,7 @@ Timings are read from `llama-server` request logs (llama.cpp) or vLLM's Promethe
 - [models/rig1-3060/](models/rig1-3060/) - Rig 1 model pages (best configs per model)
 - [models/rig2-3090/](models/rig2-3090/) - Rig 2 model pages (best configs per model)
 - [experiments/](experiments/) - transferability studies of low-level inference knobs (engine/arch-specific tuning evaluated against the recommended stacks)
+- [benchmarks/shoko-logs/](benchmarks/shoko-logs/) - agentic coding benchmark (reproduce the Shoko-WebUI logs-page rewrite + log download)
 
 Each model page carries its full experiment log in the matching `-archive.md` alongside it.
 
@@ -108,6 +109,18 @@ vLLM rows pin their KV pool by bytes to stay under the cap.
    (stock, MTP on) at 256k - it beats every quant and engine tested there; past the
    native window, ik-llama.cpp takes over (faster decode at every extended context and
    ~115K more usable reach, 852K vs 736K). See the model pages for exact commands.
+
+## Coding benchmark (shoko-logs)
+
+A separate, agentic benchmark under [benchmarks/shoko-logs/](benchmarks/shoko-logs/):
+from a clean Shoko-WebUI base commit, a model must reproduce the upstream logs-page
+rewrite (server-side search + infinite-scroll pagination) and log download against a
+backend API it discovers itself. Scored by build gates (tscheck/lint/build, 5 pts)
+plus a 95-point behavior rubric vs a reference diff, across three context variants
+(discovery / api-summary / full-spec).
+
+- Protocol, rubric, and prompts: [benchmarks/shoko-logs/README.md](benchmarks/shoko-logs/README.md)
+- Results: [benchmarks/shoko-logs/scorecard.md](benchmarks/shoko-logs/scorecard.md)
 
 ## References
 

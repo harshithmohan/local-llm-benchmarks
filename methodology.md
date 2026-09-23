@@ -92,3 +92,11 @@ but leave less headroom OOM on the first large prompt.
 - Extended-context (YaRN) configs were validated for throughput only; long-range retrieval
   quality at extended context was not independently validated. This is the canonical home
   of that caveat - model pages defer here.
+
+## Coding benchmark (shoko-logs)
+
+The agentic coding benchmark under [benchmarks/shoko-logs/](benchmarks/shoko-logs/)
+has its own, independent methodology — task, three context variants (discovery /
+api-summary / full-spec), build-gate + rubric scoring, and grading protocol. It is
+documented in [benchmarks/shoko-logs/README.md](benchmarks/shoko-logs/README.md) and
+is separate from the inference-timing methodology above.
