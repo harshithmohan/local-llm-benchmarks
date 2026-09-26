@@ -40,7 +40,7 @@ measured.
 
 ## Setup and baselines
 
-The reference stack is the [syv-ai/qwen38-27b-rtx3090](https://github.com/syv-ai/qwen38-27b-rtx3090)
+The reference stack is the [syv-ai/HyperQwen](https://github.com/syv-ai/HyperQwen)
 container (vLLM 0.28.0, `dbirks/Qwen3.8-27B-W4A16-AutoRound` weights), on a 24 GB
 RTX 3090 under a 22528 MiB usage cap. Two profiles are used throughout:
 

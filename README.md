@@ -5,7 +5,7 @@ of [llama.cpp](https://github.com/ggml-org/llama.cpp): the
 [Codacus fork](https://github.com/thecodacus/llama.cpp) (branch `perf`),
 upstream llama.cpp, and [ik-llama.cpp](https://github.com/ikawrakow/ik_llama.cpp).
 One Rig 2 model also has a
-[vLLM](https://github.com/syv-ai/qwen38-27b-rtx3090) container stack.
+[vLLM](https://github.com/syv-ai/HyperQwen) container stack.
 
 ## Rigs
 
@@ -38,8 +38,8 @@ throughout these pages:
   ~852K (stock ~736K). Results live in each model's page
   ([models/rig1-3060/qwen36-35b-a3b.md](models/rig1-3060/qwen36-35b-a3b.md));
   llama.cpp and ik results are not interchangeable - engine labels are per-row.
-- **vLLM** ([syv-ai/qwen38-27b-rtx3090](https://github.com/syv-ai/qwen38-27b-rtx3090),
-  vLLM 0.28.0) - the Rig 2 Qwen3.8-27B W4A16 stack, MTP with two KV modes: fp8 at 150000
+- **vLLM** ([syv-ai/HyperQwen](https://github.com/syv-ai/HyperQwen),
+  vLLM 0.29.0) - the Rig 2 Qwen3.8-27B W4A16 stack, MTP with two KV modes: fp8 at 150000
   (4 drafts) and KVarN 4/2-bit at 250000 (slower decode), both with pinned pools. Its
   DFlash2 profile is archived. Engine labels are per-row on the model pages - llama.cpp and
   vLLM results are not interchangeable.
@@ -92,8 +92,10 @@ vLLM rows pin their KV pool by bytes to stay under the cap.
 | Qwen3.6-35B-A3B | UD-IQ4_XS | 6 | 524288 (YaRN 2x) | 1656.7 | 89.9 | Extended; MTP off |
 | Qwen3.6-35B-A3B | UD-IQ4_XS | 15 | 786432 (YaRN 3x) | 1181.9 | 65.2 | Extended; MTP off |
 | Qwen3.6-35B-A3B | UD-IQ4_XS | 25 | 1048576 (YaRN 4x) | 871.8 | 49.4 | Extended max (1M); MTP off |
-| Qwen3.8-27B | W4A16-AutoRound-fast | n/a (vLLM) | 150000 | 1124 | 113 | vLLM 0.28.0 + MTP 4 drafts, fp8 KV, pinned pool (`MAX_LEN=150000`, `MAX_SEQS=4`); 22289 MiB |
-| Qwen3.8-27B | W4A16-AutoRound-fast | n/a (vLLM) | 250000 | 960 | 86 | vLLM 0.28.0 + MTP, KVarN 4/2-bit KV, pinned pool (`CTX=huge`, `MAX_LEN=250000`); 22340 MiB; ~2.3x slower decode at 116K |
+| Qwen3.8-27B | W4A16-AutoRound-fast | n/a (vLLM) | 150000 | 1078 | 112.4 | MTP 4 drafts, fp8 KV, pinned pool (`MAX_LEN=150000`, `MAX_SEQS=4`); 3-run mean; 21722 MiB |
+| Qwen3.8-27B | W4A16-AutoRound-fast | n/a (vLLM) | 250000 | 955 | 107.8 | MTP, KVarN 4/2-bit KV, pinned pool (`CTX=huge`, `MAX_LEN=250000`); 21650 MiB; ~2.3x slower decode at 116K |
+| Qwen3.8-27B (Swift-1.5) | Swift-1.5-INT4 | n/a (vLLM) | 150000 | 1076 | 112.4 | Fine-tune quant on the same MTP fp8 stack (4 drafts, pinned pool, server-configured sampling); 3-run mean, parity with the base quant; 22704 MiB; fewer thinking tokens, early-stopping coding answers |
+| Qwen3.8-27B (Swift-1.5) | Swift-1.5-INT4 | n/a (vLLM) | 250000 | 1029 | 97.9 | Same fine-tune on the KVarN 4/2-bit KV profile, pinned pool; single-pass reading; 22388 MiB; beats the base KVarN row (+14% decode at 116K too) |
 
 ## Headline takeaways
 
@@ -129,5 +131,5 @@ External repositories referenced on these pages.
 - [ggml-org/llama.cpp](https://github.com/ggml-org/llama.cpp) - upstream (`stock`)
 - [thecodacus/llama.cpp](https://github.com/thecodacus/llama.cpp) - Codacus fork, branch `perf`
 - [ikawrakow/ik_llama.cpp](https://github.com/ikawrakow/ik_llama.cpp) - ik-llama.cpp performance fork
-- [syv-ai/qwen38-27b-rtx3090](https://github.com/syv-ai/qwen38-27b-rtx3090) - vLLM 0.28.0 container stack (Rig 2 Qwen3.8-27B W4A16)
+- [syv-ai/HyperQwen](https://github.com/syv-ai/HyperQwen) - vLLM 0.29.0 container stack (Rig 2 Qwen3.8-27B W4A16 and Swift-1.5-INT4; all rows re-measured on the updated post-rename container)
 - [da3dsoul/Qwen3.8-vLLM-KVarN-MTP-Arc-Experiments](https://github.com/da3dsoul/Qwen3.8-vLLM-KVarN-MTP-Arc-Experiments) - source of the messy-code refactor prompt and of the tuning experiments tested in [experiments/](experiments/)
