@@ -44,9 +44,10 @@ with the same protocol as the llama.cpp builds; engine-specific differences:
   they diverge noticeably. MEASURE ON THE SECOND PASS of each prompt - the first pass
   warms the mmap page cache and its prefill reads cold-NVMe; discard it.
   Single run each; server timings read slightly higher than llama-bench's 3-rep tg.
-- Server payloads use the models' recommended sampling: temperature 1.0, top_p 0.95,
-  top_k 20, min_p 0.0; presence_penalty 1.5 on the 35B models, 0.0 on Flash-Next
-  (repetition_penalty 1.0).
+- Sampling policy: requests never override server-side sampling. Payloads carry only the
+  prompt and request shape (`n_predict` / `max_tokens`); all sampling parameters
+  (temperature, top_p, top_k, min_p, presence/repetition penalties) are whatever the
+  server is configured with - the served config is the single source of truth for a run.
 - Every cache/ctx config gets a large-prompt stability check before its decode number is
   recorded (catches the slot-sizing OOM trap).
 - ALWAYS capture BOTH prefill and decode in every server test.
