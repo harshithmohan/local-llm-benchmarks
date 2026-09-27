@@ -77,6 +77,7 @@ YaRN-extended rows raise context past the native window; see the YaRN caveat in
 | Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | 851968 (YaRN 3.25x) | 240.2 | 32.4 | Extended max on this rig; MTP off, ncmoe 41 (ik-llama.cpp) |
 | Qwen3.8-Flash-Next | UD-IQ3_XXS | 230400 practical | 157.1 | **18.1** | Fastest Flash-Next quant; MTP on |
 | KAT-Coder-V2.5-Dev | APEX-I-Compact | 262144 | 338.5 | **47.7** | qwen35moe; ncmoe 28 (hard floor with MTP); MTP on; ~517 t/s prefill on a 116K prompt |
+| Qwen3.8-27B (Swift-1.5) | IQ2_XS | 90000 (q4_0 KV) | 300.1 | 32.9 | Dense qwen35 (no MoE split); MTP on; q4_0 KV is what fits the 12 GB cap |
 
 ## Headline results (Rig 2, t/s, 22 GB cap)
 

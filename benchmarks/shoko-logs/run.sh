@@ -37,6 +37,19 @@ case "$cmd" in
     [ "$(git branch --show-current)" = "$BRANCH" ] || { echo "not on branch $BRANCH"; exit 1; }
     out="$DIR/runs/$name"
     mkdir -p "$out"
+    # Repeat runs reuse this dir: rotate the prior repeat's artifacts to -rN
+    # suffixes BEFORE the fresh export below, so eval can never clobber them.
+    if [ -f "$out/patch.diff" ]; then
+      n=1
+      while [ -f "$out/patch-r$n.diff" ]; do n=$((n+1)); done
+      mv "$out/patch.diff" "$out/patch-r$n.diff"
+      if [ -f "$out/score.md" ]; then
+        mv "$out/score.md" "$out/score-r$n.md"
+        echo "Prior repeat rotated: patch.diff -> patch-r$n.diff, score.md -> score-r$n.md"
+      else
+        echo "Prior repeat rotated: patch.diff -> patch-r$n.diff (no score.md yet)"
+      fi
+    fi
     echo "Run: $name  Date: $(date +%F)"
     status=0
     for step in tscheck lint build; do

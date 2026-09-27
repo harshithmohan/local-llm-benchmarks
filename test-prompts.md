@@ -99,8 +99,11 @@ Measurement rules specific to this prompt:
 
 ## Notes
 
-- The payload JSON files carry prompt + request shape only - no sampling parameters
-  (server decides sampling, per methodology.md). Files are name-per-prompt:
+- Payload JSONs are built here and POSTed inline - no payload or prompt files on the
+  rigs. Requests go through llama-swap's OpenAI-compatible endpoint
+  (`/v1/chat/completions`; env-specific base URLs in AGENTS.md) with prompt + request
+  shape only - no sampling parameters (server decides sampling, per methodology.md).
+  Canonical file naming (when a local temp file is convenient): name-per-prompt,
   `prompt-<name>.json` (`prompt-csharp.json`, `prompt-react.json`, `prompt-messy.json`).
   Legacy per-family copies (`prompt-<name>-35b.json` / `prompt-<name>-flash.json`) and
   per-experiment nonce variants (`-pass1/-pass2`, `-n1/-n2`, `-warm`, `-probe`,
