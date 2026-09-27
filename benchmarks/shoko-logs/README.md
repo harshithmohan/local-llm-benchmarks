@@ -48,7 +48,8 @@ grader model runs the gates and produces the score sheet (see Protocol); the mai
 spot-checks the line scores against the exported patch.
 
 Recorded per run: gate results, rubric score, wall-clock run time, whether an
-output-limit nudge was needed (see "Output limit and nudges"), notes.
+output-limit nudge or an auto-compaction was needed (see "Output limit and nudges" and
+"Auto-compaction"), notes.
 
 ## Protocol
 
@@ -115,6 +116,15 @@ Resuming must happen from the checkout directory itself — passing `--dir` to a
 reports "Session not found". The nudge is a **harness intervention, not part of the
 task**: record every nudged run in `scorecard.md` (→ "Output-limit nudges") and in
 `scorecards/<model>.md`, so nudged runs are only ever compared against other nudged runs.
+
+### Auto-compaction
+
+A run can also hit the provider's size limit: opencode then compacts the session and
+continues, so the model resumes from a summarized context rather than its full history
+(the session may go on to report completion after the compaction). Like a nudge, this is
+a **harness intervention, not part of the task** — record every auto-compaction (which
+repeat, and that it recovered) in `scorecard.md` (→ "Auto-compactions") and in
+`scorecards/<model>.md`, so compacted runs are only compared against other compacted runs.
 
 ### Run naming and repeats
 
