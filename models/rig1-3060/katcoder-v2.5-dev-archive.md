@@ -1,7 +1,7 @@
 # KAT-Coder-V2.5-Dev (Rig 1) - experiment archive
 
 This archive holds supporting measurements and experiments not on the main card
-([katcoder-v2.5-dev.md](katcoder-v2.5-dev.md)): rejected configs, sweeps, superseded
+([katcoder-v2.5-dev.md](katcoder-v2.5-dev.md)): rejected configs, sweeps, retired
 quants, and old-protocol baselines. Where a table reproduces a main-card headline
 result, the archive mirrors it; the main card remains authoritative.
 Model card:

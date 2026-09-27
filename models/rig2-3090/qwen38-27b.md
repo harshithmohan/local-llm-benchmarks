@@ -34,7 +34,7 @@ The vLLM rows use the Rig 2 coding prompts (C#+React averaged) with the server's
 configured sampling defaults (requests carry no per-request sampling overrides; only
 request shape: `max_tokens`, plus the `ignore_eos` guard for the timed 512-token
 decode), timings read from vLLM's own server metrics, requests routed through
-llama-swap. All rows are single passes (the earlier 3-run means are superseded), served
+llama-swap. All rows are single passes, served
 with `INT8_ACT=int8`. Per-run spread matters: decode swings +-5-10%
 run to run (boot-to-boot variance is material - earlier single-boot readings of the
 same configs differed by up to ~20%), while prefill is +-0.5% stable. VRAM figures

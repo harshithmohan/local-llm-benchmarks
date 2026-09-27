@@ -1,8 +1,7 @@
 # qwen36-35b-iq4xs — scores
 
 Parameter set: default (kv-q8). 2-repeat mean, re-run and re-graded **2026-09-27** under
-the revised rubric. Supersedes the 2026-09-19 pre-review run (60.5 / 62 → 61.25): those
-totals are not comparable (older weights) and predate config-served sampling.
+the revised rubric.
 
 > Implementation runs used `limit.output` 16384. On **repeat 1** the model spent its
 > entire output budget on a planning chain-of-thought and made **no edits** on the cold
@@ -11,7 +10,7 @@ totals are not comparable (older weights) and predate config-served sampling.
 
 ## Repeat 1 of 2 (nudged)
 
-**Total 54.5/100** — gates 5/5 · rubric 49.5/95 · 2026-09-27.
+**Total 54.5/100** — gates 5/5 · rubric 49.5/95 · 26.0 min · 2026-09-27.
 
 | # | Score | Pts | Notes |
 |---|---|---|---|
@@ -44,7 +43,7 @@ absent (7=0). No reconnect reset; download save flow incomplete.
 
 ## Repeat 2 of 2 (clean)
 
-**Total 47.5/100** — gates 5/5 · rubric 42.5/95 · 2026-09-27.
+**Total 47.5/100** — gates 5/5 · rubric 42.5/95 · 16.1 min · 2026-09-27.
 
 | # | Score | Pts | Notes |
 |---|---|---|---|
@@ -89,11 +88,14 @@ switching works (9=7/7), but the active query mishandles the unwrapped axios res
 
 ## Summary
 
-| Repeat | Rubric /95 | Total /100 |
-|---|---|---|
-| 1 (nudged) | 49.5 | 54.5 |
-| 2 (clean) | 42.5 | 47.5 |
-| **Mean** | **46.0** | **51.0** |
+| Repeat | Rubric /95 | Total /100 | Run time (min) |
+|---|---|---|---|
+| 1 (nudged) | 49.5 | 54.5 | 26.0 |
+| 2 (clean) | 42.5 | 47.5 | 16.1 |
+| **Mean** | **46.0** | **51.0** | **16.1–26.0** |
+
+Run time is wall-clock per run (fresh opencode session, start → last message); repeat 1
+includes the nudge. Min–max is over the two repeats.
 
 Both runs nailed the request-contract naming but missed the DSL entirely (7=0 both) and
 left one fatal end-to-end break each: r1's debounce ref never triggers a query/render, so

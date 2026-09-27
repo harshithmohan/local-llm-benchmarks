@@ -47,8 +47,8 @@ runs an empty suite), so the gates are build hygiene only and carry little weigh
 grader model runs the gates and produces the score sheet (see Protocol); the maintainer
 spot-checks the line scores against the exported patch.
 
-Recorded per run: gate results, rubric score, whether an output-limit nudge was needed
-(see "Output limit and nudges"), notes.
+Recorded per run: gate results, rubric score, wall-clock run time, whether an
+output-limit nudge was needed (see "Output limit and nudges"), notes.
 
 ## Protocol
 
@@ -130,6 +130,10 @@ the mean of the 2 repeat totals. **opencode-go reference models are the exceptio
   the headline row lands in `scorecard.md`.
 - Every repeat gets its own branch, patch export, and grading (the grader runs the
   gates); the run dir `runs/<model>/` is reused for each repeat.
+- Record each repeat's **wall-clock run time** (session start → finish, as reported by
+  the harness) in `scorecards/<model>.md`; the per-parameter-set **min–max** across
+  repeats goes in the `scorecard.md` row's notes. Run time includes model load and, for
+  nudged runs, the nudge.
 - **Delete the run dir after recording the score.** Once a repeat's score (and any
   reviewer notes worth keeping) is recorded in `scorecards/<model>.md`, remove
   `runs/<model>/` — the scorecards are the persistent record, not the run artifacts.

@@ -1,7 +1,7 @@
 # Qwen3.8-Flash-Next (Rig 1) - experiment archive
 
 This archive holds supporting measurements and experiments not on the main card
-([qwen38-flash-next.md](qwen38-flash-next.md)): rejected configs, sweeps, superseded
+([qwen38-flash-next.md](qwen38-flash-next.md)): rejected configs, sweeps, retired
 quants, and old-protocol baselines. Where a table reproduces a main-card headline result,
 the archive mirrors it; the main card remains authoritative, while archived-out quants
 (e.g. AD-Q4_K_M-M64) have their results recorded here only.

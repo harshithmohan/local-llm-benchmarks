@@ -1,7 +1,7 @@
 # Qwen3.6-35B-A3B (Rig 1) - experiment archive
 
 This archive holds supporting measurements and experiments not on the main card
-([qwen36-35b-a3b.md](qwen36-35b-a3b.md)): rejected configs, sweeps, superseded quants,
+([qwen36-35b-a3b.md](qwen36-35b-a3b.md)): rejected configs, sweeps, retired quants,
 and old-protocol baselines. Headline configs cover 262144; the extended-context YaRN
 summary is on the main page, with the full probes below, and the headline numbers live
 on the main card only. Lower-context points

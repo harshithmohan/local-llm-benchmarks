@@ -139,7 +139,7 @@ Variants and limits (lean/sweep probes, no table rows): at 512K, ncmoe 34 = 289.
 @9379 MiB and deeper packs (26) OOM; at 736K, all-CPU ncmoe 41 = 252.8/33.0 @10037 MiB
 and ncmoe 34 crashes at init (cublasCreate OOM).
 
-Stock alternatives (superseded by ik, kept for the engine comparison):
+Stock alternatives (kept for the engine comparison):
 524288 with the stock binary, `--n-cpu-moe 34` -> 37.1 t/s decode (prefill 332.5),
 11037 MiB; 753664 with `--n-cpu-moe 99` -> 32.3 t/s decode (prefill 282.0), 11525 MiB -
 edge (~370 MiB free). 704K-752K sit between on stock; 752K loads tight, 768K OOMs at

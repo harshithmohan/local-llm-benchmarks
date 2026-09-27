@@ -1,7 +1,7 @@
 # Qwen3.6-35B-A3B (Rig 2) - experiment archive
 
 This archive holds the supporting measurements and experiments that are not on the main
-card ([qwen36-35b-a3b.md](qwen36-35b-a3b.md)): rejected configs, sweeps, superseded quants,
+card ([qwen36-35b-a3b.md](qwen36-35b-a3b.md)): rejected configs, sweeps, retired quants,
 and old-protocol baselines. Headline numbers live on the main card only.
 Protocol identical: coding prompts C#+React averaged, second-pass prefill, recommended
 sampling, cold load, q8_0 KV, `--threads 8`, 22 GB VRAM cap (22 GB +- 250 MB, desktop
