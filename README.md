@@ -34,9 +34,9 @@ throughout these pages:
   the fork has nothing to add - e.g. every Rig 2 config at ncmoe 0, and IQ4_XS at 256k
   on Rig 1.
 - **ik-llama.cpp** ([ikawrakow/ik_llama.cpp](https://github.com/ikawrakow/ik_llama.cpp),
-  build 3bb386e, Rig 1) - Ilya Kawrakow's performance fork; so far tested on the Rig 1
+  build 1aaf710 (v1; older rows 3bb386e), Rig 1) - Ilya Kawrakow's performance fork; so far tested on the Rig 1
   Qwen3.6-35B-A3B IQ4_XS quant. Loses to stock at the native 256k window, wins decode at
-  YaRN-extended context (+10.5% at 512K, +7.4% at 736K) and extends the usable ceiling to
+  YaRN-extended context (+14.3% at 512K, +7.4% at 736K) and extends the usable ceiling to
   ~852K (stock ~736K). Results live in each model's page
   ([models/rig1-3060/qwen36-35b-a3b.md](models/rig1-3060/qwen36-35b-a3b.md));
   llama.cpp and ik results are not interchangeable - engine labels are per-row.
@@ -73,8 +73,8 @@ YaRN-extended rows raise context past the native window; see the YaRN caveat in
 
 | Model | Quant | Full-ctx support | Prefill t/s | Decode t/s | Notes |
 | --- | --- | --- | --- | --- | --- |
-| Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | 262144 | 525.7 | **49.4** | Fastest plain decoder; MTP on (stock); cache incompatible (fused gate_up) |
-| Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | 524288 (YaRN 2x) | 322.0 | **41.0** | Extended; MTP off, ncmoe 28 (ik-llama.cpp) |
+| Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | 262144 | 356.9 | **54.9** | Fastest plain decoder; MTP on (stock); cache incompatible (fused gate_up) |
+| Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | 524288 (YaRN 2x) | 337.1 | **42.4** | Extended; MTP off, ncmoe 28 (ik-llama.cpp) |
 | Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | 753664 (YaRN 2.875x) | 262.4 | **34.7** | Extended; MTP off, ncmoe 36 (ik-llama.cpp) |
 | Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | 851968 (YaRN 3.25x) | 240.2 | 32.4 | Extended max on this rig; MTP off, ncmoe 41 (ik-llama.cpp) |
 | Qwen3.8-Flash-Next | UD-IQ3_XXS | 230400 practical | 157.1 | **18.1** | Fastest Flash-Next quant; MTP on |
@@ -99,6 +99,10 @@ vLLM rows pin their KV pool by bytes to stay under the cap.
 | Qwen3.8-27B | W4A16-AutoRound-fast | n/a (vLLM) | 250000 | 955 | 107.8 | MTP, KVarN 4/2-bit KV, pinned pool (`CTX=huge`, `MAX_LEN=250000`); 21650 MiB; ~2.3x slower decode at 116K |
 | Qwen3.8-27B (Swift-1.5) | Swift-1.5-INT4 | n/a (vLLM) | 150000 | 1076 | 112.4 | Fine-tune quant on the same MTP fp8 stack (4 drafts, pinned pool, server-configured sampling); 3-run mean, parity with the base quant; 22704 MiB; fewer thinking tokens, early-stopping coding answers |
 | Qwen3.8-27B (Swift-1.5) | Swift-1.5-INT4 | n/a (vLLM) | 250000 | 1029 | 97.9 | Same fine-tune on the KVarN 4/2-bit KV profile, pinned pool; single-pass reading; 22388 MiB; beats the base KVarN row (+14% decode at 116K too) |
+
+Messy-prompt figures above (KAT-Coder, Qwen3.8-27B) were read on the retired ~116K
+prompt; the messy-code refactor benchmark now runs at ~60K and those cells will be
+updated after the re-runs.
 
 ## Headline takeaways
 

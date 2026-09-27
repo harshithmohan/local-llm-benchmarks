@@ -3,7 +3,7 @@
 
 Adapted from Qwen3.8-vLLM-KVarN-MTP-Arc-Experiments (scripts/generate_messy.py +
 build_prompt.py). Deterministic: seed 42, so every run/regeneration reproduces the
-same prompt text (153 repeats ~ 116K tokens on the Qwen tokenizer family; recorded
+same prompt text (79 repeats ~ 60K tokens on the Qwen tokenizer family; recorded
 token counts still vary slightly across models/tokenizers).
 
 Outputs (into --out-dir, default .):
@@ -13,7 +13,7 @@ Outputs (into --out-dir, default .):
                                 ignore_eos: true (required; see test-prompts.md)
 
 Flags:
-  --repeats N     entity-template repeats (default 153, ~116K tokens)
+  --repeats N     entity-template repeats (default 79, ~60K tokens)
   --out-dir DIR   output directory (default .)
 
 Sampling: the generated payloads use the models' recommended sampling (temp 1.0,
@@ -268,8 +268,8 @@ def main():
     ap.add_argument(
         "--repeats",
         type=int,
-        default=153,
-        help="entity-template repeats (153 ~ 116K tokens)",
+        default=79,
+        help="entity-template repeats (79 ~ 60K tokens; 153 was the retired ~116K prompt)",
     )
     ap.add_argument("--out-dir", default=".")
     args = ap.parse_args()

@@ -50,7 +50,7 @@ Stock binary + MTP, q4_0 KV at c 90000:
 
 None - only one quant (`IQ2_XS`) tested on this rig; no config ladder measured yet.
 
-## Messy-code refactor benchmark
+## Messy-code refactor benchmark (real-task ~60K prompt, not yet run)
 
 Not yet run on this rig (see [test-prompts.md](../../test-prompts.md) for the prompt and
 its single-pass protocol).

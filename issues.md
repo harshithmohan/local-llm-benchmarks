@@ -77,7 +77,8 @@ features. Items that involve fork-only knobs are tagged inline.
 - Repeated/repetitive prompt text can crash llama-server with
   "CUDA error: the requested functionality is not supported" (PLE n-gram graph path).
   Varied prompts, llama-cli interactive, and llama-bench are fine.
-- The ~116K messy-code refactor prompt (test-prompts.md) does NOT crash (the PLE
+- The messy-code refactor prompt (test-prompts.md; measured on the retired ~116K
+  variant) does NOT crash (the PLE
   n-gram path above did not fire) but makes the server stop immediately with EOS on
   raw /completion: stop_type eos, 1 predicted token, empty output. It still does this
   after a nonce removes the trailing closed fence from the prompt end, so the

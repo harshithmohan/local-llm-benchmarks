@@ -47,7 +47,8 @@ Stock binary + MTP, full 256k:
       --load-mode none --no-mmproj-offload --threads 12 --parallel 1 \
       --spec-type draft-mtp --spec-draft-n-max 2 \
       --cache-type-k-draft q8_0 --cache-type-v-draft q8_0 \
-      --reasoning-preserve
+      --reasoning-preserve \
+      --temp 1.0 --top-p 0.95 --top-k 20 --presence-penalty 1.5
 
 -> 47.7 t/s decode @ 262144 (prefill 338.5 short-prompt / 517 on the ~116K messy prompt,
 acceptance 0.71), 11729 MiB. Stock is the config as tested; the fork has no measured
@@ -62,24 +63,11 @@ Leaner or slower splits, all at c 262144 (full ladder and numbers in the archive
 - MTP off, ncmoe 28 - 42.5 decode, 9647 MiB.
 - MTP on, ncmoe 32 - 40.9 decode, 10411 MiB (more CPU experts, less VRAM).
 
-## Messy-code refactor benchmark (real-task ~116K prompt, single-pass)
+## Messy-code refactor benchmark (real-task ~60K prompt, re-run pending, single-pass)
 
-One-time real-task speed test of the messy-code refactor prompt (see
-[test-prompts.md](../../test-prompts.md), 116,257 prompt tokens), winner config, q8_0 KV,
-cold load, single-run protocol (ONE timed `/v1/chat/completions` pass, no warm-up,
-`max_tokens` 512, `ignore_eos: true`):
-
-| Quant | MTP | ignore_eos | prefill t/s | decode t/s |
-| --- | --- | --- | --- | --- |
-| APEX-I-Compact | on | yes | 517.13 | 36.08 |
-
-- Decode 36.08 vs the 47.7 headline (-24%): attention cost over ~116K cached KV tokens,
-  normal MTP acceptance (0.814, mean len 2.63). Prefill 517.13 is the saturated rate - the
-  ~192-token headline prompts are too small to amortize the per-request overhead, so the
-  two prefill columns measure different regimes, not a regression.
-- No crash and no EOS quirk: the near-repetitive prompt is safe on `qwen35moe` (the PLE
-  n-gram path is `qwen4exp`-only), and `/v1/chat/completions` decoded the full 512 tokens.
-  VRAM 11729 MiB at load.
+*Retired 2026-09-27: the ~116K-prompt run is archived in
+[katcoder-v2.5-dev-archive.md](katcoder-v2.5-dev-archive.md). Re-run on the new ~60K
+prompt pending.*
 
 ## Key arch notes
 

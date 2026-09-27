@@ -120,7 +120,7 @@ Flat within run-to-run noise (the 8 row is the headline session). The model is G
 with `-ngl 999`; `--threads` only feeds it. Keep 8. One session hit the 1-token warm-up
 transient on the second pass and had to be repeated.
 
-## Messy-code refactor (stock, c 155648)
+## Messy-code refactor (stock, c 155648, retired ~116K prompt)
 
 Winner config (MTP n-max 2), single `/v1/chat/completions` pass, no warm-up, ~116K-token
 prompt, 512 gen:
@@ -167,6 +167,31 @@ Across sessions, the first raw `/completion` call (and occasionally a second) af
 returned a single token (`stop processing: n_tokens = prompt`, eval time 0.00 ms) before
 steady-state runs produced the full 512. Treated as a load/first-use transient and
 discarded, per the cold-load-then-second-pass convention.
+
+## Messy-code refactor (vLLM, retired ~116K prompt)
+
+A deliberately messy ~116K-token refactor prompt; fp8 rows are 3-run means, KVarN rows
+are single passes:
+
+| Quant / engine | Spec | ctx | prefill t/s | decode t/s | acceptance | VRAM used |
+| --- | --- | --- | --- | --- | --- | --- |
+| W4A16 / vLLM | MTP | 150000 | 746.7 | 63.8 | 0.442 | 21722 MiB |
+| W4A16 / vLLM | MTP (KVarN) | 250000 | 784.4 | 27.5 | 0.365 | 21650 MiB |
+| Swift-1.5-INT4 / vLLM | MTP | 150000 | 757.4 | 62.4 | 0.444 | 22704 MiB |
+| Swift-1.5-INT4 / vLLM | MTP (KVarN) | 250000 | 836.0 | 32.4 | 0.512 | 22388 MiB |
+
+- Long context is expensive on this dense model: fp8 decode falls from 112.4 t/s short to
+  63.8 at ~116K (-43%), KVarN to 27.5 (its 250k ceiling) from a 107.8 t/s short baseline.
+- The decode hit is larger than the 35B-A3B's on the same task (-37%): every token here
+  runs ~27B dense params against a 116K context, while the MoE only wakes ~3B.
+- All ran the full 512 (`ignore_eos: true`); no crash or EOS quirk - see
+  [issues.md](../../issues.md). Acceptance 0.442 (base fp8) / 0.365 (base KVarN) / 0.444
+  (Swift fp8) / 0.512 (Swift KVarN).
+- The archived llama.cpp UD-Q4_K_S run read 809.8 / 28.9 here - prefill on par, decode
+  ~2x slower.
+- Swift-1.5-INT4 is near-parity with the base quant on the fp8 profile (757.4 / 62.4 vs
+  746.7 / 63.8) and leads on the single-pass KVarN reading (836.0 / 32.4 vs 784.4 / 27.5,
+  +6.6% prefill, +17.8% decode).
 
 ## Conclusions
 

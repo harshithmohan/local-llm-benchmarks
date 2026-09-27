@@ -53,7 +53,7 @@ MTP-on rows at ncmoe 28; MTP-off rows at their lowest fitting ncmoe.
 - The draft context costs ~2 GB: MTP off at ncmoe 28 is 9647 MiB vs 11729 with MTP on.
 - VRAM per draft token is ~63 MiB (n-max 1 -> 2 -> 3: 11665 -> 11729 -> 11791).
 
-## Messy-code refactor (single-pass)
+## Messy-code refactor (retired ~116K prompt)
 
 Winner config, cold load, ONE timed `/v1/chat/completions` pass, `max_tokens` 512,
 `ignore_eos:true`.
