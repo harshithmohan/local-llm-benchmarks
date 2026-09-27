@@ -47,7 +47,8 @@ runs an empty suite), so the gates are build hygiene only and carry little weigh
 grader model runs the gates and produces the score sheet (see Protocol); the maintainer
 spot-checks the line scores against the exported patch.
 
-Recorded per run: gate results, rubric score, notes.
+Recorded per run: gate results, rubric score, whether an output-limit nudge was needed
+(see "Output limit and nudges"), notes.
 
 ## Protocol
 
@@ -97,6 +98,23 @@ Recorded per run: gate results, rubric score, notes.
    repeats").
 
 Never let the branch outlive the run: results live in the exported patch, not in git.
+
+### Output limit and nudges
+
+Serve every model under test with `limit.output` **16384**. Reasoning models can spend the
+entire output budget on a planning chain-of-thought and stop at the cap with the ticket
+unimplemented (`finishReason: length`, zero edits — the model reasoned a full plan but
+never called a tool). When a run hits the cap this way, resume the **same** session and
+nudge it to stop reasoning and start implementing, then run the gates:
+
+    cd <Shoko-WebUI checkout> && opencode run -s <session-id> \
+      "You have already reasoned enough; stop planning and implement the ticket now, \
+       then run pnpm tscheck / lint / build."
+
+Resuming must happen from the checkout directory itself — passing `--dir` to a resume
+reports "Session not found". The nudge is a **harness intervention, not part of the
+task**: record every nudged run in `scorecard.md` (→ "Output-limit nudges") and in
+`scorecards/<model>.md`, so nudged runs are only ever compared against other nudged runs.
 
 ### Run naming and repeats
 

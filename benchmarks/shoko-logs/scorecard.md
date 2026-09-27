@@ -29,3 +29,17 @@ persistent record.
 | glm-5.3-flash (opencode-go, max reasoning) | **70** | — | — | — | 100% | — | Improvement over the high-reasoning run (+3.5): deferred revoke + date+time filename (20), real spinner + toast (21), sorted key (6), restored empty-tail spinner (16). Still: **no DSL handling at all** (7=0 — raw `message`), render-phase `fetchNextPageDebounced` (17=0.5), no DOM attach (20=0.5), no reconnect reset, no tooltip/header/IconButton-loading, snapshot scroll-lock. |
 | glm-5.3-flash (opencode-go, high reasoning) | **66.5** | — | — | — | 100% | — | Replacement run (prior 70.5 discarded). Data layer solid (5, 9, 11, 17, 19 full; loader row 18; clean dead-code 23) but **no DSL handling at all** (7=0 — raw `message`) and **download broken** (20=0: no DOM attach + sync revoke + `anchor.download=''`). Live-tail spinner regressed (16=0), no reconnect reset (4), unsorted key (6=0.5), no IconButton loading (22=0). |
 | katcoder-v2.5-dev | **65.5** | — | — | — | 100% | — | 2-repeat mean. Correct server-contract discovery both times (line 5 = 9/9, endpoint switch, scroll-triggered pagination) and cleanest dead-code record (23=1 in r2), but DSL 0 both times and composition broken both times — r1: chicken-and-egg level chips + deleted scrollRect workaround + stale scroll-listener element; r2: **circular filter gate** (search input `disabled` until filters active → search/level/download unreachable) + `createObjectURL(data.data)` blob misread + unsorted key. First benchmark lint flake hit r2 (oxlint false-positive on untouched files; passed re-run). |
+
+## Output-limit nudges
+
+Models are served with `limit.output` **16384** (see README → Protocol → "Output limit
+and nudges"). A reasoning model can spend the whole budget on a planning chain-of-thought
+and stop at the cap with nothing implemented; such a run is resumed with a nudge to start
+implementing. A nudge is a **harness intervention, not part of the task** — record every
+nudged run here so nudged runs are only compared against other nudged runs.
+
+| Model + params | Nudged repeats |
+|---|---|
+| qwen36-35b-iq4xs | 1 of 2 (repeat 1; repeat 2 clean) |
+
+All other rows above predate the 16384 cap + nudge protocol (`—`).
