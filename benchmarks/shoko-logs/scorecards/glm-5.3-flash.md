@@ -1,5 +1,7 @@
 # glm-5.3-flash — scores
 
+> **Outdated:** scored under the pre-review rubric (older weights; lines 18–24 renumbered 19–25). See `scorecard.md` for the revision note.
+
 Parameter set: opencode-go. Two reasoning levels tested, each a single run:
 **high** and **max**. (The very first glm run — 70.5/100, also high — was discarded at
 the user's request and replaced by the high run below.)

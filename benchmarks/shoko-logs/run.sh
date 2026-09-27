@@ -3,7 +3,7 @@
 #
 # usage:
 #   ./run.sh setup                   create the bench branch from base
-#   ./run.sh eval <run-name>         run gates, export patch to runs/<run-name>/
+#   ./run.sh eval <run-name>         export patch to runs/<run-name>/ (gates run by the grader)
 #   ./run.sh cleanup <run-name>      delete the branch (patch must be exported)
 set -euo pipefail
 
@@ -49,25 +49,13 @@ case "$cmd" in
       fi
     fi
     echo "Run: $name  Date: $(date +%F)"
-    status=0
-    for step in tscheck lint build; do
-      echo "--- pnpm $step ---"
-      if pnpm "$step" >"$out/$step.log" 2>&1; then
-        echo "$step: PASS" | tee -a "$out/gates.log"
-      else
-        echo "$step: FAIL (details in $out/$step.log)" | tee -a "$out/gates.log"
-        status=1
-      fi
-    done
     git add -A
     git diff --cached "$BASE" >"$out/patch.diff"
     git reset -q
     git diff --stat "$BASE" >"$out/stat.txt"
     echo
     echo "Patch exported: $out/patch.diff ($(wc -l <"$out/patch.diff") lines)"
-    [ "$status" -eq 0 ] || echo "One or more gates failed — export kept, review $out/gates.log"
-    echo "Next: grade with rubric.md into $out/score.md, then: $0 cleanup $name"
-    exit "$status"
+    echo "Next: grade with rubric.md into $out/score.md (the grader runs the gates), then: $0 cleanup $name"
     ;;
 
   cleanup)

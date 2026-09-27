@@ -1,5 +1,7 @@
 # qwen3.8-flash — scores
 
+> **Outdated:** scored under the pre-review rubric (older weights; lines 18–24 renumbered 19–25). See `scorecard.md` for the revision note.
+
 Parameter set: opencode-go, xhigh reasoning level (its default is xhigh). Single run.
 
 ## Single run

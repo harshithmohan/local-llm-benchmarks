@@ -1,5 +1,7 @@
 # mimo-v2.6-flash — scores
 
+> **Outdated:** scored under the pre-review rubric (older weights; lines 18–24 renumbered 19–25). See `scorecard.md` for the revision note.
+
 Parameter set: opencode-go (no reasoning levels). Single run.
 
 ## Single run

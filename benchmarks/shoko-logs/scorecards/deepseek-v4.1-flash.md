@@ -1,5 +1,7 @@
 # deepseek-v4.1-flash — scores
 
+> **Outdated:** scored under the pre-review rubric (older weights; lines 18–24 renumbered 19–25). See `scorecard.md` for the revision note.
+
 Parameter set: opencode-go, **high reasoning level** (its default is high). Single run.
 
 ## Single run

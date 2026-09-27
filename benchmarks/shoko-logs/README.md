@@ -30,8 +30,8 @@ Given to the model as a ticket, never as a reference implementation:
 
 ## Prompt
 
-Delivered as a ticket with no API reference: the model must read the ShokoServer source
-(`../ShokoServer` relative to the checkout) to find the endpoint paths, query
+Delivered as a ticket with no API reference: the model must read the sibling ShokoServer
+checkout to find the endpoint paths, query
 parameters, response shapes, and the filter DSL grammar before writing any fetch calls.
 This makes it a pure discovery test — *can the model find what it needs in an unfamiliar
 codebase and build it?* — closest to real agentic coding, with no spec handed over. The
@@ -39,32 +39,59 @@ single prompt is [`prompt.md`](prompt.md).
 
 ## Scoring
 
-Per run, three layers (`rubric.md` has the full breakdown, 100 points):
-
-1. **Automatic gates** — `pnpm tscheck` (2), `pnpm lint` (1), `pnpm build` (2).
-   The repo has no tests (`vitest` runs an empty suite), so typecheck/lint/build are
-   the only mechanical gates — they are build hygiene only and carry little weight.
-2. **Rubric vs reference** — 95 points across seven behavior aspects (data layer,
-   search integration, page composition, live view, search view, download, code
-   quality), scored 0 / half / full per line against `reference.diff`.
-3. **Maintainer review** — eyeball the exported patch; gate + rubric numbers are
-   advisory until reviewed.
+Per run, a single 100-point rubric (`rubric.md`): the build gates (`pnpm tscheck` 2,
+`pnpm lint` 1, `pnpm build` 2) plus 95 points across seven behavior aspects (data layer,
+search integration, page composition, live view, search view, download, code quality),
+each scored 0 / half / full against `reference.diff`. The repo has no tests (`vitest`
+runs an empty suite), so the gates are build hygiene only and carry little weight. The
+grader model runs the gates and produces the score sheet (see Protocol); the maintainer
+spot-checks the line scores against the exported patch.
 
 Recorded per run: gate results, rubric score, notes.
 
 ## Protocol
 
-1. Pick the model in opencode (via the LiteLLM gateway).
-2. `./run.sh setup` — verifies a clean tree, creates branch `bench/shoko-logs`
-   from the base commit, and prints the prompt to paste into an opencode session
-   started in the Shoko-WebUI checkout. Point `run.sh` at that checkout via
-   `SHOKO_WEBUI_DIR` (or edit the top of `run.sh`); ShokoServer sits at
-   `../ShokoServer` relative to the checkout, which is what the prompt points to.
-3. Let the model work.
-4. `./run.sh eval <run-name>` — runs the three gates (each pass/fail recorded
-   independently), exports the patch to `runs/<run-name>/`.
-5. Grade with `rubric.md`; save scores as `runs/<run-name>/score.md`.
-6. After review, `./run.sh cleanup <run-name>` — returns to `master`, deletes the
+1. `./run.sh setup` — verifies a clean tree, creates branch `bench/shoko-logs`
+   from the base commit, and prints the prompt for the implementation step.
+   Point `run.sh` at the Shoko-WebUI checkout via `SHOKO_WEBUI_DIR` (or edit the top
+   of `run.sh`); ShokoServer must sit beside it (siblings under one parent), which is
+   what the prompt points to.
+2. **Implement.** The implementation runs by giving a model the prompt, either
+   interactively (start opencode in the checkout, select the model under test, paste
+   `prompt.md`) or headlessly:
+
+       opencode run --agent build --model <model> --dir <parent dir holding \
+         Shoko-WebUI and ShokoServer> "$(cat <shoko-logs dir>/prompt.md)"
+
+   `--dir` must be the parent that holds **both** checkouts: the model has to read the
+   sibling ShokoServer source, and headless opencode auto-rejects reads outside its
+   working directory. Always use the `build` agent: the default `orchestrator` agent
+   delegates to subagents and can finish without implementing. The harness itself never
+   drives opencode; it only exports the patch after the model stops.
+3. `./run.sh eval <run-name>` — exports the patch to `runs/<run-name>/`. No gates here:
+   the grader runs them (next step). The checkout is left on the bench branch with the
+   changes applied for the grader.
+4. **Rubric eval — grader model.** Grade the exported patch with a headless opencode
+   session running the configured grader model (`<grader-model>`). Use the `build`
+   agent: the default `orchestrator` agent delegates to subagents and can return
+   without producing a score sheet. Run opencode from a directory that contains the
+   checkout, its sibling ShokoServer, and this benchmark dir (e.g. their common parent)
+   so the grader can read `rubric.md`/`reference.diff`/the server source and still run
+   the gates in the checkout:
+
+       opencode run --agent build --model <grader-model> --dir <common parent dir> \
+         "Run the build gates in <Shoko-WebUI checkout> (pnpm tscheck, pnpm lint, \
+          pnpm build), then grade <shoko-logs dir>/runs/<run-name>/patch.diff against \
+          <shoko-logs dir>/rubric.md using <shoko-logs dir>/reference.diff as the \
+          reference implementation; write the score sheet to \
+          <shoko-logs dir>/runs/<run-name>/score.md."
+
+   The grader runs the gates, reads `rubric.md`, `reference.diff`, and the run's patch,
+   and writes `runs/<run-name>/score.md` in the format at the end of `rubric.md`. If
+   you instead run it with `--dir` set to the checkout alone, add `--auto` or stage the
+   two rubric files into the checkout — reads outside the working directory are
+   auto-rejected in headless mode.
+5. After review, `./run.sh cleanup <run-name>` — returns to `master`, deletes the
    branch, and removes `runs/<run-name>/`. The score recorded in
    `scorecards/<model>.md` is the only surviving artifact (see "Run naming and
    repeats").
@@ -83,8 +110,8 @@ the mean of the 2 repeat totals. **opencode-go reference models are the exceptio
   name — it can be arbitrarily long. Per-model detail goes in
   `scorecards/<model>.md` (one section per parameter set, labeled with the paramset);
   the headline row lands in `scorecard.md`.
-- Every repeat gets its own branch, gates run, and grading; the run dir
-  `runs/<model>/` is reused for each repeat.
+- Every repeat gets its own branch, patch export, and grading (the grader runs the
+  gates); the run dir `runs/<model>/` is reused for each repeat.
 - **Delete the run dir after recording the score.** Once a repeat's score (and any
   reviewer notes worth keeping) is recorded in `scorecards/<model>.md`, remove
   `runs/<model>/` — the scorecards are the persistent record, not the run artifacts.
@@ -93,6 +120,7 @@ the mean of the 2 repeat totals. **opencode-go reference models are the exceptio
 ## Results
 
 Canonical results live in [scorecard.md](scorecard.md) — one row per model +
-parameter set, the mean score across repeats (see "Run naming and repeats" above).
+parameter set, the mean score across repeats (see "Run naming and repeats" above), with
+per-capability subtotals (see `rubric.md` → "Capability dimensions and rollup").
 Per-repeat rubric breakdown is in `scorecards/<model>.md`; run artifacts under
 `runs/` are deleted once their scores are recorded.

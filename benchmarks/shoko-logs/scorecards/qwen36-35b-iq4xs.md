@@ -1,5 +1,7 @@
 # qwen36-35b-iq4xs — scores
 
+> **Outdated:** scored under the pre-review rubric (older weights; lines 18–24 renumbered 19–25). See `scorecard.md` for the revision note.
+
 Parameter set: default (kv-q8). 2-repeat mean.
 
 ## Repeat 1 of 2

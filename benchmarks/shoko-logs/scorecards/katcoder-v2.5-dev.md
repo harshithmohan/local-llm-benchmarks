@@ -1,5 +1,7 @@
 # katcoder-v2.5-dev — scores
 
+> **Outdated:** scored under the pre-review rubric (older weights; lines 18–24 renumbered 19–25). See `scorecard.md` for the revision note.
+
 Parameter set: katcoder apex-i compact (262k ctx, default reasoning; no reasoning_effort variants — KAT templates take `enable_thinking`/`preserve_thinking` only).
 
 ## Repeat 1 of 2

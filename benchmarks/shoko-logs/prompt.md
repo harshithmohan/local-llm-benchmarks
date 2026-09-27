@@ -43,7 +43,8 @@ Requirements:
 
 ## Constraints
 
-- The ShokoServer backend source is available at `../ShokoServer`. Its logging API
+- The ShokoServer backend source is available as a sibling checkout next to the
+  Shoko-WebUI repository (`ShokoServer`). Its logging API
   (REST controller + log service) is the source of truth: discover the exact endpoint
   paths, query parameters, response shapes, and the filter expression syntax the
   server accepts from that source before writing any fetch calls. Sending the server
