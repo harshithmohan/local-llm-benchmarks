@@ -10,7 +10,7 @@ model-specific issues in [issues](../../issues.md).
 
 Quants tested: `IQ2_XS` of the **Swift-1.5 fine-tune** ([ukisai/Swift-1.5-Qwen3.8-27B-GSQ-RCO-GGUF](https://huggingface.co/ukisai/Swift-1.5-Qwen3.8-27B-GSQ-RCO-GGUF), 2-bit) - the only quant on this rig. `IQ2_XS` on its own only names the quant format: every file measured here is the Swift-1.5 fine-tune, not the base model.
 
-## Measured results at c 90000 (llama-server, coding prompts C#+React averaged, second-pass, + 512 gen, q4_0 KV, stock)
+## Measured results at c 90000 (llama-server, coding prompts C#+React averaged, second-pass, + 512 gen, q4_0 KV, stock v0.5.0-dev 1ab7e5ad)
 
 | Quant | MTP | prefill t/s | decode t/s | acceptance | VRAM used |
 | --- | --- | --- | --- | --- | --- |

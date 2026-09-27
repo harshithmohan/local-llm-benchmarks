@@ -28,9 +28,11 @@ throughout these pages:
   build b10818-27c54b4bb) - adds prefill patches and a VRAM-resident expert cache;
   env vars and flags are defined in [methodology.md](methodology.md).
 - **Upstream (stock)** ([ggml-org/llama.cpp](https://github.com/ggml-org/llama.cpp)) -
-  Rig 1: v0.4.0-dev 30b6a75; Rig 2: v0.4.0-dev build 10809 (5266f24da7). No fork features
-  (no expert cache; the fork env vars are no-ops). The config of choice where the fork has
-  nothing to add - e.g. every Rig 2 config at ncmoe 0, and IQ4_XS at 256k on Rig 1.
+  Rig 1: v0.5.0-dev d834d44 since the 2026-09-26 container rebuild (older stock rows
+  measured on v0.4.0-dev 30b6a75); Rig 2: v0.4.0-dev build 10809 (5266f24da7). No fork
+  features (no expert cache; the fork env vars are no-ops). The config of choice where
+  the fork has nothing to add - e.g. every Rig 2 config at ncmoe 0, and IQ4_XS at 256k
+  on Rig 1.
 - **ik-llama.cpp** ([ikawrakow/ik_llama.cpp](https://github.com/ikawrakow/ik_llama.cpp),
   build 3bb386e, Rig 1) - Ilya Kawrakow's performance fork; so far tested on the Rig 1
   Qwen3.6-35B-A3B IQ4_XS quant. Loses to stock at the native 256k window, wins decode at
