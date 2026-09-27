@@ -21,6 +21,7 @@ Rig details and setup: [../../rig2-3090.md](../../rig2-3090.md). Methodology:
 [../../methodology.md](../../methodology.md). Full experiment log:
 [qwen38-27b-archive.md](qwen38-27b-archive.md). Low-level knob transferability
 study: [../../experiments/qwen38-27b-da3dsoul-arc-transfer.md](../../experiments/qwen38-27b-da3dsoul-arc-transfer.md).
+Fine-tune port study: [../../experiments/qwen38-27b-swift-1.5-int4.md](../../experiments/qwen38-27b-swift-1.5-int4.md).
 Model card: [unsloth/Qwen3.8-27B-GGUF](https://huggingface.co/unsloth/Qwen3.8-27B-GGUF).
 vLLM weights: [dbirks/Qwen3.8-27B-W4A16-AutoRound](https://huggingface.co/dbirks/Qwen3.8-27B-W4A16-AutoRound)
 (the container requantizes the lm_head/embeddings/MTP in place on first boot: the base
