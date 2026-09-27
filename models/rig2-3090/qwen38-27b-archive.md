@@ -3,7 +3,7 @@
 This archive holds supporting measurements and experiments not on the main card
 ([qwen38-27b.md](qwen38-27b.md)); it covers the retired llama.cpp `UD-Q4_K_S` quant log. The
 quant is retired - dominated by the vLLM `W4A16-AutoRound-fast` stack on the main page (same
-VRAM, ~1.8x faster short-context decode, ~2.4x at 116K, and 250000 vs 155648 context) - so
+VRAM, ~1.7x faster short-context decode, ~2.4x at 116K, and 250000 vs 155648 context) - so
 its full log lives here. llama.cpp protocol: coding prompts C#+React averaged, second-pass
 prefill, recommended sampling, cold load, q8_0 KV, `--threads 8 --threads-batch 16`,
 22 GB VRAM cap (22 GB +- 250 MB, desktop reserve). Methodology in
@@ -180,8 +180,9 @@ are single passes:
 | Swift-1.5-INT4 / vLLM | MTP | 150000 | 757.4 | 62.4 | 0.444 | 22704 MiB |
 | Swift-1.5-INT4 / vLLM | MTP (KVarN) | 250000 | 836.0 | 32.4 | 0.512 | 22388 MiB |
 
-- Long context is expensive on this dense model: fp8 decode falls from 112.4 t/s short to
-  63.8 at ~116K (-43%), KVarN to 27.5 (its 250k ceiling) from a 107.8 t/s short baseline.
+- Long context is expensive on this dense model: fp8 decode falls from its 112.4 t/s
+  short baseline (pre-2026-09-27; now 103.3 single-pass) to 63.8 at ~116K (-43%), KVarN to
+  27.5 (its 250k ceiling) from 107.8 (now 92.7).
 - The decode hit is larger than the 35B-A3B's on the same task (-37%): every token here
   runs ~27B dense params against a 116K context, while the MoE only wakes ~3B.
 - All ran the full 512 (`ignore_eos: true`); no crash or EOS quirk - see
@@ -197,7 +198,7 @@ are single passes:
 
 - UD-Q4_K_S was the best llama.cpp config at c 155648 (MTP n-max 2): 61.6 t/s decode
   (prefill 1019.7, acceptance 0.703), 22127 MiB. It is now retired - the vLLM
-  `W4A16-AutoRound-fast` stack on the main page beats it on decode (~1.8x short, ~2.4x at
+  `W4A16-AutoRound-fast` stack on the main page beats it on decode (~1.7x short, ~2.4x at
   116K) at the same VRAM and reaches 250000 via KVarN.
 - Stock only. Dense model - the Codacus fork's MoE-specific features do not apply.
 - 155648 is the llama.cpp context ceiling (native 262144 does not fit); `-ngld 0` does not
