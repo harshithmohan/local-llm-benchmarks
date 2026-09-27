@@ -1,84 +1,102 @@
 # qwen36-35b-iq4xs — scores
 
-> **Outdated:** scored under the pre-review rubric (older weights; lines 18–24 renumbered 19–25). See `scorecard.md` for the revision note.
+Parameter set: default (kv-q8). 2-repeat mean, re-run and re-graded **2026-09-27** under
+the revised rubric. Supersedes the 2026-09-19 pre-review run (60.5 / 62 → 61.25): those
+totals are not comparable (older weights) and predate config-served sampling.
 
-Parameter set: default (kv-q8). 2-repeat mean.
+> Implementation runs used `limit.output` 16384. On **repeat 1** the model spent its
+> entire output budget on a planning chain-of-thought and made **no edits** on the cold
+> attempt; the patch was produced only after one nudge ("stop reasoning, implement").
+> **Repeat 2** needed no nudge. The nudge is a harness intervention, not part of the task.
 
-## Repeat 1 of 2
+## Repeat 1 of 2 (nudged)
 
-**Total 60.5/100** — gates 5/5 · rubric 55.5/95 · 2026-09-19. Re-weighted re-grade (gates 25→5, rubric 75→95): no fraction changed vs the old grading, only point values.
-
-| # | Score | Pts | Notes |
-|---|---|---|---|
-| 4 | 0.5 | 3/6 | SignalR backlog append + per-entry append intact, but no reconnect reset (`useLogsSubscription` untouched). |
-| 5 | 1 | 9/9 | Paginated `Range/Read` with `offset`, `NextOffset`→next / null→exhausted, `descending:false`; param names all correct. |
-| 6 | 0.5 | 1.5/3 | Content-sensitive key, Set never hashed — but `Array.from(set)` unsorted → toggle order changes the key. |
-| 7 | 0 | 0/10 | No DSL handling at all — no mode-char regex, no `c#:` wrap, no `toServerSearch`. |
-| 8 | 1 | 5/5 | Empty `level`/`message` omitted — never sent as empty strings. |
-| 9 | 1 | 6/6 | `isSearching` (debounced, trimmed) switches live↔search. |
-| 10 | 0.5 | 2/4 | Six levels, toggleable, active styling — no tooltip. |
-| 11 | 1 | 3/3 | 250 ms debounce; value trimmed at use. |
-| 12 | 1 | 3/3 | `clearFilters` resets both; scroll-lock hidden (not `disabled`) while filters active — functionally equivalent. |
-| 13 | 0 | 0/1 | Header is just `Logs`; no mode subtitle. |
-| 14 | 0.5 | 3/6 | Base throttle+`setTimeout` scrollTop heuristic retained; not a bottom-distance check. Moot: live view renders 0 rows. |
-| 15 | 0 | 0/3 | scrollRect workaround removed — no replacement hook. |
-| 16 | 1 | 3/3 | Spinner shown only when `logLines.length === 0` (initial state). |
-| 17 | 0.5 | 2.5/5 | `fetchNextPage` invoked, but via IntersectionObserver callback that ignores `isIntersecting` and fires on initial observe → eager fetch. |
-| 18 | 0.5 | 2/4 | Searching + no-results/Clear present; no phantom loader row. |
-| 19 | 0.5 | 3/6 | Always `Range/Download`, never `File/Current/Download`; names correct but `limit:100` + `format:'Simple'` leak in. |
-| 20 | 0.5 | 2.5/5 | Object URL + DOM anchor + local `YYYYMMDD-HHmmss` filename, but synchronous `revokeObjectURL`. |
-| 21 | 1 | 4/4 | `Button loading` real spinner + `onError` toast. |
-| 22 | 0 | 0/3 | `IconButton` not modified; patch uses `Button` directly. |
-| 23 | 0.5 | 1.5/3 | Placeholder removed; unused export `LogSearchQueryResult`. |
-| 24 | 0.5 | 1.5/3 | Types modeled, no `any`; but `Level: string` and event fields required. |
-
-**Key findings:**
-
-- **Critical:** a single virtualizer bound to search-result count (`count: searchEntries.length`) leaves the live tail rendering zero rows.
-- Nailed the discovery crux (line 5 = 9/9) but missed DSL (7=0), eager pagination, no endpoint switch.
-
-## Repeat 2 of 2
-
-**Total 62/100** — gates 5/5 · rubric 57/95 · 2026-09-19.
+**Total 54.5/100** — gates 5/5 · rubric 49.5/95 · 2026-09-27.
 
 | # | Score | Pts | Notes |
 |---|---|---|---|
-| 4 | 0.5 | 3/6 | Live tail retained (backlog + per-entry append), but no `onreconnected` reset. |
-| 5 | 1 | 9/9 | `Range/Read` infinite query: `offset` pageParam, `limit:100`, `descending:false`, `level` singular + `message` correct; `getNextPageParam` = `NextOffset`. |
-| 6 | 0.5 | 1.5/3 | Set→array derived, not hashed — but unsorted → toggle order changes key. |
-| 7 | 0 | 0/10 | No DSL handling — search passed raw as `message`. |
-| 8 | 1 | 5/5 | `message`/`level` emit `undefined` when empty. |
-| 9 | 1 | 6/6 | `hasFilters` switches live↔search and gates `enabled`. |
-| 10 | 0.5 | 2/4 | Six levels, toggleable, active styling + close icon — no tooltip. |
-| 11 | 1 | 3/3 | 250 ms debounce of `search.trim()`. |
-| 12 | 0.5 | 1.5/3 | `handleClearFilters` resets both; scroll-lock only rendered when `hasFilters` and never disabled — inverted. |
-| 13 | 0 | 0/1 | Header shows only "Logs"; no mode hint. |
-| 14 | 0.5 | 3/6 | Retained snapshot scroll lock; unreliable under active logging; lock button removed from live mode. |
-| 15 | 1 | 3/3 | `rowVirtualizer.scrollRect` patched from live container. |
-| 16 | 1 | 3/3 | Empty-tail spinner gated on `logLines.length === 0`. |
-| 17 | 0 | 0/5 | `fetchNextPage` never invoked — `SearchVirtualizer` uses `count: results.length` (no sentinel), so the `if (!row)` fetch branch is dead. Only first 100 rows. |
-| 18 | 0.5 | 2/4 | Searching + no-results/Clear ✓; phantom loader row is dead code (same count bug). |
-| 19 | 1 | 6/6 | `File/Current/Download` vs `Range/Download` switch; `level` + `message` correct. |
-| 20 | 0.5 | 2.5/5 | Object URL + DOM-attached anchor; synchronous revoke; no date+time filename. |
-| 21 | 0.5 | 2/4 | `disabled` only (no spinner); error toast ✓. |
-| 22 | 0 | 0/3 | `IconButton.tsx` untouched; `Button.loading` exists in base but unused. |
-| 23 | 1 | 3/3 | Placeholder removed; old file/`LogLineType` reused; no unused exports. |
-| 24 | 0.5 | 1.5/3 | Optional fields + result type modeled, no `any` — but `Level` bare `string`. |
+| 4 | 0 | 0/6 | No reconnect handler resets the tail; `GetBacklog` + `Log` append, so a reconnect backlog can duplicate stale lines. |
+| 5 | 1 | 10/10 | `Range/Read`, offset pages, `NextOffset`, ascending order, correct `level`/`message`/`offset`/`limit`/`descending` names. |
+| 6 | 0.5 | 1.5/3 | Content-sensitive key, but `Array.from(activeLevels)` preserves toggle order instead of sorting. |
+| 7 | 0 | 0/10 | Always wraps nonempty input as case-sensitive `c:`; DSL not passed through. |
+| 8 | 1 | 5/5 | `message`/`level` added only when nonempty. |
+| 9 | 0.5 | 3.5/7 | Filters switch views, but mode uses immediate search text, not the debounced value. |
+| 10 | 0.5 | 2/4 | Six toggleable levels + active styling; no tooltip. |
+| 11 | 0 | 0/3 | 250 ms timer updates a ref without a render/query update; value not trimmed when stored. |
+| 12 | 0.5 | 1.5/3 | Clear filters resets text, debounce ref, levels; scroll-lock not disabled while filtering. |
+| 13 | 0 | 0/1 | Header stays "Logs"; no count or server-search hint. |
+| 14 | 0.5 | 2/4 | Throttled scroll-direction check is heuristic, not a reliable user-scroll detector. |
+| 15 | 0 | 0/1 | No live-dimension `scrollRect` workaround. |
+| 16 | 0.5 | 1.5/3 | Spinner for empty tail; reconnect does not reset the tail. |
+| 17 | 1 | 6/6 | Trailing-edge scroll listener calls `fetchNextPage` from an effect-installed handler. |
+| 18 | 1 | 5/5 | Pages flattened in order and rendered from fetched timestamp/level/message. |
+| 19 | 0.5 | 2/4 | "No results" + Clear present; first-fetch condition inverted (no searching state while fetching); no phantom loader row. |
+| 20 | 0.5 | 3/6 | Filtered requests use `level`/`message`, but downloads always call `Range/Download` even with no filters. |
+| 21 | 0.5 | 1.5/3 | Object URL + DOM anchor, but revoked synchronously after click. |
+| 22 | 0.5 | 2/4 | Error toast present; download state only disables the button (no visible busy indicator). |
+| 23 | 0 | 0/1 | `IconButton` gains no `loading` prop. |
+| 24 | 0.5 | 1.5/3 | Commented placeholder removed, but old `logs/queries.ts` and `LogLineType` remain. |
+| 25 | 0.5 | 1.5/3 | Result shape modeled; both log level fields bare `string`; no `any` leakage. |
 
-**Key findings:**
+**Key findings:** read contract fully correct (5=10/10) and pagination path invoked
+(17=6/6), but the debounce ref is never wired to a query/render update (9, 11) and DSL is
+absent (7=0). No reconnect reset; download save flow incomplete.
 
-- **Critical (different from r1):** live tail works, but infinite scroll is dead (`fetchNextPage` unreachable → capped at 100 rows).
-- API discovery nailed again (line 5=9/9); DSL 0 again. Endpoint switching (19) now correct.
-- Level chips unreachable to initiate (render only when `hasFilters` already true).
+## Repeat 2 of 2 (clean)
+
+**Total 47.5/100** — gates 5/5 · rubric 42.5/95 · 2026-09-27.
+
+| # | Score | Pts | Notes |
+|---|---|---|---|
+| 4 | 0.5 | 3/6 | SignalR append intact, but no reconnect reset (fresh backlog can duplicate stale entries). |
+| 5 | 0.5 | 5/10 | Correct endpoint/params/`NextOffset`/ascending, but the active query reads `res.data` though `@/core/axios` already unwraps it; a correct hook is defined but unused. |
+| 6 | 0.5 | 1.5/3 | Content-sensitive array key, but unsorted → toggle order changes the key. |
+| 7 | 0 | 0/10 | No DSL recognition; ordinary text not wrapped as case-insensitive contains. |
+| 8 | 1 | 5/5 | Empty `level`/`message` → `undefined`, omitted from requests. |
+| 9 | 1 | 7/7 | Active search/level filters select server search; none select the live tail. |
+| 10 | 0.5 | 2/4 | Six toggleable levels + active styling; no tooltip. |
+| 11 | 0.5 | 1.5/3 | 250 ms debounce and request-time trim; stored value not trimmed, whitespace can still activate search. |
+| 12 | 0.5 | 1.5/3 | No-results action clears both; no general clear control; scroll lock not disabled while filtering. |
+| 13 | 0 | 0/1 | No count or server-search hint. |
+| 14 | 0.5 | 2/4 | Upward-scroll heuristic can't distinguish user from programmatic/measurement scrolls. |
+| 15 | 1 | 1/1 | Virtualizer receives live container dimensions via the `scrollRect` workaround. |
+| 16 | 0.5 | 1.5/3 | Empty-tail spinner present, but reconnect does not reset the tail. |
+| 17 | 0 | 0/6 | `getNextPageParam` defined, but nothing invokes `fetchNextPage` near the trailing row. |
+| 18 | 0 | 0/5 | Flatten/render path present, but the `res.data` access conflicts with response unwrapping → entries not rendered reliably. |
+| 19 | 0.5 | 2/4 | First-fetch/no-results UI + trailing loader coded; broken result handling makes the loader unreachable. |
+| 20 | 1 | 6/6 | Switches current-file vs range-download endpoints; singular `level` + `message` for filtered downloads. |
+| 21 | 0 | 0/3 | No success handler creates/clicks an anchor or revokes a URL. |
+| 22 | 0.5 | 2/4 | Download button busy state present; failures not surfaced with an error toast. |
+| 23 | 0 | 0/1 | `IconButton` not extended; page uses `Button` directly. |
+| 24 | 0 | 0/3 | Old `logs/queries.ts` path and `LogLineType` remain; only the commented placeholder was removed. |
+| 25 | 0.5 | 1.5/3 | Result shape + optional fields modeled; `LogLineType.Level` stays `string` rather than the `LogLevelType` union. |
+
+**Key findings:** read + download request parameters are correct (8=5/5, 20=6/6) and view
+switching works (9=7/7), but the active query mishandles the unwrapped axios response
+(5, 18) and never calls `fetchNextPage` (17=0). DSL absent (7=0). No download save flow
+(21=0).
+
+## Capability rollup
+
+| Dimension | r1 | r2 | Mean |
+|---|---:|---:|---:|
+| Discovery & server-contract (20) | 50.0% | 25.0% | 37.5% |
+| Implementation (28) | 39.3% | 42.9% | 41.1% |
+| Integration & wiring (41) | 62.2% | 58.5% | 60.4% |
+| Build hygiene (5) | 100% | 100% | 100% |
+| Code quality (6) | 50.0% | 25.0% | 37.5% |
+| **Total /100** | 54.5 | 47.5 | **51.0** |
 
 ## Summary
 
 | Repeat | Rubric /95 | Total /100 |
 |---|---|---|
-| 1 | 55.5 | 60.5 |
-| 2 | 57 | 62 |
-| **Mean** | **56.25** | **61.25** |
+| 1 (nudged) | 49.5 | 54.5 |
+| 2 (clean) | 42.5 | 47.5 |
+| **Mean** | **46.0** | **51.0** |
 
-Both runs nailed API discovery (line 5=9/9) and missed DSL entirely (7=0); they diverged on the critical render bug (r1: live tail renders zero rows; r2: live tail works but infinite scroll dead) and endpoint switching (r1 absent 0.5, r2 correct 1). Spread 1.5 pts.
-
-Pattern: data-layer contract solid in both runs (line 5 = 9/9); DSL absent (7=0); one fatal end-to-end wiring bug per run. The model implements spec'd local mechanics well but repeatedly fails the end-to-end loop (fetch→save blob, page 1→page 2).
+Both runs nailed the request-contract naming but missed the DSL entirely (7=0 both) and
+left one fatal end-to-end break each: r1's debounce ref never triggers a query/render, so
+the search wiring is dead; r2's active query mishandles the unwrapped axios response and
+never pages. Neither produces a working download save flow. Build gates pass in both —
+build hygiene does not catch these runtime data-flow breaks. Spread 7 pts.
