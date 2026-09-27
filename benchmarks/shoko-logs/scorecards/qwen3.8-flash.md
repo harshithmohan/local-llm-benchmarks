@@ -2,7 +2,7 @@
 
 Parameter set: opencode-go, xhigh reasoning level (its default is xhigh). Single run.
 
-## Discovery — single run
+## Single run
 
 **Total 74.5/100** — gates 5/5 · rubric 69.5/95 · 2026-09-19. Fresh-session grade; orchestrator spot-checked the load-bearing claims (always-`c#:` wrap, render-phase `fetchNextPageDebounced`, endpoint switch, detached anchor + deferred revoke, `LogLineType` removed, no error toast) — all confirmed.
 

@@ -2,7 +2,7 @@
 
 Parameter set: katcoder apex-i compact (262k ctx, default reasoning; no reasoning_effort variants — KAT templates take `enable_thinking`/`preserve_thinking` only).
 
-## Discovery — repeat 1 of 2
+## Repeat 1 of 2
 
 **Total 64.5/100** — gates 5/5 · rubric 59.5/95 · 2026-09-23. Orchestrator spot-checked (no `c#:` in patch; `fetchNextPage` in scroll effect; scrollRect workaround deleted; sync `revokeObjectURL`; no `loading` prop) — all confirmed.
 
@@ -35,7 +35,7 @@ Parameter set: katcoder apex-i compact (262k ctx, default reasoning; no reasonin
 - Solid API integration + search plumbing (working infinite scroll, endpoint switch, correct contract), completely missing DSL (7=0, 10 pts).
 - r1 regressions: **chicken-and-egg level chips** (render only when `hasActiveFilters` → level-only filtering unreachable), deleted scrollRect workaround, scroll listener bound to a stale element after view switch, `new Blob([...])` double-wrap cast.
 
-## Discovery — repeat 2 of 2
+## Repeat 2 of 2
 
 **Total 66.5/100** — gates 5/5 · rubric 61.5/95 · 2026-09-23. Note: the first eval's lint gate failed on a transient oxlint flake (`Cannot find module 'react-use-measure'` ×39, all in files the patch never touched); lint passed on re-run, gates re-recorded 5/5. Orchestrator spot-checked the load-bearing claims — all confirmed.
 
@@ -69,7 +69,7 @@ Parameter set: katcoder apex-i compact (262k ctx, default reasoning; no reasonin
 - r2 restored the scrollRect workaround (15: 0→1) and fixed scroll-lock (12: 0.5→1), but shipped the circular gate + `createObjectURL(data.data)` blob misread (20: 0.5→0) and dropped sorting (6: 0.5→0).
 - The circular gate isn't captured by any single rubric line — search/level/download are behaviorally dead end-to-end despite lines 5/9/17/19 scoring on code.
 
-## Discovery — variant summary
+## Summary
 
 | Repeat | Rubric /95 | Total /100 |
 |---|---|---|

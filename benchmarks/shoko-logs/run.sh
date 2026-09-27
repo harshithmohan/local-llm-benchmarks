@@ -2,9 +2,9 @@
 # shoko-logs benchmark runner — see README.md in this directory.
 #
 # usage:
-#   ./run.sh setup <discovery|api-summary|full-spec>   create the bench branch from base
-#   ./run.sh eval <run-name>                          run gates, export patch to runs/<run-name>/
-#   ./run.sh cleanup <run-name>                       delete the branch (patch must be exported)
+#   ./run.sh setup                   create the bench branch from base
+#   ./run.sh eval <run-name>         run gates, export patch to runs/<run-name>/
+#   ./run.sh cleanup <run-name>      delete the branch (patch must be exported)
 set -euo pipefail
 
 # Shoko-WebUI checkout (repo under test). Override with SHOKO_WEBUI_DIR, or edit here.
@@ -16,8 +16,6 @@ DIR="$(cd "$(dirname "$0")" && pwd)"
 cmd="${1:-help}"
 case "$cmd" in
   setup)
-    variant="${2:?variant required: discovery | api-summary | full-spec}"
-    [ -f "$DIR/prompt-$variant.md" ] || { echo "unknown variant '$variant'"; exit 1; }
     cd "$WEBUI"
     [ -z "$(git status --porcelain)" ] || { echo "working tree not clean — commit or stash first"; exit 1; }
     if git rev-parse --verify -q "$BRANCH" >/dev/null; then
@@ -27,12 +25,12 @@ case "$cmd" in
     echo
     echo "Branch $BRANCH created at $BASE."
     echo "Next: start opencode in $WEBUI and paste the prompt from"
-    echo "  $DIR/prompt-$variant.md"
+    echo "  $DIR/prompt.md"
     echo "Then: $0 eval <run-name>"
     ;;
 
   eval)
-    name="${2:?run name required, e.g. qwen38-27b-full-spec}"
+    name="${2:?run name required, e.g. qwen38-27b-w4a16}"
     cd "$WEBUI"
     [ "$(git branch --show-current)" = "$BRANCH" ] || { echo "not on branch $BRANCH"; exit 1; }
     out="$DIR/runs/$name"
@@ -107,6 +105,6 @@ case "$cmd" in
     ;;
 
   *)
-    echo "usage: $0 setup <discovery|api-summary|full-spec> | eval <run-name> | cleanup <run-name>"
+    echo "usage: $0 setup | eval <run-name> | cleanup <run-name>"
     ;;
 esac

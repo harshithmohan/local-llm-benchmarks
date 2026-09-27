@@ -28,21 +28,14 @@ Given to the model as a ticket, never as a reference implementation:
 2. **Log download** — download button: current log file when no filters are active,
    filtered range when they are; loading state on the button, error toast on failure.
 
-## Context variants
+## Prompt
 
-| Variant | Prompt file | API context given |
-|---|---|---|
-| discovery | `prompt-discovery.md` | Ticket only; the model must read the ShokoServer source to find endpoints, params, and the filter DSL grammar |
-| api-summary | `prompt-api-summary.md` | Ticket + endpoint list, params, response shapes, DSL grammar summary |
-| full-spec | `prompt-full-spec.md` | Ticket + full behavioral spec including every edge case the reference implementation had to get right (query-key stability, param omission, DSL prefix regex, pagination triggers, scroll-lock logic, blob handling) |
-
-The ticket body is identical in all three; only the API reference appendix differs.
-
-**What each variant measures** (discovery is mandatory; api-summary and full-spec are optional diagnostics — run them when you want to isolate a failure mode):
-
-- **discovery** — the headline number: *can the model find what it needs in an unfamiliar codebase and build it?* Closest to real agentic coding (no spec, must explore). A low score here reads as a weak explorer.
-- **api-summary** (optional) — *given the API contract, can it implement?* Removes the research burden. Comparing against discovery separates "couldn't find the API" from "couldn't implement with the API known". For most models expect ≥ discovery; if a model scores below discovery (as qwen36-35b did), the summary hurt more than it helped — a signal in itself.
-- **full-spec** (optional) — upper-bound control: *given a complete spec with every edge case spelled out, can it follow the spec?* Exposes whether a model's gap is information gathering (recovers strongly under full-spec) or implementation ability (stays low). It does not re-test discovery; it tells you whether the discovery variant's losses were research failures or implementation failures.
+Delivered as a ticket with no API reference: the model must read the ShokoServer source
+(`../ShokoServer` relative to the checkout) to find the endpoint paths, query
+parameters, response shapes, and the filter DSL grammar before writing any fetch calls.
+This makes it a pure discovery test — *can the model find what it needs in an unfamiliar
+codebase and build it?* — closest to real agentic coding, with no spec handed over. The
+single prompt is [`prompt.md`](prompt.md).
 
 ## Scoring
 
@@ -57,17 +50,16 @@ Per run, three layers (`rubric.md` has the full breakdown, 100 points):
 3. **Maintainer review** — eyeball the exported patch; gate + rubric numbers are
    advisory until reviewed.
 
-Recorded per run: variant, gate results, rubric score, notes.
+Recorded per run: gate results, rubric score, notes.
 
 ## Protocol
 
-1. Pick the model in opencode (via the LiteLLM gateway) and a variant.
-2. `./run.sh setup <variant>` — verifies a clean tree, creates branch `bench/shoko-logs`
+1. Pick the model in opencode (via the LiteLLM gateway).
+2. `./run.sh setup` — verifies a clean tree, creates branch `bench/shoko-logs`
    from the base commit, and prints the prompt to paste into an opencode session
    started in the Shoko-WebUI checkout. Point `run.sh` at that checkout via
    `SHOKO_WEBUI_DIR` (or edit the top of `run.sh`); ShokoServer sits at
-   `../ShokoServer` relative to the checkout, which is what the discovery prompt
-   points to.
+   `../ShokoServer` relative to the checkout, which is what the prompt points to.
 3. Let the model work.
 4. `./run.sh eval <run-name>` — runs the three gates (each pass/fail recorded
    independently), exports the patch to `runs/<run-name>/`.
@@ -81,30 +73,26 @@ Never let the branch outlive the run: results live in the exported patch, not in
 
 ### Run naming and repeats
 
-Run names follow `<model>/<variant>`, e.g. `qwen36-35b-iq4xs/discovery`:
+Run names are the served model id, e.g. `qwen36-35b-iq4xs` (without a rig prefix —
+models are assumed identical across rigs). Each model gets **2 repeats**; the score is
+the mean of the 2 repeat totals. **opencode-go reference models are the exception:
+1 run only** (cost), so their score is a single sample — no repeat-mean.
 
-- **model** is the served model id (without a rig prefix — models are assumed
-  identical across rigs).
-- **discovery is mandatory** (2 repeats); **api-summary and full-spec are optional**
-  diagnostics (2 repeats each when run). A variant's score is the mean of its
-  2 repeat totals; the Overall score is the mean of the variant means that were
-  run (discovery-only → Overall = the discovery mean). Every repeat gets its own
-  branch, gates run, and grading; the run dir `runs/<model>/<variant>/` is reused
-  for each repeat. **opencode-go reference models are the exception: 1 run only** (cost),
-  so their score is a single sample — no repeat-mean.
 - The parameter set the model was served with (e.g. `kv-q8`, or `kv-q4` when
   re-testing with a different cache) is recorded in the scorecards, not in the run
   name — it can be arbitrarily long. Per-model detail goes in
   `scorecards/<model>.md` (one section per parameter set, labeled with the paramset);
   the headline row lands in `scorecard.md`.
+- Every repeat gets its own branch, gates run, and grading; the run dir
+  `runs/<model>/` is reused for each repeat.
 - **Delete the run dir after recording the score.** Once a repeat's score (and any
   reviewer notes worth keeping) is recorded in `scorecards/<model>.md`, remove
-  `runs/<model>/<variant>/` — the scorecards are the persistent record, not the run
-  artifacts. Review the patch before deleting; nothing survives in `runs/`.
+  `runs/<model>/` — the scorecards are the persistent record, not the run artifacts.
+  Review the patch before deleting; nothing survives in `runs/`.
 
 ## Results
 
 Canonical results live in [scorecard.md](scorecard.md) — one row per model +
-parameter set, per-variant mean totals (see "Run naming and repeats" above).
+parameter set, the mean score across repeats (see "Run naming and repeats" above).
 Per-repeat rubric breakdown is in `scorecards/<model>.md`; run artifacts under
 `runs/` are deleted once their scores are recorded.

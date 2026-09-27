@@ -2,7 +2,7 @@
 
 Parameter set: opencode-go (no reasoning levels). Single run.
 
-## Discovery — single run
+## Single run
 
 **Total 79/100** — gates 5/5 · rubric 74/95 · 2026-09-23. Fresh oracle session; orchestrator spot-checked claims and corrected one line (see below).
 

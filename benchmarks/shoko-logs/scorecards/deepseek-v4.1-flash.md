@@ -2,7 +2,7 @@
 
 Parameter set: opencode-go, **high reasoning level** (its default is high). Single run.
 
-## Discovery — single run
+## Single run
 
 **Total 77/100** — gates 5/5 · rubric 72/95 · 2026-09-19. Fresh-session grade; orchestrator spot-checked the load-bearing claims (order-independent key, always-`c#:` wrap, trailing-row `fetchNextPage`, both download endpoints, `disabled={hasFilters}`, sync revoke without DOM attach) — all confirmed.
 

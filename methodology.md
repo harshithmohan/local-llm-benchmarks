@@ -97,7 +97,6 @@ but leave less headroom OOM on the first large prompt.
 ## Coding benchmark (shoko-logs)
 
 The agentic coding benchmark under [benchmarks/shoko-logs/](benchmarks/shoko-logs/)
-has its own, independent methodology — task, three context variants (discovery /
-api-summary / full-spec), build-gate + rubric scoring, and grading protocol. It is
-documented in [benchmarks/shoko-logs/README.md](benchmarks/shoko-logs/README.md) and
-is separate from the inference-timing methodology above.
+has its own, independent methodology — task, build-gate + rubric scoring, and grading
+protocol. It is documented in [benchmarks/shoko-logs/README.md](benchmarks/shoko-logs/README.md)
+and is separate from the inference-timing methodology above.

@@ -1,10 +1,10 @@
 # glm-5.3-flash — scores
 
-Parameter set: opencode-go. Two reasoning levels tested, each a single discovery run:
+Parameter set: opencode-go. Two reasoning levels tested, each a single run:
 **high** and **max**. (The very first glm run — 70.5/100, also high — was discarded at
 the user's request and replaced by the high run below.)
 
-## Discovery — single run (high reasoning)
+## Single run (high reasoning)
 
 **Total 66.5/100** — gates 5/5 · rubric 61.5/95 · 2026-09-23. Replacement run (prior 70.5 discarded); orchestrator spot-checked (no `c#` anywhere; `anchor.download=''` + sync revoke + no `appendChild`; `fetchNextPage` in scroll handler; live empty state regressed) — all confirmed. Patch 399 lines, 4 files (stat.txt shows 2 — new files untracked at stat time).
 
@@ -38,7 +38,7 @@ the user's request and replaced by the high run below.)
 - Live-tail initial spinner regressed (16=0), no reconnect reset (4), unsorted key (6=0.5), no IconButton loading (22=0).
 - Textbook "green gates ≠ working feature": 61.5/95 rubric despite a fully passing build.
 
-## Discovery — single run (max reasoning)
+## Single run (max reasoning)
 
 **Total 70/100** — gates 5/5 · rubric 65/95 · 2026-09-23. Fresh oracle session; orchestrator spot-checked (no `c#` anywhere; sorted `.sort()` at L188; render-phase `fetchNextPageDebounced` at L347; deferred revoke via `setTimeout` but no `appendChild`; IconButton.tsx untouched) — all confirmed. Patch 384 lines, 2 files.
 

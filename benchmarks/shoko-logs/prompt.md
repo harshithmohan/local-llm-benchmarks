@@ -1,7 +1,6 @@
-# Prompt — variant: api-summary
+# Prompt — shoko-logs
 
-Same ticket as `prompt-discovery.md`; the Constraints section is replaced by the
-version below (ticket body repeated in full so the file is paste-ready).
+Paste everything below the marker into the opencode session.
 
 ---
 
@@ -42,34 +41,13 @@ Requirements:
 - Show a loading state on the button while the download is in flight, and an error
   toast on failure.
 
-## API reference (from ShokoServer)
-
-Endpoints (relative to the API base the app's axios instance already uses):
-
-- `GET Logging/Range/Read?offset=<n>&limit=<n>&descending=<bool>&level=<names>&message=<expr>`
-  — reads log entries over the full history. `offset` is the page start, `limit` the
-  page size, `descending=false` gives ascending order. `level` is a comma-separated
-  list of level names (e.g. `Warning,Error`); omit it for no level filter.
-  `message` is an optional filter expression (DSL below); omit it for no message
-  filter. Inactive filters must be omitted entirely, not sent empty.
-  Response: `{ NextOffset: number | null, Entries: LogEvent[] }` — `NextOffset` is
-  the offset of the next page, or null when there are no more entries.
-- `GET Logging/File/Current/Download` — downloads the current log file as plain text.
-- `GET Logging/Range/Download?level=<names>&message=<expr>` — downloads the filtered
-  range as plain text, same filter semantics as Range/Read.
-
-`LogEvent` fields: `TimeStamp` (string), `Level` (one of
-`Trace | Debug | Information | Warning | Error | Critical | None`, serialized as a
-string), `ThreadID?`, `ProcessID?`, `Logger?`, `Caller?`, `Message`, `Exception?`.
-The optional fields may be absent from the payload — handle their absence.
-
-Filter expression grammar (`message`): an optional mode character first — `c:`
-contains, `=`: equals, `^`: starts with, `$`: ends with, `~`: fuzzy, `*`: regex —
-followed by the payload. A bare payload without a mode prefix is shorthand for
-case-sensitive contains.
-
 ## Constraints
 
+- The ShokoServer backend source is available at `../ShokoServer`. Its logging API
+  (REST controller + log service) is the source of truth: discover the exact endpoint
+  paths, query parameters, response shapes, and the filter expression syntax the
+  server accepts from that source before writing any fetch calls. Sending the server
+  something it does not accept is a failure mode you must avoid.
 - Keep the existing live tail fully working: backlog delivered on connect plus new
   entries appended as they arrive.
 - Match existing repo conventions: TanStack Query for data fetching, the existing

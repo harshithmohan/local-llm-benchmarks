@@ -18,7 +18,7 @@ with half the feature non-functional.
 | 5 | Server search: paginated `Range/Read` query (offset pages, `NextOffset` → next page, exhausted on null, `descending=false`/ascending) **and** correct query-param names (`level` singular, `message`, `offset`, `limit`, `descending`) | 9 |
 | 6 | Level filter derived into a stable, content-sensitive query key (Set never hashed directly; key order-independent — sorted — so toggle order is irrelevant; array-vs-Set source doesn't matter, only the derived key) | 3 |
 | **Search integration** | | **15** |
-| 7 | DSL handling: full-grammar passthrough regex (mode char first, ≤1 `!` and ≤1 `#` in either order, then `:`); everything else wrapped as case-insensitive contains; empty search not wrapped/sent. *Discovery discriminator — near-mechanical for full-spec runs* | 10 |
+| 7 | DSL handling: full-grammar passthrough regex (mode char first, ≤1 `!` and ≤1 `#` in either order, then `:`); everything else wrapped as case-insensitive contains; empty search not wrapped/sent. *Discovery discriminator* | 10 |
 | 8 | Empty `message`/`level` params omitted, never sent as empty strings | 5 |
 | **Page composition** | | **17** |
 | 9 | `filtersActive` (debounced search ≠ "" or any level chip) switches live view ↔ server search view | 6 |
@@ -68,7 +68,6 @@ Copy into `runs/<run-name>/score.md` and fill in. Markdown format.
 |---|---|
 | Run | `<run-name>` |
 | Model | `<model>` |
-| Variant | discovery \| api-summary \| full-spec |
 | Date | <date> |
 | Gates | tscheck ✅/❌ · lint ✅/❌ · build ✅/❌ (**5/5 or partial**) |
 | Rubric subtotal | **<n> / 95** |

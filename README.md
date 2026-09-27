@@ -121,8 +121,7 @@ A separate, agentic benchmark under [benchmarks/shoko-logs/](benchmarks/shoko-lo
 from a clean Shoko-WebUI base commit, a model must reproduce the upstream logs-page
 rewrite (server-side search + infinite-scroll pagination) and log download against a
 backend API it discovers itself. Scored by build gates (tscheck/lint/build, 5 pts)
-plus a 95-point behavior rubric vs a reference diff, across three context variants
-(discovery / api-summary / full-spec).
+plus a 95-point behavior rubric vs a reference diff.
 
 - Protocol, rubric, and prompts: [benchmarks/shoko-logs/README.md](benchmarks/shoko-logs/README.md)
 - Results: [benchmarks/shoko-logs/scorecard.md](benchmarks/shoko-logs/scorecard.md)
