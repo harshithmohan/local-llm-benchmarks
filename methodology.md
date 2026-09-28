@@ -16,6 +16,31 @@ The upstream README's mention of legacy `GGML_MOE_CACHE_*` env vars for llama-be
 wrong for this build. The working env names for llama-server AND llama-cli are
 `LLAMA_ARG_MOE_CACHE_*` (they go through the common arg parser).
 
+## moe-cache fork features used (GenerelSchwerz - dynamic expert cache)
+
+A second fork, [GenerelSchwerz/llama.cpp](https://github.com/GenerelSchwerz/llama.cpp)
+(branch `moe-cache`), provides a *different* expert cache: a dynamic CUDA
+LRU/frequency-aware cache with no routing profile and no trace step. Opt-in, CUDA-only.
+Its flags do **not** exist in the Codacus build (and the Codacus `LLAMA_ARG_MOE_CACHE_*`
+/ `GGML_CUDA_REGISTER_HOST` flags do not exist here) - the two expert caches are distinct
+designs with different vocabularies.
+
+- `--moe-expert-cache-size N` - expert slabs kept on GPU per expert tensor, per owning
+  device (0 = off, default). Enabling it routes all MoE expert tensors through the cache
+  and **overrides** `--cpu-moe` / `--n-cpu-moe` placement; cold experts stay in host
+  pinned memory. `--moe-expert-cache-mib MiB` is the byte-budget alternative (mutually
+  exclusive with a nonzero size).
+- `--moe-expert-cache-layers N[,N-M]` - restrict caching to listed layers; this flips
+  precedence so CPU/tensor overrides win and the cache claims only leftovers.
+- `--moe-early-router`, `--moe-expert-cache-host-pinned-mb N`, `--experimental-logs`
+  (validation counters), `--spec-draft-moe-expert-cache-*` (independent draft cache).
+- Env aliases `LLAMA_ARG_MOE_EXPERT_CACHE_*`; `GGML_CUDA_MOE_FREQUENCY=0` forces pure LRU.
+
+`llama-bench` cannot exercise either cache (no context); measure with llama-server +
+`curl /completion`. Validate the dynamic cache with one `--experimental-logs` run:
+`moe-grouped-decode` `calls > 0`, `fallback/rollback/prepare_error/finish_error/
+upload_errors = 0`.
+
 ## ik-llama.cpp notes
 
 [ik-llama.cpp](https://github.com/ikawrakow/ik_llama.cpp) results (Rig 1) were measured

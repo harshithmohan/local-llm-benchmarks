@@ -71,6 +71,19 @@ Winner config, cold load, ONE timed `/v1/chat/completions` pass, `max_tokens` 51
 - No crash and no EOS quirk: `qwen35moe` is safe on the near-repetitive prompt (the PLE
   n-gram path is `qwen4exp`-only).
 
+## Messy-code refactor (~60K prompt, 2026-09-28)
+
+Cold load, ONE timed `/v1/chat/completions` pass, `max_tokens` 512, `ignore_eos:true`,
+q8_0 KV. Replaces the retired ~116K run above (the benchmark moved to ~60K on 2026-09-27).
+
+| Quant | Engine | MTP | ncmoe | cache | prompt tokens | prefill t/s | decode t/s | acceptance | VRAM used |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| APEX-I-Compact | moe-cache fork | on | 28 | 80 | 59760 | 608.70 | 49.06 | 275/470 (0.59) | 11077 MiB |
+| APEX-I-Compact | stock | on | 28 | - | 59760 | 572.79 | 38.33 | 288/446 (0.65) | 11781 MiB |
+
+- Fork holds ~+6% prefill and ~+28% decode at ~60K; both fully prefill cold
+  (`cached_tokens` 0).
+
 ## Method note: slot KV cache vs the second-pass protocol
 
 The shared protocol measures on the SECOND pass so the first pass can warm mmap page cache.
@@ -81,12 +94,35 @@ page cache is irrelevant here because the config uses `--load-mode none` (eager 
 there is nothing for the warm-up pass to warm; the only effect of `cache_prompt:false` is to
 defeat the KV hit.
 
+## moe-cache fork (GenerelSchwerz) expert-cache sweep (c 262144, MTP on, q8_0 KV)
+
+The fork's dynamic CUDA expert cache overrides `--n-cpu-moe` placement: cold experts stay in
+host RAM and only `--moe-expert-cache-size` slabs per expert tensor are GPU-resident. Cold
+load, second-pass, C#+React averaged, `cache_prompt:false`.
+
+| cache | prefill t/s | decode t/s | VRAM used |
+| --- | --- | --- | --- |
+| 0 (control) | 345.4 | 51.8 | 11105 MiB |
+| 32 | 322.8 | 56.8 | 7727 MiB |
+| 64 | 319.4 | 73.6 | 9629 MiB |
+| 80 | 342.4 | 78.1 | 11029 MiB |
+| 80 (repeat) | 344.1 | 73.4 | 11029 MiB |
+| 88 | 360.5 | 75.4 | 11353 MiB |
+| 96 | 368.2 | 78.4 | 11531 MiB |
+| 128 / 160 / 192 | - | - | OOM at spawn |
+
+- Cache 80 is the pick: ~76 t/s decode (two samples 73.4/78.1) with ~1.26 GiB free; 96 matches
+  the decode but leaves only ~430 MiB, below the headroom rule.
+- The cache-0 control (51.8) already beats the stock binary (47.7) - the fork tracks a newer
+  upstream, so part of the gain is engine, not cache.
+- Per-prompt at cache 80: C# 378-395 prefill / 73.5-79.9 decode; React 294-296 / 73.2-76.4.
+
 ## Conclusions
 
-- Best config on this rig: `APEX-I-Compact`, stock + MTP n-max 2, ncmoe 28, c 262144 ->
-  47.7 t/s decode (prefill 338.5 short-prompt / 517 saturated, acceptance 0.71),
-  11729 MiB.
+- Best config on this rig: `APEX-I-Compact`, moe-cache fork + MTP n-max 2, ncmoe 28, cache 80,
+  c 262144 -> ~76 t/s decode (prefill ~344 short-prompt, acceptance ~0.75), 11029 MiB. Stock +
+  MTP (47.7 t/s, 11729 MiB) is the fallback where the fork engine is unavailable.
 - ncmoe 28 is the hard floor with MTP at full ctx; 32 costs ~14% decode for ~1.3 GB.
 - MTP is a net win despite ~2 GB of draft context.
-- Not probed: the Codacus-fork expert cache (would need an all-CPU ncmoe to free room for a
-  pack; at ncmoe 28 only ~560 MiB is free).
+- Not probed: the Codacus CSV-profile cache (it needs a VRAM-resident profile pack; at ncmoe 28
+  only ~560 MiB is free). The moe-cache fork needs no pack and wins here.

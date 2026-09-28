@@ -11,13 +11,15 @@ Model cards: [unsloth/Qwen3.6-35B-A3B-MTP-GGUF](https://huggingface.co/unsloth/Q
 
 Quants:
 
-- `IQ4_XS-4.19bpw.gguf` (17.32 GiB, fused gate_up experts - cache incompatible)
+- `IQ4_XS-4.19bpw.gguf` (17.32 GiB, fused gate_up experts - incompatible with the Codacus CSV-profile cache; the moe-cache fork caches them)
 - `UD-Q6_K.gguf` (27.94 GiB, separate gate/up/down)
-- `UD-Q4_K_M.gguf` (21.10 GiB, separate gate/up/down)
+- `UD-Q4_K_M.gguf` (21.10 GiB, separate gate/up/down; cache-compatible on both forks)
 
 Routing profiles at `<models>/moe-cache-profiles/`: `qwen36-udq6-merged.csv` (traced at
 ncmoe 34), `qwen36-udq4km-merged.csv` (traced at ncmoe 26). Both made with
-`llama-moe-trace`, code + chat prompts. The IQ4 trace exists but is unused (cache incompatible).
+`llama-moe-trace`, code + chat prompts. These profiles are for the **Codacus CSV-profile
+cache only**; the GenerelSchwerz moe-cache fork uses a dynamic cache and needs no profile.
+The IQ4 trace exists but is unused (the Codacus cache is IQ4-incompatible).
 
 ## Prefill patches (llama-bench, pp2048 / tg512, -b 2048 -ub 2048)
 
@@ -76,6 +78,72 @@ Findings:
   not tested).
 - Full-256k no-cache reference: ~7.1 GB used, decode 29.5 t/s (bench); the cache at
   52 slots recovers it to 37.1 t/s.
+
+## GenerelSchwerz moe-cache fork - dynamic expert cache (llama-server + /completion)
+
+A different expert-cache design from the Codacus CSV-profile cache: a dynamic CUDA
+LRU/frequency cache (`--moe-expert-cache-size N` = expert slabs per tensor kept on GPU;
+cold experts stay in host pinned memory), with no routing-trace step. Measured with the
+C# coding prompt, second pass, +512 gen, q8_0 KV, ncmoe 28, **MTP on**, ctx 32768, cold
+load. VRAM is the load reading against the 12288 MiB cap.
+
+| Quant | cache slots | prefill t/s | decode t/s | VRAM (load) |
+| --- | --- | --- | --- | --- |
+| UD-Q4_K_M | 0 (control) | 330.9 | 45.5 | 9213 |
+| UD-Q4_K_M | 16 | 296.3 | 30.9 | 4309 |
+| UD-Q4_K_M | 32 | 307.1 | 53.0 | 5371 |
+| UD-Q4_K_M | 64 | 334.1 | 67.7 | 7761 |
+| UD-Q4_K_M | 96 | 400.1 | 80.1 | 10151 |
+| UD-Q4_K_M | 112 | 459.1 | 90.4 | 11463 |
+| UD-Q4_K_M | 128 / 160 / 192 | - | OOM at spawn | - |
+| IQ4_XS | 0 (control) | 381.0 | 52.5 | 7871 |
+| IQ4_XS | 16 | 335.4 | 39.1 | 3315 |
+| IQ4_XS | 32 | 354.4 | 59.8 | 4269 |
+| IQ4_XS | 64 | 387.2 | 79.9 | 6279 |
+| IQ4_XS | 96 | 457.2 | 96.2 | 8361 |
+| IQ4_XS | 128 | 587.8 | 103.1 | 10371 |
+
+- The fork caches IQ4_XS's **fused gate_up** experts, which the Codacus CSV-profile cache
+  cannot - so IQ4_XS is again the fastest 35B quant in this regime.
+- Caches below the routed-group width are a net **loss** vs the cache-off control
+  (UD-Q4_K_M 16 slots = 30.9 vs 45.5): with the cache on, `--n-cpu-moe` placement is
+  overridden, so an undersized cache thrashes while the control keeps whole expert layers
+  resident. The cache only pays from ~32 slots up.
+- VRAM scales ~linearly with slots; the 12 GB ceiling at 32768 is ~112 slots (UD-Q4_K_M)
+  / ~128 (IQ4_XS).
+- `--moe-early-router`: +1-4% decode (IQ4_XS 128: 104.5 vs 103.1; UD-Q4_K_M 96: 82.9 vs
+  80.1).
+- `--moe-expert-cache-mib 5000` (IQ4_XS) = 87.8 decode @ 7493 MiB - a coarser knob that
+  lands between the 64- and 96-slot points.
+- `--moe-expert-cache-layers 0-23` (half the layers, IQ4_XS 128) = 56.2 decode - far worse
+  than caching all layers (103.1); leave the layer selector off.
+- MTP still matters: IQ4_XS 128 slots with MTP off = 81.2 vs 103.1 with MTP (~+27%).
+- Validation (`--experimental-logs`, IQ4_XS 96 @ 32768): `moe-grouped-decode calls=2358
+  covered=41 fallback=0 rollback=0 prepare_error=0 finish_error=0 upload_errors=0`, and
+  `decode_grouped=2238 cache_hits=32291 cache_misses=5042` = **86.5% hit rate** - the
+  grouped cache path is genuinely engaged (not merely a VRAM-placement effect).
+
+### Context scaling (coding prompts C#+React averaged)
+
+| Quant | cache slots | ctx | prefill t/s | decode t/s | VRAM (load) |
+| --- | --- | --- | --- | --- | --- |
+| IQ4_XS | 64 | 131072 | 388.0 | 82.8 | 7785 |
+| IQ4_XS | 48 | 262144 | 355.1 | 72.0 | 8825 |
+| IQ4_XS | 96 | 262144 | - | OOM | - |
+| IQ4_XS | 128 | 131072 | - | OOM | - |
+| UD-Q4_K_M | 64 | 262144 | 301.7 | 69.3 | 11275 |
+| IQ4_XS | 48 | 524288 | 363.2 | 60.8 | 10937 |
+| IQ4_XS | 56 | 524288 | 358.3 | 63.0 | 11405 |
+| IQ4_XS | 64 | 524288 | - | crash (OOM) | - |
+
+- At 256k the q8_0 KV (2720 MiB) plus the cache lowers the slot ceiling: IQ4_XS 48 /
+  UD-Q4_K_M 64 are the largest that fit with headroom. IQ4_XS @ 256k/48 = 72.0 decode
+  beats stock's 54.9 by +31% at prefill parity (355.1 vs 356.9).
+- Extended context (YaRN scale 2, MTP off): the fork keeps working at 512K. C#-only slot
+  sweep: 8 = 40.3, 16 = 45.6, 24 = 52.1, 32 = 54.5, 48 = 58.3, 56 = 61.0 decode
+  (VRAM 8521 -> 11405); 64 crashes (OOM). Both-prompt averages: cache 48 = 363.2/60.8,
+  cache 56 = 358.3/63.0. Cache 48 leaves ~1.35 GiB headroom, 56 ~0.88 GiB. Beats the ik
+  512K row (337.1/42.4) by ~+43% decode at ~+8% prefill.
 
 ## Stock (upstream) llama-server baseline vs Codacus fork
 
@@ -281,10 +349,11 @@ single home for the retired run's numbers.
 
 ## Conclusions
 
-- Final verdict at large ctx: IQ4_XS via stock llama-server + MTP, 54.9 t/s @ 262144 on
-  the current protocol, is the fastest config (the 51.4 t/s in the stock-baseline table
-  was the old-protocol baseline).
-- The Codacus fork's role for the 35B family: UD-Q4_K_M's cache at mid-ctx
+- Final verdict at large ctx: IQ4_XS on the GenerelSchwerz moe-cache fork (cache 48,
+  MTP on) is the fastest config at 262144 - 72.0 t/s decode, +31% over stock+MTP (54.9).
+  Cache sizes beyond 48 do not fit at 256k; at 32k the same fork reaches 103 t/s (128
+  slots).
+- The Codacus fork's role for the 35B family: UD-Q4_K_M's CSV cache at mid-ctx
   (40.5 @ 131072 without MTP) and its prefill patches for short-ctx/cold prefill -
   not the 256k decode crown.
 - UD-Q6_K is the weakest at large ctx in every measured config; archived from the
