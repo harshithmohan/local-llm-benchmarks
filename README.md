@@ -113,7 +113,7 @@ model page archive.
 1. Prefill patches are the single biggest win everywhere: +104-137% on the 35B, and
    ~+55-63% on the recommended Flash-Next quant (UD-IQ3_XXS); the wider range (+183% AD,
    +656% archived Q3_K_XL) is other Flash-Next quants.
-2. The expert cache is a strong win for the MoE models that fit: the Codacus CSV-profile
+2. The expert cache is a strong win for MoE models that need expert offload: the Codacus CSV-profile
    cache gave the traced 35B 256k row +26% decode; the GenerelSchwerz dynamic cache takes
    IQ4_XS to 72.0 t/s at 256k (+31%) / 60.8 at 512k, and KAT-Coder to ~76 t/s (+59%). It is
    weak or a net loss for Flash-Next at 12 GB VRAM (512 experts, flat routing traffic), and
