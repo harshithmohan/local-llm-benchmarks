@@ -1,12 +1,10 @@
 # katcoder-v2.5-dev — scores
 
-Run on the **moe-cache fork** (cache 80, 262k ctx, MTP on) on 2026-09-28 under the revised
-rubric.
+Run on the **moe-cache fork** (cache 80, 262k ctx, MTP on) on 2026-09-28.
 
 ## Run — 2026-09-28
 
 Served as `atlantis/katcoder-apex-i-compact` on the GenerelSchwerz moe-cache fork engine.
-Graded under the **revised** rubric (post-review: lines 18–24 -> 19–25, capability rollup).
 No nudges, no auto-compactions.
 
 ### Repeat 1 of 2

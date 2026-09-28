@@ -1,75 +1,57 @@
 # glm-5.3-flash — scores
 
-> **Outdated:** scored under the pre-review rubric (older weights; lines 18–24 renumbered 19–25). See `scorecard.md` for the revision note.
-
-Parameter set: opencode-go. Two reasoning levels tested, each a single run:
-**high** and **max**. (The very first glm run — 70.5/100, also high — was discarded at
-the user's request and replaced by the high run below.)
+Parameter set: opencode-go. Cloud reference model — **1 run per reasoning level** (no
+repeat-mean; see README → "Run naming and repeats"). One level tested: **high**.
 
 ## Single run (high reasoning)
 
-**Total 66.5/100** — gates 5/5 · rubric 61.5/95 · 2026-09-23. Replacement run (prior 70.5 discarded); orchestrator spot-checked (no `c#` anywhere; `anchor.download=''` + sync revoke + no `appendChild`; `fetchNextPage` in scroll handler; live empty state regressed) — all confirmed. Patch 399 lines, 4 files (stat.txt shows 2 — new files untracked at stat time).
+**Total 64.5/100** — gates 5/5 · rubric 59.5/95 · 2026-09-28. Single run (cloud; no
+repeat-mean). Run time **10.2 min** (12:57:31Z–13:07:44Z). **No output-limit nudge, no
+auto-compaction.** Patch 438 lines across 5 files: `src/pages/logs/LogsPage.tsx`,
+`src/core/react-query/logs/queries.ts`, new `src/core/react-query/logs/types.ts`, new
+`src/core/react-query/logs/mutations.ts`, `src/components/Input/IconButton.tsx`.
+Orchestrator spot-checked (hardcoded case-sensitive `` `c:${search}` `` DSL;
+`getNextPageParam` = `lastPageParam + lastPage.Entries.length` ignoring `NextOffset`; no
+reconnect handler; detached anchor + synchronous `revokeObjectURL`; filtered/unfiltered
+endpoint switch; `IconButton` `loading` pass-through) — all confirmed.
 
-| # | Score | Pts | Notes |
-|---|---|---|---|
-| 4 | 0.5 | 3 | SignalR subscription + GetBacklog append + per-entry `Log` append kept; no `onreconnected` reconnect reset. |
-| 5 | 1.0 | 9 | `Range/Read`, `offset: pageParam`, `limit: 500`, `descending:false`, `NextOffset ?? undefined`; `level`(singular)/`message`/`offset`/`limit`/`descending` all correct. |
-| 6 | 0.5 | 1.5 | Content-sensitive `levels.join(',')` key (no Set hashing); **not sorted** → toggle order changes the cache key. |
-| 7 | 0 | 0 | **No DSL handling at all** — raw trimmed `message` sent (queries.ts:40); no `c#:` wrap, no passthrough; case-sensitive search. |
-| 8 | 1.0 | 5 | `level`/`message` via `\|\| undefined` → omitted, never empty strings. |
-| 9 | 1.0 | 6 | `isFilterActive` (debounced+trimmed) switches line source + render branch. |
-| 10 | 0.5 | 2 | Six levels, toggleable, active styling; no tooltip (raw `<button>`). |
-| 11 | 1.0 | 3 | `useDebounceValue(searchInput, 250)` then `.trim()`. |
-| 12 | 0.5 | 1.5 | `clearFilters` resets both ✓; scroll-lock IconButton not disabled while filters active. |
-| 13 | 0 | 0 | Header is just `Logs` — no live-count / server-search hint. |
-| 14 | 1.0 | 6 | Kept base throttle scroll-lock; unlocks on scroll-up, stays locked through programmatic `scrollToIndex` (flakiness noted). |
-| 15 | 1.0 | 3 | scrollRect workaround present inline. |
-| 16 | 0 | 0 | Live-view empty state shows "No results found." — the initial-load spinner was regressed/removed. |
-| 17 | 1.0 | 5 | `fetchNextPage` invoked in `handleScroll` near bottom (<400px); not render-phase, no debounce. |
-| 18 | 1.0 | 4 | Full-height searching; "Loading more…" during `isFetchingNextPage`; "No results found." + Clear filters. |
-| 19 | 1.0 | 6 | `Range/Download` vs `File/Current/Download` switch; `level` (singular) + `message` names correct. |
-| 20 | 0 | 0 | No DOM attach, **synchronous** revoke, `anchor.download=''` (no filename) — broken in Firefox, wrong filename everywhere. |
-| 21 | 0.5 | 2 | `disabled` + opacity (no spinner); error toast ✓. |
-| 22 | 0 | 0 | IconButton `loading` prop not added (IconButton.tsx untouched). |
-| 23 | 1.0 | 3 | No leftover placeholder, no unused exports/imports; kept `logs/queries.ts` + `LogLineType` (both still used). |
-| 24 | 0.5 | 1.5 | Types modeled, no `any`; `LogEntryType.Level` bare `string`; Logger/Caller/ThreadID/ProcessID required. |
+Capability subtotals: Discovery & server-contract **25%** · Implementation **64%** ·
+Integration & wiring **82%** · Build hygiene **100%** · Code quality **50%**.
 
-**Key findings:**
-
-- Data layer solid (5, 9, 11, 17, 19 full; loader row 18; clean dead-code 23) — but **no DSL handling at all** (7=0) and **download broken** (20=0: no DOM attach + sync revoke + empty filename).
-- Live-tail initial spinner regressed (16=0), no reconnect reset (4), unsorted key (6=0.5), no IconButton loading (22=0).
-- Textbook "green gates ≠ working feature": 61.5/95 rubric despite a fully passing build.
-
-## Single run (max reasoning)
-
-**Total 70/100** — gates 5/5 · rubric 65/95 · 2026-09-23. Fresh oracle session; orchestrator spot-checked (no `c#` anywhere; sorted `.sort()` at L188; render-phase `fetchNextPageDebounced` at L347; deferred revoke via `setTimeout` but no `appendChild`; IconButton.tsx untouched) — all confirmed. Patch 384 lines, 2 files.
-
-| # | Score | Pts | Notes |
-|---|---|---|---|
-| 4 | 0.5 | 3 | Backlog + per-entry append kept; `onreconnected` tail reset absent. |
-| 5 | 1.0 | 9 | `level` (singular), `message`, `offset`, `limit`, `descending:false` all correct; `NextOffset ?? undefined` pagination. |
-| 6 | 1.0 | 3 | `selectedLevels` kept `.sort()`ed in `toggleLevel` — order-independent key (fixed vs high run's 0.5). |
-| 7 | 0 | 0 | **No DSL handling at all** — raw `message` (queries.ts:89, mutations.ts:27); no `c#:` wrap, no passthrough; case-sensitive search. |
-| 8 | 1.0 | 5 | Empty `message`/`level` omitted (`\|\| undefined`) in both query and download. |
-| 9 | 1.0 | 6 | `hasFilters` switches the single virtualizer's data source (live ↔ search). |
-| 10 | 0.5 | 2 | Six toggleable levels with active styling; no tooltip. |
-| 11 | 1.0 | 3 | `useDebounceValue(search, 250)` + `.trim()`. |
-| 12 | 0.5 | 1.5 | `clearFilters` resets both; scroll-lock IconButton has no `disabled={hasFilters}`. |
-| 13 | 0 | 0 | Header bare "Logs" — no mode hint. |
-| 14 | 0.5 | 3 | Kept the throttle+`setTimeout` snapshot lock; not reliable through programmatic scroll/measurement corrections. |
-| 15 | 1.0 | 3 | Inline `rowVirtualizer.scrollRect` workaround preserved. |
-| 16 | 1.0 | 3 | Empty-tail spinner gated to `!hasFilters && logLines.length === 0` (restored vs high run's 0). |
-| 17 | 0.5 | 2.5 | Fetch invoked on the trailing phantom row, but as a **render-phase side effect** (`fetchNextPageDebounced` inside `.map()`, L347) + needless 100 ms debounce. |
-| 18 | 1.0 | 4 | First-fetch searching state; phantom loader row; "No results found." + Clear filters. |
-| 19 | 1.0 | 6 | Endpoint switch correct; `level`/`message` names correct. |
-| 20 | 0.5 | 2.5 | Object URL + **deferred revoke** (`setTimeout`) + date+time filename (fixed vs high run's 0), but anchor never DOM-attached. |
-| 21 | 1.0 | 4 | Real spinner (`isDownloading ? mdiLoading : mdiDownload`) + `toast.error` (fixed vs high run's disabled-only). |
-| 22 | 0 | 0 | IconButton not given a `loading` prop; download sidesteps via icon-swap + `disabled`. |
-| 23 | 1.0 | 3 | Placeholder removed; no dead file; all imports used. |
-| 24 | 0.5 | 1.5 | Types modeled, no `any`; Logger/Caller/ThreadID/ProcessID required; live tail still `LogLineType.Level: string`. |
+| # | Score | Notes |
+|---|---|---|
+| 1 | 1 (2/2) | `pnpm tscheck` completed successfully. |
+| 2 | 1 (1/1) | `pnpm lint` completed dprint, oxlint, and stylelint successfully. |
+| 3 | 1 (2/2) | `pnpm build` succeeded; Vite emitted a non-fatal unresolved-at-build-time warning for `/api/v3/WebUI/Theme.css`. |
+| 4 | 0 (0/6) | SignalR handlers append backlog + single entries, but there is no reconnect handler/reset; a fresh backlog can append to stale tail data. |
+| 5 | 0.5 (5/10) | `Range/Read` sends the required `level`/`message`/`offset`/`limit`/`descending=false` params, but `getNextPageParam` derives the next offset from entry count instead of `NextOffset`. |
+| 6 | 0.5 (1.5/3) | Query key includes level-array contents but does not sort them, so the same set toggled in a different order hashes differently. |
+| 7 | 0 (0/10) | Search text is sent as case-sensitive `` `c:<text>` ``; valid DSL is not passed through and ordinary searches are not wrapped for case-insensitive `c#:`. |
+| 8 | 1 (5/5) | Empty level/message params are conditionally omitted from read and download requests. |
+| 9 | 1 (7/7) | Debounced nonempty search or selected levels switches from the live tail to server search. |
+| 10 | 0.5 (2/4) | Six levels are toggleable with active styling, but the chips have no tooltips. |
+| 11 | 1 (3/3) | Search input is trimmed and debounced at 250 ms. |
+| 12 | 1 (3/3) | No-results "Clear filters" resets search + levels; scroll-lock button is disabled while filters are active. |
+| 13 | 0 (0/1) | Header only says "Logs"; no live-count / server-search hint. |
+| 14 | 0.5 (2/4) | Delayed scroll-direction heuristic detects user scroll-up but can also treat programmatic movement / virtualizer corrections as user input. |
+| 15 | 1 (1/1) | Virtualizer `scrollRect` is updated from the live container dimensions. |
+| 16 | 1 (3/3) | Live view shows a spinner while the tail is empty and stops showing it once entries exist. |
+| 17 | 1 (6/6) | Scroll handler invokes `fetchNextPage` near the end of results, guards concurrent next-page fetches, and uses no debounce. |
+| 18 | 1 (5/5) | Search pages are flattened in page order and rendered from returned timestamp/level/message fields. |
+| 19 | 0.5 (2/4) | First-page searching state + no-results/Clear-filters are present, but there is no phantom trailing loader row for subsequent pages. |
+| 20 | 1 (6/6) | Unfiltered downloads use `Logging/File/Current/Download`; filtered downloads use `Logging/Range/Download` with singular `level`/`message`. |
+| 21 | 0 (0/3) | The anchor is detached when clicked, then the object URL is revoked synchronously. |
+| 22 | 1 (4/4) | Download button shows a visible loading state and reports failures through an error toast. |
+| 23 | 1 (1/1) | `IconButton` accepts `loading` and passes it to `Button`. |
+| 24 | 0.5 (1.5/3) | Legacy `logs/queries.ts`/`LogLineType` structure is retained; the commented search placeholder is gone; no newly added unused exports/imports. |
+| 25 | 0.5 (1.5/3) | Result types are modeled, but `LogEntryType.Level` is bare `string` and the live view keeps the narrow legacy `LogLineType`. |
 
 **Key findings:**
 
-- +3.5 over the high run: deferred revoke + date+time filename (20), real spinner + toast (21), sorted key (6), restored empty-tail spinner (16).
-- Traded even elsewhere: pagination trigger went clean-scroll-handler → render-phase debounced (17: 1→0.5); scroll-lock unchanged.
-- Still 0 on DSL both times — the grammar is missed regardless of reasoning level.
+- Broad, build-clean delivery: search/live switching, 250 ms debounce, six server-side
+  level chips, filtered/unfiltered endpoint selection, download spinner + error toast,
+  and `IconButton` loading are all wired (Integration & wiring 82%).
+- Misses the server contract where it matters most: no DSL passthrough and a
+  case-sensitive `` `c:` `` search (7=0); pagination ignores the server `NextOffset`
+  cursor (5=0.5); no reconnect reset (4=0).
+- Download is wired but browser-fragile: detached anchor + synchronous revoke (21=0).

@@ -2,7 +2,6 @@
 
 > **Note:** the low reasoning repeat 1 run was **auto-compacted** (native compaction; a
 > harness intervention, not part of the task) — see `scorecard.md` → "Auto-compactions".
-> All six repeats were graded under the current revised rubric.
 
 Parameter set: Swift-1.5-INT4 vLLM, fp8 KV, low reasoning.
 

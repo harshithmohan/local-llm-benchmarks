@@ -1,7 +1,6 @@
 # qwen36-35b-iq4xs — scores
 
-Parameter set: default (kv-q8). 2-repeat mean, re-run and re-graded **2026-09-27** under
-the revised rubric.
+Parameter set: default (kv-q8). 2-repeat mean.
 
 > Implementation runs used `limit.output` 16384. On **repeat 1** the model spent its
 > entire output budget on a planning chain-of-thought and made **no edits** on the cold
