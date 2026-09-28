@@ -59,7 +59,7 @@ Timings are read from `llama-server` request logs (llama.cpp) or vLLM's Promethe
 
 ## Contents
 
-- [methodology.md](methodology.md) - env vars, measurement methods, VRAM headroom rule, caveats
+- [methodology.md](methodology.md) - env vars, measurement methods, memory measurement, VRAM headroom rule, caveats
 - [test-prompts.md](test-prompts.md) - the actual prompt texts used for timing runs and traces (C# and React/TS timing prompts; a C++ prompt for routing-trace tests)
 - [rig1-3060.md](rig1-3060.md) - Rig 1 hardware and build info
 - [rig2-3090.md](rig2-3090.md) - Rig 2 hardware and build info

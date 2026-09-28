@@ -77,6 +77,18 @@ with the same protocol as the llama.cpp builds; engine-specific differences:
   recorded (catches the slot-sizing OOM trap).
 - ALWAYS capture BOTH prefill and decode in every server test.
 
+## Memory measurement
+
+Every `VRAM used` figure in this folder is the model's **per-process** GPU allocation,
+never the whole-GPU total. Read it from the compute-apps query, taking the serving
+process's row:
+
+    nvidia-smi --query-compute-apps=pid,process_name,used_memory --format=csv
+
+- vLLM: the process is `VLLM::EngineCore`.
+- llama.cpp (stock or any fork): the process is `llama-server` - match on whatever name
+  the query reports (it may be a full path ending in `llama-server`).
+
 ## Test prompts
 
 The actual prompt texts used for timing runs, including coding prompts for C# and
