@@ -1,82 +1,88 @@
 # katcoder-v2.5-dev — scores
 
-> **Outdated:** scored under the pre-review rubric (older weights; lines 18–24 renumbered 19–25). See `scorecard.md` for the revision note.
+Run on the **moe-cache fork** (cache 80, 262k ctx, MTP on) on 2026-09-28 under the revised
+rubric.
 
-Parameter set: katcoder apex-i compact (262k ctx, default reasoning; no reasoning_effort variants — KAT templates take `enable_thinking`/`preserve_thinking` only).
+## Run — 2026-09-28
 
-## Repeat 1 of 2
+Served as `atlantis/katcoder-apex-i-compact` on the GenerelSchwerz moe-cache fork engine.
+Graded under the **revised** rubric (post-review: lines 18–24 -> 19–25, capability rollup).
+No nudges, no auto-compactions.
 
-**Total 64.5/100** — gates 5/5 · rubric 59.5/95 · 2026-09-23. Orchestrator spot-checked (no `c#:` in patch; `fetchNextPage` in scroll effect; scrollRect workaround deleted; sync `revokeObjectURL`; no `loading` prop) — all confirmed.
+### Repeat 1 of 2
 
-| # | Score | Pts | Notes |
-|---|---|---|---|
-| 4 | 0.5 | 3/6 | Backlog append + per-entry append preserved, but no `onreconnected` tail reset. |
-| 5 | 1 | 9/9 | `Range/Read` pagination correct: `offset`/`limit:200`/`descending:false`, `getNextPageParam` → `NextOffset`, `level` singular. |
-| 6 | 0.5 | 1.5/3 | Content-sensitive key, Set→array, but `Array.from(activeLevels)` insertion-ordered, not sorted. |
-| 7 | 0 | 0/10 | **No DSL handling at all** — `message` sent raw (queries.ts:90); no `c#:` wrap, no passthrough. |
-| 8 | 1 | 5/5 | Empty `message`/`level` omitted, never sent as empty strings. |
-| 9 | 1 | 6/6 | `hasActiveFilters` correctly switches live ↔ search. |
-| 10 | 0.5 | 2/4 | Six levels, toggleable, active styling — no tooltip; chips gated behind `hasActiveFilters`. |
-| 11 | 1 | 3/3 | `useDebounceValue(search.trim(), 250)`. |
-| 12 | 0.5 | 1.5/3 | `clearFilters` resets both; scroll-lock hidden (not disabled) while filters active. |
-| 13 | 0 | 0/1 | Header bare "Logs" — no live-count / server-search hint. |
-| 14 | 0.5 | 3/6 | Kept old `throttle`+`setTimeout` snapshot approach, not bottom-distance check. |
-| 15 | 0 | 0/3 | Inline `scrollRect` workaround **removed** and never replaced — TanStack #634 regression. |
-| 16 | 1 | 3/3 | Live spinner gated on `logLines.length === 0` (initial only). |
-| 17 | 1 | 5/5 | `fetchNextPage` invoked via scroll listener (<200px from bottom), not render-phase, no debounce. |
-| 18 | 0.5 | 2/4 | Searching + no-results/clear states present; **no phantom loader row**. |
-| 19 | 1 | 6/6 | Endpoint switch (Range vs File/Current) + `level`/`message` correct names. |
-| 20 | 0.5 | 2.5/5 | Object URL + DOM anchor; but **sync** revoke and static `shoko-logs.txt` filename (no date/time). |
-| 21 | 1 | 4/4 | `Button loading={isDownloading}` spinner + `toast.error` on failure. |
-| 22 | 0 | 0/3 | `IconButton` never gains `loading` prop — sidestepped via `Button`. |
-| 23 | 0.5 | 1.5/3 | Placeholder removed; but `LogSearchFilters` unused export; `LogLineType` kept alongside `LogEntryType`. |
-| 24 | 0.5 | 1.5/3 | Types + optional fields modeled; but `Level` bare `string`, `NextOffset?` loose, `as unknown as Blob` cast. |
-
-**Key findings:**
-
-- Solid API integration + search plumbing (working infinite scroll, endpoint switch, correct contract), completely missing DSL (7=0, 10 pts).
-- r1 regressions: **chicken-and-egg level chips** (render only when `hasActiveFilters` → level-only filtering unreachable), deleted scrollRect workaround, scroll listener bound to a stale element after view switch, `new Blob([...])` double-wrap cast.
-
-## Repeat 2 of 2
-
-**Total 66.5/100** — gates 5/5 · rubric 61.5/95 · 2026-09-23. Note: the first eval's lint gate failed on a transient oxlint flake (`Cannot find module 'react-use-measure'` ×39, all in files the patch never touched); lint passed on re-run, gates re-recorded 5/5. Orchestrator spot-checked the load-bearing claims — all confirmed.
+**Total 66.5/100** — gates 5/5 · rubric 61.5/95 · 2026-09-28 · wall 16m41s.
 
 | # | Score | Pts | Notes |
 |---|---|---|---|
-| 4 | 0.5 | 3/6 | Backlog + per-entry append kept; no `withAutomaticReconnect`/`onreconnected` tail reset. |
-| 5 | 1 | 9/9 | `Range/Read` with `offset/limit/descending:false`, `NextOffset ?? undefined`, all param names correct. |
-| 6 | 0 | 0/3 | Query key `['logs','search', search, levels]` with raw `string[]` — toggle order changes the key, not sorted/stable. |
-| 7 | 0 | 0/10 | **No DSL handling at all** — raw `search.trim()` as `message`; no `c#:` wrap, no passthrough. |
-| 8 | 1 | 5/5 | `message`/`level` omitted when empty. |
-| 9 | 1 | 6/6 | `hasFilters` switch logic correct (but behaviorally dead — see findings). |
-| 10 | 0.5 | 2/4 | Six levels, toggleable, active styling; no tooltip; chips unreachable (gated behind `levels.length > 0`). |
-| 11 | 1 | 3/3 | `debounce(..., 250)` + trim at use sites. |
-| 12 | 1 | 3/3 | `clearFilters` resets both; scroll-lock `disabled={hasFilters}`. |
-| 13 | 0 | 0/1 | Header bare "Logs". |
-| 14 | 0.5 | 3/6 | Kept base scrollTop-snapshot heuristic; no bottom-distance check. |
-| 15 | 1 | 3/3 | Inline `scrollRect` workaround preserved (r1 had deleted it — regression fixed). |
-| 16 | 1 | 3/3 | Empty-tail spinner gated to `!hasFilters && logLines.length === 0`. |
-| 17 | 1 | 5/5 | `fetchNextPage` in `handleScroll` (<200px from bottom); not render-phase, no debounce. |
-| 18 | 0.5 | 2/4 | Searching + no-results/Clear states present; no phantom loader row. |
-| 19 | 1 | 6/6 | Endpoint switch + `level`/`message` correct names. |
-| 20 | 0 | 0/5 | `createObjectURL(data.data)` — axios interceptor already unwrapped, so `data.data` is `undefined` → throws in `onSuccess`; anchor never DOM-attached; sync revoke; no date/time filename. |
-| 21 | 1 | 4/4 | `Button loading={isPending}` spinner + `toast.error`. |
-| 22 | 0 | 0/3 | `IconButton` untouched; download sidesteps via `Button`. |
-| 23 | 1 | 3/3 | Old `logs/queries.ts` + `LogLineType` reused (not dead); placeholder removed; no unused exports. |
-| 24 | 0.5 | 1.5/3 | Types modeled, no `any`; but `Level` bare `string`, event fields required (not optional). |
+| 4 | 0 | 0/6 | No reconnect/`onreconnected` reset; a fresh backlog appends to a stale tail. |
+| 5 | 1 | 10/10 | `Range/Read`, offset/limit, `NextOffset`, ascending, singular `level` + `message`. |
+| 6 | 0.5 | 1.5/3 | Content-sensitive key, but levels not sorted (toggle order changes the key). |
+| 7 | 0 | 0/10 | Raw `search.trim()` as `message`; no DSL passthrough, no case-insensitive wrap. |
+| 8 | 1 | 5/5 | Empty message/levels omitted. |
+| 9 | 1 | 7/7 | Search mode when debounced query or any level active; clearing returns to live. |
+| 10 | 1 | 4/4 | Six toggleable levels, each with tooltip + active styling. |
+| 11 | 1 | 3/3 | Trimmed + 250 ms debounce. |
+| 12 | 1 | 3/3 | Clear resets text+levels; scroll lock disabled under filters. |
+| 13 | 0 | 0/1 | Header static "Logs". |
+| 14 | 0 | 0/4 | 1 s-snapshot + 50 ms compare; unreliable, cannot tell user vs programmatic scroll. |
+| 15 | 1 | 1/1 | Live virtualizer `scrollRect` set from container dimensions. |
+| 16 | 1 | 3/3 | Live spinner whenever tail empty. |
+| 17 | 1 | 6/6 | Effect near trailing entries calls `fetchNextPage`; not render-phase. |
+| 18 | 1 | 5/5 | Pages flattened in order; timestamp/level/message rendered. |
+| 19 | 0.5 | 2/4 | First-fetch + no-results/clear present; loader `h-64` not full-height; no phantom row. |
+| 20 | 1 | 6/6 | Endpoint switch correct; filtered `level`/`message`; extra `format=simple` on unfiltered. |
+| 21 | 0.5 | 1.5/3 | Object URL + DOM anchor, but sync revoke and static filename. |
+| 22 | 0.5 | 2/4 | Error toast present; no visible busy indicator. |
+| 23 | 0 | 0/1 | `IconButton` not extended with `loading`. |
+| 24 | 0 | 0/3 | Legacy `logs/queries.ts` + `LogLineType` retained. |
+| 25 | 0.5 | 1.5/3 | Fields modeled; `Level` bare string, not `LogLevelType`. |
 
-**Key findings:**
+### Repeat 2 of 2
 
-- **CRITICAL — circular filter gate**: the search Input is `disabled` whenever `!hasFilters`, and `hasFilters` only becomes true once search is non-empty or a level is active → provably always false; server search, level filtering, and filtered download can never be triggered.
-- r2 restored the scrollRect workaround (15: 0→1) and fixed scroll-lock (12: 0.5→1), but shipped the circular gate + `createObjectURL(data.data)` blob misread (20: 0.5→0) and dropped sorting (6: 0.5→0).
-- The circular gate isn't captured by any single rubric line — search/level/download are behaviorally dead end-to-end despite lines 5/9/17/19 scoring on code.
+**Total 66/100** — gates 5/5 · rubric 61/95 · 2026-09-28 · wall 11m52s.
 
-## Summary
+| # | Score | Pts | Notes |
+|---|---|---|---|
+| 1 | 1 | 2/2 | `pnpm tscheck` clean. |
+| 2 | 1 | 1/1 | `pnpm lint` clean (dprint/oxlint/stylelint). |
+| 3 | 1 | 2/2 | `pnpm build` succeeded. |
+| 4 | 0 | 0/6 | No reconnect handler/reset; stale tail keeps old entries. |
+| 5 | 1 | 10/10 | `Range/Read`, offset/limit, `NextOffset`, `descending:false`, singular `level`+`message`. |
+| 6 | 0.5 | 1.5/3 | Set->string key is content-sensitive but unsorted (toggle order changes it). |
+| 7 | 0.5 | 5/10 | Valid DSL prefix passes through + empty search omitted, but plain terms not wrapped as case-insensitive contains; invalid prefix not normalized. |
+| 8 | 1 | 5/5 | Undefined message/level omitted, never empty strings. |
+| 9 | 1 | 7/7 | Debounced non-empty search or levels -> server search; clearing -> live tail. |
+| 10 | 0.5 | 2/4 | Six toggleable levels, active styling; no tooltip. |
+| 11 | 1 | 3/3 | Trimmed + 250 ms debounce. |
+| 12 | 0.5 | 1.5/3 | `clearFilters` resets both, but clear only rendered on empty results; scroll-lock not disabled. |
+| 13 | 0 | 0/1 | Header static "Logs". |
+| 14 | 0.5 | 2/4 | Delayed compare can detect scroll-up but cannot distinguish user vs programmatic. |
+| 15 | 1 | 1/1 | `scrollRect` from live container dimensions. |
+| 16 | 1 | 3/3 | Live spinner whenever tail empty. |
+| 17 | 0 | 0/6 | `checkLoadMore` in a `useRef` initializer captures initial `isSearchMode===false` -> early return blocks every later-page fetch. |
+| 18 | 1 | 5/5 | Pages flattened in order; no apparent drop/duplicate. |
+| 19 | 0.5 | 2/4 | First-search + no-results/clear present; no phantom loader row. |
+| 20 | 0.5 | 3/6 | Param names correct; unfiltered -> current file, but filtered download also hits `File/Current/Download` instead of `Range/Download`. |
+| 21 | 0 | 0/3 | Uses `window.open`, not fetch+blob+DOM anchor with deferred revoke. |
+| 22 | 0.5 | 2/4 | Error toast; pending only disables the button (no visible busy indicator). |
+| 23 | 0 | 0/1 | `IconButton` not extended with `loading`. |
+| 24 | 0.5 | 1.5/3 | Removed obsolete commented placeholder, no unused imports/exports, but old `logs/` file + `LogLineType` remain. |
+| 25 | 0.5 | 1.5/3 | Response typed, no `any`; `Level` bare string, not the union. |
 
-| Repeat | Rubric /95 | Total /100 |
-|---|---|---|
-| r1 | 59.5 | 64.5 |
-| r2 | 61.5 | 66.5 |
-| **Mean** | **60.5** | **65.5** |
+### Summary
 
-Both repeats: full server-contract discovery (line 5 = 9/9), DSL 0, IconButton sidestep (22=0), no reconnect reset, no header hint, snapshot scroll lock, no phantom loader row, tooltip missing. Divergence: r1 broke composition via a chicken-and-egg chip gate + deleted workaround; r2 via an input-level deadlock + a blob misread. Consistent KAT pattern — solid API discovery + correct primitives, broken composition.
+| Repeat | Rubric /95 | Total /100 | Wall |
+|---|---|---|---|
+| r1 | 61.5 | 66.5 | 16m41s |
+| r2 | 61 | 66 | 11m52s |
+| **Mean** | **61.25** | **66.25** | — |
+
+**Key findings:** solid server-contract discovery both repeats (line 5 full), gates clean
+both; misses DSL (r1 0 / r2 0.5), reconnect reset (4=0 both), header hint (13=0 both),
+chip tooltips, and `IconButton` loading. Each repeat carries one load-bearing wiring break:
+r1's unreliable snapshot-based scroll lock (14=0) and sync-revoke download (21=0.5); r2's
+`useRef`-captured `checkLoadMore` making later pages unreachable (17=0) plus filtered
+download hitting the wrong endpoint (20=0.5). Consistent KAT pattern: correct primitives +
+contract discovery, fragile composition.
+
