@@ -1,75 +1,46 @@
-# Qwen3.8-Flash-Next (Rig 1) - best configs
+# Qwen3.8-Flash-Next (Rig 1) - recommended configs
 
-Different model family from Qwen3.6-35B-A3B: arch `qwen4exp` (Codacus fork cache-supported),
-176.94B params despite the misleading `512x56B` size label, ~3B active per token, hybrid
-Mamba2 + attention (1 full-attn layer per 4). Full experiment log:
-[qwen38-flash-next-archive.md](qwen38-flash-next-archive.md). Methodology in
-[methodology](../../methodology.md); model-specific issues in [issues](../../issues.md).
-Model card: [unsloth/Qwen3.8-Flash-Next-GGUF](https://huggingface.co/unsloth/Qwen3.8-Flash-Next-GGUF)
-(`UD-*` quants).
+Updated: 2026-09-29 · [full experiment log](archive/qwen38-flash-next.md) · [methodology](../../methodology.md)
 
-Quants tested: `UD-IQ3_XXS` (76.32 GiB, 3 shards) - the recommended one.
+`UD-IQ3_XXS` (`qwen4exp`, native ctx 262144, separate shared MTP head). 177B total =
+125B compute + 51B n-gram embedding table + 4B MTP; 48 layers =
+12 x (3 x Gated DeltaNet -> MoE + 1 x Qwen Sparse Attention -> MoE), 512 experts
+(10 routed + 1 shared). Model cards:
+[unsloth/Qwen3.8-Flash-Next-GGUF](https://huggingface.co/unsloth/Qwen3.8-Flash-Next-GGUF) (`UD-*` quants).
 
-## Measured results at c 230400 (llama-server, coding prompts C#+React averaged, second-pass, + 512 gen, q8_0 KV, Codacus fork)
+## Recommended configs
 
-| Quant | MTP | ncmoe | prefill t/s | decode t/s | VRAM free after req |
-| --- | --- | --- | --- | --- | --- |
-| UD-IQ3_XXS | on | 99 | 157.1 | **18.1** | ~860 MB |
+| Config | ctx | engine | MTP | prefill t/s | decode t/s | VRAM | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| UD-IQ3_XXS | 81920 | moe-cache fork | off | 362 | **21.4** | 11496 MiB | cache 48, `-b/-ub 1024` |
 
-204800 was measured and dropped from this table: same speed class but 25k fewer tokens
-of window for zero cost - 230400 is the recommended setting (256k loads but is not
-usable in practice, see the archive).
+## Configs
 
-All rows on the Codacus fork; env vars REGISTER_HOST on; second-pass measurement
-(first pass warms mmap page cache, discarded); recommended sampling (temp 1.0,
-top_p 0.95, top_k 20, min_p 0.0, presence_penalty 0.0); cold load. ncmoe 99 clamps to
-48 (the model's total MoE layer count) - same behavior. MTP acceptance at the
-recommended temperature: 0.90-0.94.
+### UD-IQ3_XXS 80k - moe-cache fork, cache 48 + `-b/-ub 1024`
 
-## Best config per quant
+    llama-server --port PORT \
+      -m <models>/Qwen3.8-Flash-Next-UD-IQ3_XXS-00001-of-00003.gguf \
+      --ctx-size 81920 -ngl all -fit off \
+      --moe-expert-cache-size 48 \
+      --cache-type-k q8_0 --cache-type-v q8_0 --flash-attn on \
+      --load-mode none --lazy-mode on --no-mmproj-offload --threads 12 --parallel 1 \
+      --backend-sampling --decode-overlap --decode-boundary-overlap \
+      --cache-ram 0 \
+      -b 1024 -ub 1024 \
+      --temp 1.0 --top-k 20 --min-p 0.0
 
-### UD-IQ3_XXS - winner (fastest Flash-Next quant)
+## Notes
 
-Best config: MTP on, ncmoe 99, c 230400. ncmoe 47 (one GPU-expert layer + MTP) is
-equivalent within single-run noise on decode and prefill, for ~1 GB less headroom -
-not worth it (ncmoe 46 OOMs with the draft context):
+- **MTP is off.** The shared MTP head does not fit alongside the expert cache at 12 GB.
+- **`--load-mode none` and `--lazy-mode on` are required.**
 
-    GGML_CUDA_REGISTER_HOST=1 \
-    llama-server -m <models>/Qwen3.8-Flash-Next-UD-IQ3_XXS-00001-of-00003.gguf \
-      -ngl 99 --n-cpu-moe 99 -fa on \
-      -c 230400 -ctk q8_0 -ctv q8_0 -b 512 -ub 512 \
-      --load-mode mmap -fit off -np 1 --threads 12 \
-      -md <models>/mtp-Qwen3.8-Flash-Next-shared-Q8_0.gguf \
-      -ngld 0 --spec-type draft-mtp --spec-draft-n-max 2 \
-      --temp 1.0 --top-p 0.95 --top-k 20 --min-p 0.0
+## Long-context refactor benchmark (~60K prompt)
 
--> 18.1 t/s @ 230400 (acceptance 0.90-0.94; prefill 157.1), ~860 MB free - the
-practical ceiling (256k loads but is not usable in practice, see the archive).
-`--threads 12` (llama.cpp's default on this CPU) is the tested best; 6 and 8 lose
-~7-10% decode with identical acceptance (see the archive's threads sweep).
+Real-task timing test of a long-context code-refactor task ([test-prompts.md](../../test-prompts.md)):
+a fixed refactor instruction wraps a deterministically generated (seed 42) ~60K-token Python
+file of 79 near-identical legacy templates. Same protocol as the recommended configs
+([methodology.md](../../methodology.md) §Measurement methods): q8_0 KV, cold load.
 
-## Alternatives (archived)
-
-- UD-Q3_K_XL was dropped from this page: at large ctx it never beats the other two
-  (ties at 204800) - see the archive for its full history.
-- AD-Q4_K_M-M64 was dropped from this page: it loses to IQ3_XXS in every measured config
-  on this rig, and has no MTP (an AD + shared MTP head accepted only ~0.71 and decoded
-  slower than no-MTP). Its only argument is quantization quality (bpw 4.27 vs 3.06) -
-  never tested. Full config and numbers in the archive.
-
-## Messy-code refactor benchmark (real-task ~60K prompt, re-run pending, single-pass)
-
-*Retired 2026-09-27: the ~116K-prompt run is archived in
-[qwen38-flash-next-archive.md](qwen38-flash-next-archive.md). Re-run on the new ~60K
-prompt pending.*
-
-## Key arch notes
-
-- The compute buffer scales with `-ub` on this arch (indexer): ub 2048 needs ~3.5x the
-  compute of ub 512 at large ctx. The `-ub 512` trick is what unlocks large contexts,
-  not KV savings (KV is only ~4.9 KiB/token).
-- The expert cache is weak or a net loss on every quant at 12 GB VRAM: 512 experts with
-  flat routing traffic means even 30 slots cover only ~19% of traffic, and the pack
-  (~86-118 MiB/slot) competes with compute buffers. Keep GPU expert layers instead.
-- Prefill patches (REGISTER_HOST) matter more here than on the 35B: this model streams
-  ~10x more expert bytes per token.
+| Config | ctx | engine | MTP | prefill t/s | decode t/s | VRAM | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| UD-IQ3_XXS | 81920 | moe-cache fork | off | 341 | **13.1** | 11492 MiB | cache 48, `-b/-ub 1024` |

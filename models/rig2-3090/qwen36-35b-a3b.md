@@ -1,110 +1,68 @@
-# Qwen3.6-35B-A3B (Rig 2) - best configs
+# Qwen3.6-35B-A3B (Rig 2) - recommended configs
 
-Rig details and setup:
-[../../rig2-3090.md](../../rig2-3090.md). Methodology: [../../methodology.md](../../methodology.md).
-Full experiment log: [qwen36-35b-a3b-archive.md](qwen36-35b-a3b-archive.md).
-Model cards: [unsloth/Qwen3.6-35B-A3B-MTP-GGUF](https://huggingface.co/unsloth/Qwen3.6-35B-A3B-MTP-GGUF)
+Updated: 2026-09-30 · [full experiment log](archive/qwen36-35b-a3b.md) · [methodology](../../methodology.md)
+
+`UD-IQ4_XS` (`qwen35moe` arch, native ctx 262144, embedded MTP head). Model cards:
+[unsloth/Qwen3.6-35B-A3B-MTP-GGUF](https://huggingface.co/unsloth/Qwen3.6-35B-A3B-MTP-GGUF)
 (`UD-*` quants); [byteshape/Qwen3.6-35B-A3B-MTP-GGUF](https://huggingface.co/byteshape/Qwen3.6-35B-A3B-MTP-GGUF) (`IQ4_XS-4.19bpw`).
 
-Same protocol as Rig 1: coding prompts C#+React averaged, second-pass prefill,
-recommended sampling (temp 1.0, top_p 0.95, top_k 20, min_p 0.0, presence_penalty 1.5),
-cold load, q8_0 KV, `--threads 8` (Ryzen 7 5700X), 22 GB VRAM cap (desktop reserve).
-Context covered: 262144 for the headline config; a YaRN extension probe reaches 1M (512K
-and 768K also tested) - see the extended-context results below.
+## Recommended configs
 
-## Measured results at c 262144 (llama-server, coding prompts C#+React averaged, second-pass, + 512 gen, q8_0 KV)
-
-| MTP | ncmoe | cache slots | ctx | prefill t/s | decode t/s | VRAM used |
-| --- | --- | --- | --- | --- | --- | --- |
-| on | 0 | n/a | 262144 | 2375.8 | **165.1** | 22065 MiB |
-
-Why it wins on this rig:
-
-- Fastest quant that holds FULL 262144 ctx within the 22 GB cap (the 4.19bpw IQ4 is
-  faster only at 230400 - see the archive for that trade).
-- Cache-compatible (separate gate/up/down tensors), so the Codacus fork's cache stays
-  available if a future config ever shifts layers to CPU. Nothing to cache at ncmoe 0.
-- Decode 3-4x Rig 1's best 35B numbers (54.9) - the 3090 fits the expert tensors on GPU
-  (ncmoe 0 here; the whole MoE-offload story inverts on this rig).
-
-## Measured results at extended context (YaRN, q8_0 KV, MTP off)
-
-Same protocol as above; every row extends past the native 262144 with
-`--rope-scaling yarn --rope-scale <ctx/262144> --yarn-orig-ctx 262144` (2.0 at 512K, 3.0
-at 768K, 4.0 at 1M). UD-IQ4_XS only. MTP is off: at extended ctx its draft context costs
-~2.3 GiB, which funds 6-7 fewer GPU expert layers and loses more than it gains at every
-point (MTP-on rows in the archive).
-
-| Quant | binary | MTP | ncmoe | ctx | prefill t/s | decode t/s | VRAM used |
+| Config | ctx | engine | MTP | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| UD-IQ4_XS | stock | off | 6 | 524288 | 1656.7 | **89.9** | 21915 MiB |
-| UD-IQ4_XS | stock | off | 15 | 786432 | 1181.9 | 65.2 | 22205 MiB |
-| UD-IQ4_XS | stock | off | 25 | 1048576 | 871.8 | 49.4 | 22141 MiB |
+| UD-IQ4_XS | 262144 | moe-cache fork | on | 4686 | **214** | 22182 MiB | `-b/-ub 4096` (max prefill that fits; ~350 MiB headroom) |
+| UD-IQ4_XS | 524288 | moe-cache fork | on | 3925 | **154** | 22230 MiB | YaRN 2x; cache 168, `-b/-ub 8192` |
 
-- 1M fits on this rig: the 22 GB budget absorbs the 10.6 GiB q8_0 KV cache by pushing
-  experts to CPU (ncmoe 25), something Rig 1's 12 GB cannot do.
-- MTP costs decode at extended context here too (Rig 1 repeats): dropping it buys 6-7 GPU
-  expert layers, and every point gains (512K 89.9 vs 83.9 decode, 1656.7 vs 1249.1
-  prefill). Acceptance is higher with MTP but does not convert.
-- Decode and prefill each fall ~25-28% per context step (89.9 -> 65.2 -> 49.4) while VRAM
-  stays flat (21.9-22.2 GB) - each step offloads more experts to make room for KV.
-- Long-range retrieval quality under YaRN was **not validated** - see
-  [methodology.md](../../methodology.md).
+The native 262144 window runs on GPU, q8_0 KV, no expert cache. The 524288 entry runs
+YaRN 2x; the window no longer fits on GPU, so the expert cache keeps 168 slots/layer resident.
 
-## Best config per quant
+## Configs
 
-### UD-IQ4_XS - winner (full ctx within the 22 GB cap)
+### UD-IQ4_XS 256k - moe-cache fork, MTP on, `-b/-ub 4096`
 
-    llama-server -m <models>/Qwen3.6-35B-A3B-UD-IQ4_XS.gguf \
-      --n-cpu-moe 0 --ctx-size 262144 -ngl 999 \
+    llama-server --port PORT \
+      -m <models>/Qwen3.6-35B-A3B-UD-IQ4_XS.gguf \
+      --ctx-size 262144 -ngl 999 \
       --cache-type-k q8_0 --cache-type-v q8_0 --flash-attn on \
       --load-mode none --no-mmproj-offload --threads 8 --parallel 1 \
+      --reasoning-preserve \
       --spec-type draft-mtp --spec-draft-n-max 2 \
       --cache-type-k-draft q8_0 --cache-type-v-draft q8_0 \
-      --reasoning-preserve -b 512 -ub 512
+      -b 4096 -ub 4096 \
+      --temp 0.6 --top-p 0.95 --top-k 20 --min-p 0.0
 
--> 165.1 t/s decode @ 262144 (prefill 2375.8, acceptance 0.70), 22065 MiB.
+### UD-IQ4_XS 512k (YaRN 2x) - moe-cache fork, MTP on, cache 168, `-b/-ub 8192`
 
-Tested on stock only, deliberately: at ncmoe 0 the Codacus fork has nothing to add -
-no CPU layers means no cache to build and no weights to pin/prefetch, and a higher-ncmoe
-fork config with a cache pack measured slower on both rigs (Q4_K_M: 119.3 < 165.1 here).
-Same-flags fork vs stock is a wash in every pairing measured on either rig.
-
-### UD-IQ4_XS - extended context via YaRN (512K / 768K / 1M)
-
-    llama-server -m <models>/Qwen3.6-35B-A3B-UD-IQ4_XS.gguf \
-      --n-cpu-moe <ncmoe> --ctx-size <ctx> -ngl 999 \
-      --rope-scaling yarn --rope-scale <ctx/262144> --yarn-orig-ctx 262144 \
+    llama-server --port PORT \
+      -m <models>/Qwen3.6-35B-A3B-UD-IQ4_XS.gguf \
+      --ctx-size 524288 -ngl 999 \
+      --rope-scaling yarn --rope-scale 2 --yarn-orig-ctx 262144 \
+      --moe-expert-cache-size 168 \
       --cache-type-k q8_0 --cache-type-v q8_0 --flash-attn on \
       --load-mode none --no-mmproj-offload --threads 8 --parallel 1 \
-      --reasoning-preserve -b 512 -ub 512
+      --reasoning-preserve \
+      --spec-type draft-mtp --spec-draft-n-max 2 \
+      --cache-type-k-draft q8_0 --cache-type-v-draft q8_0 \
+      -b 8192 -ub 8192 \
+      --temp 0.6 --top-p 0.95 --top-k 20 --min-p 0.0
 
-| ctx | rope-scale | ncmoe |
-| --- | --- | --- |
-| 524288 | 2.0 | 6 |
-| 786432 | 3.0 | 15 |
-| 1048576 | 4.0 | 25 |
+## Notes
 
--> Speeds in the extended-context table above (89.9 t/s decode at 512K, 49.4 at 1M). MTP
-stays off. `rope-scale` must equal ctx/262144 exactly - `--ctx-size` is clamped to
-`n_ctx_train * rope-scale`.
+- All experts run on GPU (the default placement); set no expert-cache flag, since the
+  cache has no CPU expert layers to build here.
+- At 524288 all experts no longer fit on GPU: `--moe-expert-cache-size 168` is required
+  (the all-on-GPU config fails to load).
+- Rare moe-cache fork quirk: a 10k-prompt pass can occasionally return EOS as the first
+  token (empty output); a retry decodes normally - see [issues.md](../../issues.md) §5.
 
-## Alternatives (archived)
+## Long-context refactor benchmark (~60K prompt)
 
-- IQ4_XS-4.19bpw: 178.1 t/s @ 230400 / 147.7 @ 262144 - faster at reduced ctx, cannot
-  use the cache ever.
-- UD-Q4_K_M: 119.3 t/s (Codacus fork cache+MTP) - possibly better quality (untested).
-See the archive.
+Real-task timing test of a long-context code-refactor task ([test-prompts.md](../../test-prompts.md)):
+a fixed refactor instruction wraps a deterministically generated (seed 42) ~60K-token Python
+file of 79 near-identical legacy templates. Same protocol as the recommended configs
+([methodology.md](../../methodology.md) §Measurement methods): q8_0 KV, cold load.
 
-## Messy-code refactor benchmark (real-task ~60K prompt, re-run pending)
-
-*Retired 2026-09-27: the ~116K-prompt run is archived in
-[qwen36-35b-a3b-archive.md](qwen36-35b-a3b-archive.md). Re-run on the new ~60K prompt
-pending.*
-
-## Key arch notes
-
-Ncmoe 0 (all experts on GPU) is optimal up to 262144. Past that the q8_0 KV cache forces
-expert offload, and the Rig 1 MoE-offload trade-offs apply: each context step trades GPU
-expert layers for KV at ~flat VRAM (21.9-22.2 GB across 512K-1M), and MTP must be dropped
-because its draft context evicts experts. General notes in [methodology.md](../../methodology.md).
+| Config | ctx | engine | MTP | prefill t/s | decode t/s | VRAM | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| UD-IQ4_XS | 262144 | moe-cache fork | on | 3891 | **154.0** | 22182 MiB | `-b/-ub 4096` |
+| UD-IQ4_XS | 524288 | moe-cache fork | on | 3587 | **131.2** | 22230 MiB | YaRN 2x; cache 168, `-b/-ub 8192` |

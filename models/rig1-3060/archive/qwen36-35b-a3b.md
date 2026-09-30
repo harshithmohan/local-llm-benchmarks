@@ -1,27 +1,23 @@
 # Qwen3.6-35B-A3B (Rig 1) - experiment archive
 
+> **Timing-prompt note:** numbers on this page were measured with the retired short C#/React timing prompts (pre-2026-09-29). The current prompt is the single ~10k-token opencode session context ([test-prompts.md](../../../test-prompts.md)); the two are not directly comparable.
+
 This archive holds supporting measurements and experiments not on the main card
-([qwen36-35b-a3b.md](qwen36-35b-a3b.md)): rejected configs, sweeps, retired quants,
+([qwen36-35b-a3b.md](../qwen36-35b-a3b.md)): rejected configs, sweeps, retired quants,
 and old-protocol baselines. Headline configs cover 262144; the extended-context YaRN
 summary is on the main page, with the full probes below, and the headline numbers live
 on the main card only. Lower-context points
-(4096 / 131072 / 204800) appear only inside the sweep tables below. Methodology in [methodology](../../methodology.md); gotchas in [issues](../../issues.md).
+(4096 / 131072 / 204800) appear only inside the sweep tables below. Methodology in [methodology](../../../methodology.md); gotchas in [issues](../../../issues.md).
 Model cards: [unsloth/Qwen3.6-35B-A3B-MTP-GGUF](https://huggingface.co/unsloth/Qwen3.6-35B-A3B-MTP-GGUF)
 (`UD-*` quants); [byteshape/Qwen3.6-35B-A3B-MTP-GGUF](https://huggingface.co/byteshape/Qwen3.6-35B-A3B-MTP-GGUF) (`IQ4_XS-4.19bpw`).
 
 Quants:
 
-- `IQ4_XS-4.19bpw.gguf` (17.32 GiB, fused gate_up experts - incompatible with the Codacus CSV-profile cache; the moe-cache fork caches them)
+- `IQ4_XS-4.19bpw.gguf` (17.32 GiB, fused gate_up experts - the moe-cache fork caches them)
 - `UD-Q6_K.gguf` (27.94 GiB, separate gate/up/down)
-- `UD-Q4_K_M.gguf` (21.10 GiB, separate gate/up/down; cache-compatible on both forks)
+- `UD-Q4_K_M.gguf` (21.10 GiB, separate gate/up/down; cache-compatible)
 
-Routing profiles at `<models>/moe-cache-profiles/`: `qwen36-udq6-merged.csv` (traced at
-ncmoe 34), `qwen36-udq4km-merged.csv` (traced at ncmoe 26). Both made with
-`llama-moe-trace`, code + chat prompts. These profiles are for the **Codacus CSV-profile
-cache only**; the GenerelSchwerz moe-cache fork uses a dynamic cache and needs no profile.
-The IQ4 trace exists but is unused (the Codacus cache is IQ4-incompatible).
-
-## Prefill patches (llama-bench, pp2048 / tg512, -b 2048 -ub 2048)
+## Prefill patches (llama-bench, retired tool; pp2048 / tg512, -b 2048 -ub 2048)
 
 | Quant | ncmoe | env | pp2048 | tg512 |
 | --- | --- | --- | --- | --- |
@@ -44,7 +40,7 @@ Findings:
 
 - Prefill patches: +104-137% on the UD quants, +106% on IQ4. Decode (tg) unaffected.
 - Batch size caps prefill: the first IQ4 run without -b/-ub 2048 gave pp 480.89 - always
-  bench with -b 2048 -ub 2048 to match the Codacus fork README methodology.
+  bench with -b 2048 -ub 2048.
 
 ## UD-Q6_K - expert cache sweep (llama-server, ~770-tok prompt + 512 gen, q8_0 KV)
 
@@ -81,9 +77,9 @@ Findings:
 
 ## GenerelSchwerz moe-cache fork - dynamic expert cache (llama-server + /completion)
 
-A different expert-cache design from the Codacus CSV-profile cache: a dynamic CUDA
-LRU/frequency cache (`--moe-expert-cache-size N` = expert slabs per tensor kept on GPU;
-cold experts stay in host pinned memory), with no routing-trace step. Measured with the
+A dynamic CUDA LRU/frequency cache (`--moe-expert-cache-size N` = expert slabs per tensor
+kept on GPU; cold experts stay in host pinned memory), with no routing-trace step.
+Measured with the
 C# coding prompt, second pass, +512 gen, q8_0 KV, ncmoe 28, **MTP on**, ctx 32768, cold
 load. VRAM is the load reading against the 12288 MiB cap.
 
@@ -103,8 +99,8 @@ load. VRAM is the load reading against the 12288 MiB cap.
 | IQ4_XS | 96 | 457.2 | 96.2 | 8361 |
 | IQ4_XS | 128 | 587.8 | 103.1 | 10371 |
 
-- The fork caches IQ4_XS's **fused gate_up** experts, which the Codacus CSV-profile cache
-  cannot - so IQ4_XS is again the fastest 35B quant in this regime.
+- The fork caches IQ4_XS's **fused gate_up** experts, so IQ4_XS is again the fastest 35B
+  quant in this regime.
 - Caches below the routed-group width are a net **loss** vs the cache-off control
   (UD-Q4_K_M 16 slots = 30.9 vs 45.5): with the cache on, `--n-cpu-moe` placement is
   overridden, so an undersized cache thrashes while the control keeps whole expert layers
@@ -145,7 +141,91 @@ load. VRAM is the load reading against the 12288 MiB cap.
   cache 56 = 358.3/63.0. Cache 48 leaves ~1.35 GiB headroom, 56 ~0.88 GiB. Beats the ik
   512K row (337.1/42.4) by ~+43% decode at ~+8% prefill.
 
-## Stock (upstream) llama-server baseline vs Codacus fork
+### IQ4_XS - 256k expert-cache ceiling (peak-vs-load + 48-vs-64 A/B, ub 2048)
+
+Measured 2026-09-29 on the 10k opencode session prompt (current timing prompt), ctx 262144,
+`-b 2048 -ub 2048`, MTP on, `--n-cpu-moe` dropped (ignored while the cache is on, above).
+
+- **Peak == load.** Sampling `nvidia-smi` every 200 ms across a full 10k prefill + 512 gen
+  held flat at **9471 MiB** (225 samples, min = max) - no hidden prefill transient at this
+  ctx/ubatch, so the load reading is the true high-water mark and the leftover headroom is
+  genuinely untuned.
+- **Cache ceiling at 256k** (load VRAM): 48 = 9471, 56 = 9957, 64 = 10439, 80 = 11553; 96
+  would be ~12.5 GB -> OOM. The earlier "48 is the largest that fits" rule predates the
+  current ubatch/config and was over-conservative (it fit only because 48 left 2.8 GiB
+  unspent).
+- **48-vs-64 A/B** (interleaved 64/48/64/48, 4 measured passes each, to cancel drift):
+  64 = **76.8 t/s** decode (8 passes, acceptance 0.841), 48 = **70.0** (7 valid, acceptance
+  0.876). Cache 64 wins ~+10% *despite the lower acceptance* (i.e. ~+12% raw decode);
+  prefill is identical (1377 both). Cache 80 gave no further gain and leaves only ~735 MiB.
+- **Picked cache 64** (10439 MiB, ~1.85 GiB margin). Stability: one cache-48 and one
+  cache-64 pass returned `predicted_n` 1 (EOS as first token, empty output) - rare,
+  cache-independent, a retry decodes normally.
+
+### IQ4_XS - 256k ubatch sweep + ub 2048-vs-6144 A/B (2026-09-29)
+
+Follow-up to the cache work: the compute arena is sized by `min(n_ctx, n_ubatch)`, so the
+physical ubatch is the prefill lever (the logical `-b` only caps `-ub`). Measured on the
+10k opencode prompt, ctx 262144, cache 64, MTP on:
+
+| `-b`/`-ub` | prefill t/s | decode t/s | VRAM (load) |
+| --- | --- | --- | --- |
+| 2048 | 1374 | 76-79 | 10439 MiB |
+| 4096 | 1744 | ~70 | 10923 MiB |
+| 6144 | **1909** | 77 | 11545 MiB |
+| 8192 | crash | - | - |
+
+- Prefill scales with ubatch: 2048 -> 4096 = +27%, 4096 -> 6144 = +10%, **+39% total**.
+  ub 8192 passes the health check then dies on the first inference (runtime crash, not a
+  load OOM). Peak VRAM at 6144 is flat at the load reading (sampled every 200 ms across a
+  full prefill+gen), so 6144 leaves ~740 MiB margin.
+- Decode is ubatch-independent: an interleaved ub 2048/6144 A/B (3 measured passes each,
+  alternating loads to cancel drift) gave 79.4 t/s (acceptance 0.88) vs 76.6 (0.86) - the
+  ~3.5% gap tracks MTP acceptance, not the ubatch. The ub-4096 decode reading was a
+  lower-acceptance session for the same reason.
+- The base entry was moved to `-b 6144 -ub 6144` (+39% prefill for ~1.1 GiB, still under
+  the 12288 MiB cap).
+
+### IQ4_XS - 512K ubatch + cache ceiling (2026-09-29)
+
+The 512K extended-context entry was tuned the same way as the 256K one (raise `-b/-ub`, then
+the cache to the ceiling): measured on the 10k opencode prompt, ctx 524288 (YaRN 2x), cache
+48, MTP off:
+
+| `-b`/`-ub` | prefill t/s | decode t/s | VRAM (load) |
+| --- | --- | --- | --- |
+| 2048 | 1449 | ~52 | 11249 MiB |
+| 4096 | 1861 | ~55 | 11497 MiB |
+| 6144 | **2063** | 52 | 11749 MiB |
+
+- The ubatch lift is larger here than at 256K: prefill 1449 -> 2063 (**+42%**). `-b/-ub 6144`
+  is the applied value (the 843K entry stays at ubatch 512 - VRAM-tight).
+- Decode is ubatch-independent (all rows ~50-55; the spread is sampling/acceptance noise).
+- Cache 56 at `-b/-ub 6144` fails on load (OOM, reproduced twice). The larger compute arena
+  competes with the cache slabs, so the cache ceiling drops from 56 (at ub 512) to 48 at
+  ub 6144. `-b/-ub 8192` was not retested here; at 256K it crashes the fork at runtime.
+- Superseded (retired short-prompt protocol, cache 48, ub 512): 363.2 / 60.8 @10937 MiB.
+
+### IQ4_XS - 843776 fork max-ctx probe (archived from the main page, retired-protocol)
+
+The fork's maximum serving context on this rig (scale 3.21875), retired short-prompt
+protocol. All experts on CPU (ncmoe 41), cache 0 - at this ctx the q8_0 KV leaves no VRAM
+for cache slabs plus the compute buffer. ubatch 512 (VRAM-tight).
+
+| Quant | binary | MTP | ncmoe | cache slots | ctx | prefill t/s | decode t/s | VRAM (load) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| IQ4_XS | moe-cache fork | off | 41 | 0 | 843776 | 278.2 | **34.7** | 11837 MiB |
+
+- 851968 (scale 3.25) loads but crashes the fork child on the first request; the retired ik
+  engine was the only one that served 851968 (all-CPU, 11153 MiB).
+- Timing: at this ctx both retired short prompts emit EOS as their first token over raw
+  `/completion` (a YaRN-scale artifact - the older ik rows decoded normally), so the row was
+  timed with `ignore_eos: true`, which does not affect the decode rate
+  ([test-prompts.md](../../../test-prompts.md)).
+- MTP stays off at every extended row - the draft context's VRAM cost evicts GPU expert
+  layers (stock) or eats the KV headroom (ik); the fork runs all-CPU at 843K.
+
+## Stock (upstream) llama-server baseline
 
 Stock binary: upstream llama-server (upstream v0.4.0-dev 30b6a75), running the same
 commands (c 262144, q8_0 KV incl. draft, threads 12, MTP
@@ -154,20 +234,15 @@ commands (c 262144, q8_0 KV incl. draft, threads 12, MTP
 | Quant / ncmoe | binary | env | prefill t/s | decode t/s |
 | --- | --- | --- | --- | --- |
 | IQ4_XS / 28 | stock | none | 686.5 | 51.4 |
-| IQ4_XS / 28 | Codacus fork | both | 663.9 | 49.8 |
-| IQ4_XS / 28 | Codacus fork + MTP | both | 668.5 | 50.7 (acc 0.67) |
 | UD-Q6_K / 34 | stock | none | OOM | OOM |
 | UD-Q6_K / 36 | stock | none | 447.1 | 31.3 (acc ~0.73) |
 | UD-Q4_K_M / 99 | stock | none | 710.7 | 29.5 |
 | UD-Q4_K_M / 99 | stock + MTP | none | 680.1 | 35.1 (acc 0.77) |
-| UD-Q4_K_M / 99 | Codacus fork + MTP | both | 612.3 | 38.1 (acc 0.69) |
 
 Findings:
 
-- With MTP active, decode is spec-bound: fork and stock are equal for IQ4 (~50 t/s) -
-  a wash, since IQ4 cannot use the fork's cache anyway.
-- Prefill at 256k is attention-bound: the prefill patches add nothing measurable here
-  (663.9 vs 686.5 - noise). Their gain was measured on pure prefill at short ctx
+- Prefill at 256k is attention-bound: the prefill patches add nothing measurable here.
+  Their gain was measured on pure prefill at short ctx
   (1121 -> 2307 t/s on IQ4, see the prefill table above).
 - UD-Q6_K at ncmoe 34 + MTP OOMs at 262144 on the stock binary; ncmoe 36 works.
   Suggested config: ncmoe 36+, lower ctx, or drop MTP.
@@ -186,8 +261,6 @@ Fork, ncmoe 99, cache + MTP (c 262144, q8_0 KV incl. draft, prefill env vars on)
   protocol; 51.4 was the old-protocol baseline): the 256k KV +
   draft context starve the pack (20 slots = weak coverage), and all-CPU layers lose the
   14 GPU-expert layers IQ4 keeps at ncmoe 28.
-- Small-ctx cache+MTP stacking (the Codacus fork README's 74.2 t/s class) was not
-  measured - large ctx is the target use case.
 - Re-test under the dual-prompt/temperature-0/ub-512 protocol: 40 slots + MTP now fit
   (the smaller compute buffer frees the room) -> 45.6 t/s decode, acceptance 0.77-0.84.
   The cache+MTP stack works at 256k once ub is 512; stock + MTP is 36.2, so the cache is
@@ -198,9 +271,8 @@ Fork, ncmoe 99, cache + MTP (c 262144, q8_0 KV incl. draft, prefill env vars on)
 The GGUF carries no YaRN metadata (native ctx 262144; `rope.freq_base` 10000000,
 `rope.dimension_count` 64 = 25% partial rotary, mrope sections [11,11,10,0] - Qwen's
 documented YaRN config for this family, simply not embedded), so extension is passed on
-the command line. Both binaries honour it: the Codacus fork logs `custom YaRN scaling
-detected, re-adjusting n_ctx_train(262144)`, and neither binary caps the slot at the
-native window at this build (both report n_ctx_slot 524288). Config: ncmoe 99 - every
+the command line. The stock binary honours it and does not cap the slot at the
+native window at this build (n_ctx_slot 524288). Config: ncmoe 99 - every
 expert on CPU, the only way the 512K KV fits - q8_0 KV throughout, YaRN 2x
 (`--rope-scaling yarn --rope-scale 2 --yarn-orig-ctx 262144`) -> `--ctx-size 524288`,
 ub 512, coding prompts C#+React averaged, second pass, +512 gen:
@@ -208,23 +280,14 @@ ub 512, coding prompts C#+React averaged, second pass, +512 gen:
 | Quant / binary | MTP | cache slots | VRAM (load) | prefill t/s | decode t/s | notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | UD-Q4_K_M / stock | off | n/a | 9365 MiB | 248.7 | 29.0 | clean |
-| UD-Q4_K_M / Codacus fork | off | n/a | 9365 MiB | 188.5 | 28.4 | clean |
-| UD-Q4_K_M / Codacus fork | off | 20 | 10813 MiB | 161.4 | 30.0 | clean, prompt-dependent (31.6 / 28.4) |
-| UD-Q4_K_M / Codacus fork | on | n/a | 11685 MiB | 238.4 | 32.3 (acc 0.66-0.68) | cudaMalloc OOM warnings in warm-up |
 
 - The 512K q8_0 KV is ~5.3 GiB (~10.6 KiB/token); at ncmoe 99 weights + compute add
   ~4.4 GB, so the no-MTP/no-cache config leaves ~2.9 GB under the 12 GB cap.
-- MTP is the decode winner, but with only ~600 MiB headroom it threw transient
-  `cudaMalloc ... out of memory` during warm-up (the timed pass itself completed). Parked
-  as not-clean rather than recorded as a usable row.
-- Short-prompt prefill differences between stock and fork read large here (248.7 vs
-  188.5), but with only 192/155-token prompts and two samples that is not a robust
+- Short-prompt prefill with only 192/155-token prompts and two samples is not a robust
   separation; decode is the meaningful column.
 - 1M is the model's documented YaRN target (factor 4) but needs ~10.6 GiB of q8_0 KV
-  alone - infeasible on this 12 GB rig. 512K is the practical ceiling for the cache/MTP
-  configs; dropping MTP and cache (stock) reaches ~672K - see the scaling subsection.
-- Long-range retrieval under YaRN was not validated - that needs a >262144-token needle
-  and a slow full prefill.
+  alone - infeasible on this 12 GB rig. Dropping MTP (stock) reaches ~672K - see the
+  scaling subsection.
 
 ### Stock + MTP off - context scaling to the 12 GB ceiling
 
@@ -247,7 +310,6 @@ compute buffer that keeps growing with ctx (~3.4 KiB/token):
 - Ceiling: ~672K (688128) is the largest that runs, but at ~370 MiB free it is not a
   comfortable config. 640K (655360, ~800 MiB free) is the safe maximum; 512K (~2.5 GB
   free) stays the recommended point when headroom matters.
-- YaRN is engaged throughout; retrieval quality at these lengths is still unvalidated.
 
 ### IQ4_XS - extended context (512K-736K)
 
@@ -275,46 +337,115 @@ GPU (~437 MiB each) and ncmoe >=41 is all-CPU (ncmoe 64 and 99 identical).
 - MTP is a net loss at extended ctx: the draft context costs ~2.3 GiB, which evicts the
   GPU expert layers; acceptance is only ~0.60 (vs 0.67-0.70 at 256K).
 - IQ4_XS beats UD-Q4_K_M at every shared extended point (512K 332.5/37.1 @11037 vs UD
-  fork+MTP 238.4/32.3 @11685; 672K 286.4/33.5 @10653 vs UD 247.7/28.7 @11545) and reaches
+  248.7/29.0 @9365; 672K 286.4/33.5 @10653 vs UD 247.7/28.7 @11545) and reaches
   ~736K where UD stops at ~672K.
 - Ceiling ~736K usable / 752K loads / 768K OOM. All IQ4 rows logged a benign
   `common_fit_params: failed to fit params ... n_gpu_layers already set by user to 999`
   warning and served normally.
-- Messy-code refactor (retired ~116K prompt): the 512K/ncmoe 34 and 736K/ncmoe 99 rows
+- Long-context refactor (retired ~116K prompt): the 512K/ncmoe 34 and 736K/ncmoe 99 rows
   are consolidated under the retired-prompt section below. Both decoded the full 512
-  tokens (finish_reason length); the decode drop vs the 256K MTP-on messy row (32.63) is
+  tokens (finish_reason length); the decode drop vs the 256K MTP-on long-context row (32.63) is
   MTP-off plus attention over the larger allocated KV.
-- YaRN engaged throughout; retrieval quality at these lengths is still unvalidated.
+
+### IQ4_XS ik - extended-context rows (archived from the main page)
+
+Retired short-prompt protocol. The ik engine extended furthest (all-CPU experts at the top
+end); its extended rows were replaced on the main page by the moe-cache fork, which maxes
+out at 843776 (cache 0). ik build 3bb386e except the 512K row (build 1aaf710).
+
+| ctx | rope-scale | ncmoe | GPU experts | prefill t/s | decode t/s | VRAM (load) | notes |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 524288 | 2.0 | 28 | 13 | 337.1 | 42.4 | 11767 MiB | re-measured 2026-09-27 (build 1aaf710), config-served sampling |
+| 753664 | 2.875 | 36 | 5 | 262.4 | 34.7 | 11361 MiB | ik best at 736K |
+| 851968 | 3.25 | 41 | 0 | 240.2 | 32.4 | 11153 MiB | ik max measured, serves fine |
+
+- ik lean/sweep probes (no rows): at 512K, ncmoe 34 = 289.4/37.3 @9379 MiB and deeper packs
+  (26) OOM; at 736K, all-CPU ncmoe 41 = 252.8/33.0 @10037 MiB. All-CPU ceiling sweep:
+  786432 (scale 3.0) = 255.0/32.8 @10409 MiB; 851968 (scale 3.25) = 240.2/32.4 @11153 MiB.
+- ik ceiling detail: 917504 (scale 3.5) loads at 11897 MiB but crashes on the first request
+  (runtime CUDA OOM in the decode cublas path - loads-fine is not proof of serviceability
+  near the ceiling, [issues.md](../../../issues.md)); 983040 (scale 3.75) OOMs at init; ncmoe 34
+  at 736K crashes at init (cublasCreate OOM).
+- ik's per-GPU-expert-layer cost at 736K is ~265 MiB vs ~437 MiB on stock, so ik packs ~4
+  more experts on GPU at equal VRAM - the main reason for its extended decode lead.
+- ik-specific: ncmoe above the 41 layer count clamps to 41 (all-CPU) - ncmoe 99 == 41.
+- Stock extended (retired): 524288 ncmoe 34 = 332.5/37.1 @11037 MiB; 753664 ncmoe 99 =
+  282.0/32.3 @11525 MiB (edge, ~370 MiB free). 704K-752K sit between; 752K loads tight,
+  768K OOMs at context creation. The 512K->736K step costs ~15% prefill / ~13% decode on
+  stock. Full sweep table above.
+- MTP at extended ctx (ik) is a loser: fits only on the lean 512K split (`--n-cpu-moe 34` +
+  `--spec-type mtp:n_max=2 -ctkd q8_0 -ctvd q8_0`: 41.8 decode / 269.6 prefill, 11729 MiB,
+  acceptance ~0.76-0.82 - decode ~parity with MTP-off ncmoe 28 at 42.4, prefill much worse);
+  the draft context eats the KV headroom at ncmoe 28 and OOMs at 736K even all-CPU (ncmoe 41,
+  the per-step recurrent speculative checkpoint init OOMs the main KV alloc, 782 MiB).
+
+### IQ4_XS ik - 256k probes + engine notes (archived from the main page)
+
+ik-llama.cpp (build 3bb386e) was tested at 256k but offers no win, so it never got a main-
+page table row. Short-prompt probes: best row 311.6 prefill / 47.5 decode with MTP; MTP-off
+probe 358.7 / 45.0. MTP acceptance is higher on ik (0.81-0.84 vs 0.67-0.70 on stock) but
+does not convert to throughput, and the ik MTP draft context does not fit with deeper GPU
+packs (ncmoe 18/24 + MTP fail at init; the 256k MTP ceiling is ncmoe 28).
+
+- ik ncmoe clamps at the 41 layer count (values above = all-CPU experts).
+- Per-GPU-expert-layer VRAM cost at extended ctx is ~265 MiB on ik vs ~437 MiB on stock, so
+  ik keeps ~4 more experts on GPU at equal VRAM at 736K.
+- ik's extended ceiling fails past 852K with a runtime CUDA OOM crash on the first request
+  rather than a clean init-time rejection (see the ik extended rows above).
+- ik-llama.cpp flags/notes: [methodology.md](../../../methodology.md); gotchas: [issues.md](../../../issues.md).
+
+### IQ4_XS stock + MTP - 262144 headline (archived from the main page)
+
+The moe-cache fork is faster at 256k, so the stock row was demoted off the main page.
+Stock binary + MTP, ncmoe 28, c 262144, q8_0 KV, config-served sampling:
+
+    llama-server -m <models>/Qwen3.6-35B-A3B-IQ4_XS-4.19bpw.gguf \
+      --n-cpu-moe 28 --ctx-size 262144 -ngl 999 \
+      --cache-type-k q8_0 --cache-type-v q8_0 --flash-attn on \
+      --load-mode none --no-mmproj-offload --threads 12 --parallel 1 \
+      --spec-type draft-mtp --spec-draft-n-max 2 \
+      --cache-type-k-draft q8_0 --cache-type-v-draft q8_0 \
+      --reasoning-preserve \
+      --temp 0.6 --top-p 0.95 --top-k 20 --min-p 0.0
+
+| prompt | prefill t/s | decode t/s | VRAM | notes |
+| --- | --- | --- | --- | --- |
+| 10k opencode session prompt (2026-09-29) | 659 | 56.5 | 11823 MiB | post-rebuild stock (v0.5.0-dev 2b129cc); acceptance ~0.85; 5 passes, decode 54.1-57.9 |
+| retired C#+React short prompts (2026-09-27) | 356.9 | 54.9 | | v0.5.0-dev d834d44; acceptance 0.69-0.78; earlier v0.4.0-dev 30b6a75 = 525.7 / 49.4 |
+
+- On the ~10k prompt the fork (cache 48, MTP on, `-b 2048 -ub 2048`) does 1374 prefill /
+  73 decode (9471 MiB): stock stays archived - ~+29% fork decode and ~2.1x prefill, and
+  stock uses ~2.7 GiB more VRAM.
+- Ubatch probe (2026-09-29): the entry already runs `-b 2048` by default; raising `-ub`
+  512 -> 2048 lifted prefill 654 -> 1374 t/s (~2.1x) with decode unchanged within
+  acceptance noise, for +350 MiB (9471 vs 9121). Cache 48 + MTP still fit at 256k.
+- `--n-cpu-moe` is ignored while the expert cache is on (the cache overrides CPU-MoE
+  placement): the registered 256k and 512K entries no longer set it (verified - identical
+  VRAM and speed with the flag present or absent at 256k). Cache-off control for this quant
+  is `--n-cpu-moe 28` with `--moe-expert-cache-size 0`.
 
 ### UD-Q4_K_M - 262144 headline (archived from the main page)
 
 IQ4_XS proved faster at every context, so UD-Q4_K_M was demoted off the main page.
-Current protocol (coding prompts C#+React averaged, second pass, +512 gen, q8_0 KV,
+Retired protocol (coding prompts C#+React averaged, second pass, +512 gen, q8_0 KV,
 c 262144):
 
 | binary | MTP | ncmoe | cache slots | prefill t/s | decode t/s |
 | --- | --- | --- | --- | --- | --- |
 | stock | on | 99 | n/a | 370.3 | 32.5 |
-| Codacus fork | on | 99 | 40 | 268.6 | 38.8 |
 
-- The 40-slot expert cache + MTP is UD-Q4_K_M's best 256k decode (38.8, acceptance
-  0.59-0.72) but prefill stays cache-bound (268.6 vs 370.3) and it stays below IQ4_XS
-  stock+MTP (54.9). Stock + MTP without the cache is 32.5.
 - Q4_K_M's only argument might be quantization quality (bpw 4.4-4.8 vs 4.19) - never
   tested, treat as an unverified alternative.
-- Messy-code refactor (retired ~116K prompt): the Codacus fork + 40-slot cache + MTP
-  result is consolidated under the retired-prompt section below; the config reproduced
-  across re-runs.
 
-## Messy-code refactor (retired ~116K prompt)
+## Long-context refactor (retired ~116K prompt)
 
-One-time real-task speed test of the messy-code refactor prompt (see
-[test-prompts.md](../../test-prompts.md), generated by `scripts/generate-messy-prompt.py`,
+One-time real-task speed test of the long-context refactor prompt (see
+[test-prompts.md](../../../test-prompts.md), generated by `scripts/generate-long-context-prompt.py`,
 seed 42, 116,259 prompt tokens), the IQ4_XS 256K headliner plus the two extended-context
 IQ4_XS recipes, q8_0 KV, cold load, single-run protocol (ONE timed pass, no warm-up;
-/v1/chat/completions, max_tokens 512, `ignore_eos: true` per the messy-prompt rules in
+/v1/chat/completions, max_tokens 512, `ignore_eos: true` per the long-context-prompt rules in
 test-prompts.md). Retired 2026-09-27 when the prompt was reduced to ~60K tokens; the
-~60K re-run is pending on [qwen36-35b-a3b.md](qwen36-35b-a3b.md). This section is the
+~60K re-run lives on [qwen36-35b-a3b.md](../qwen36-35b-a3b.md). This section is the
 single home for the retired run's numbers.
 
 | Quant | binary | MTP | ncmoe | ctx | cache slots | prefill t/s | decode t/s |
@@ -342,21 +473,52 @@ single home for the retired run's numbers.
   491.48/23.33 at 512K (ncmoe 34, 11037 MiB) and 452.04/21.97 at 736K (ncmoe 99,
   11525 MiB). The 256K MTP-on row's higher decode (32.63) reflects MTP plus the smaller
   allocated KV; every row decoded the full 512 tokens (finish_reason "length").
-- UD-Q4_K_M (Codacus fork + 40-slot cache + MTP, 262144): 400.39 prefill / 31.00 decode,
-  VRAM 10061 MiB, MTP acceptance 0.806 (mean len 2.61); an earlier attempt was aborted by
-  a power loss and the re-run reproduced - the config is reproducible. The original
-  two-pass numbers (399.25/30.25) match within single-run noise.
+
+### IQ4_XS fork - ~60K long-context rows (unified protocol, 2026-09-29)
+
+Re-measured on the current configs under the unified timing protocol (raw
+`/v1/completions`, two-pass, `ignore_eos: true`; prompt_n 59751):
+
+| MTP | ctx | cache | ub | prefill t/s | decode t/s | VRAM |
+| --- | --- | --- | --- | --- | --- | --- |
+| on | 262144 | 64 | 6144 | 1552 | 59.2 | 11551 MiB |
+| off | 524288 | 48 | 6144 | 1693 | 40.8 | 11747 MiB |
+
+Superseded rows (2026-09-28, first fork run; retired protocol - `/v1/chat/completions`,
+single-pass, cache 48, ub 512, prompt_n 59760):
+
+| MTP | ctx | prefill t/s | decode t/s | VRAM |
+| --- | --- | --- | --- | --- |
+| on | 262144 | 580.36 | 54.23 | 9141 MiB |
+| off | 524288 | 609.06 | 40.54 | 11095 MiB |
+
+### IQ4_XS stock/ik - ~60K long-context rows (archived from the main page)
+
+The ~60K re-run's stock and ik rows (2026-09-27, stock build d834d44 / ik build 1aaf710,
+config-served sampling, /v1/chat/completions, max_tokens 512, `cache_prompt: false`,
+`ignore_eos: true`, `cached_tokens` 0):
+
+| Quant | binary | MTP | ncmoe | ctx | cache slots | prefill t/s | decode t/s |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| IQ4_XS | stock | on | 28 | 262144 | n/a | 580.70 | 46.36 |
+| IQ4_XS | ik | off | 28 | 524288 | n/a | 435.82 | 30.20 |
+
+- prompt_n 59760 (stock) / 59759 (ik); VRAM 11791 MiB / 11755 MiB, both under cap. Every
+  row decoded the full 512 tokens (finish_reason "length"). The moe-cache fork beats both
+  on this prompt under the retired protocol (256K 580.36/54.23, ~+17% decode; 512K
+  609.06/40.54, ~+34%); the current-config re-run is on the main page.
 
 ## Conclusions
 
-- Final verdict at large ctx: IQ4_XS on the GenerelSchwerz moe-cache fork (cache 48,
-  MTP on) is the fastest config at 262144 - 72.0 t/s decode, +31% over stock+MTP (54.9).
-  Cache sizes beyond 48 do not fit at 256k; at 32k the same fork reaches 103 t/s (128
-  slots).
-- The Codacus fork's role for the 35B family: UD-Q4_K_M's CSV cache at mid-ctx
-  (40.5 @ 131072 without MTP) and its prefill patches for short-ctx/cold prefill -
-  not the 256k decode crown.
+- Final verdict at large ctx: IQ4_XS on the GenerelSchwerz moe-cache fork (cache 64 at
+  `-b/-ub 6144`, MTP on) is the fastest config at 262144 - 76 t/s decode, +35% over
+  stock+MTP (54.9); it also takes 512K (52) and is the first engine here to serve YaRN up to
+  843776. Cache 64 is the ceiling at 256k/ub 6144 (80 no longer fits, 96 OOMs); at 32k the
+  same fork reaches 103 t/s (128 slots).
 - UD-Q6_K is the weakest at large ctx in every measured config; archived from the
   main surfaces.
 - Q4_K_M's only argument might be quantization quality (bpw 4.4-4.8 vs 4.19) - never
   tested, treat as an unverified alternative.
+- Context choice: 262144 is the headline. 204800 and 131072 runs exist (204800 is within
+  6-9% of 262144); 200k only buys 1-2 extra cache slots for 57k tokens of window, so they
+  stay off the main page.

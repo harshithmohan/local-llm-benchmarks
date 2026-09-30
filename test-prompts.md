@@ -1,123 +1,107 @@
 # Test prompts
 
-Prompts used for benchmarking the Codacus fork. Two families: routing-trace prompts
-(used to build moe-cache profiles) and server test prompts (used for prefill/decode
-timing runs). Server prompts are deliberately non-repetitive - repeated text can
-crash llama-server on the qwen4exp arch (see issues.md, PLE n-gram path). One exception
-(the messy-code refactor prompt below) is near-repetitive on purpose and treated as a
-stability test, not a timing prompt.
-
-## Routing-trace prompts (profile generation)
-
-Traced with `llama-moe-trace`, ~one run each, merged per model. These are the exact
-texts the existing profiles were built with - keep them unchanged so profiles stay
-comparable:
-
-- **code** - "Write a C++ function that implements an LRU cache with get() and put().
-  Include the class definition, a hash map plus doubly linked list, and brief usage in
-  main(). Handle capacity overflow by evicting the least recently used key."
-- **chat** - "Explain the differences between TCP and UDP, when to use each, and give
-  practical examples of applications that rely on them. Then briefly describe how DNS
-  resolution works end to end."
+Prompts used for benchmarking. The server test prompts below drive the prefill/decode
+timing runs. The 10k opencode session-context prompt is deliberately non-repetitive -
+repeated text can crash llama-server on the qwen4exp arch (see issues.md, PLE n-gram
+path). The 60K long-context refactor prompt is near-repetitive on purpose: it is a
+long-context stability + throughput test, timed under the same protocol.
 
 ## Server test prompts (prefill/decode timing)
 
-### C# / dotnet (coding, ~192 tokens)
+### opencode session context (realistic, ~10k tokens)
 
-    Implement a thread-safe LRU cache in C# with Get and Put methods. Use a
-    ConcurrentDictionary paired with a doubly linked list for O(1) recency updates, and
-    protect the linked list with a lock or make operations atomic via Interlocked where
-    possible. Enforce a configurable MaxCapacity: when adding beyond capacity, evict the
-    least recently used entry. Then explain the tradeoffs between LRU, LFU, and FIFO
-    eviction policies for a mixed read/write workload, describe how a clock
-    second-chance approximation trades accuracy for simplicity in an OS page cache, and
-    note when you would pick a weak-reference-based cache over a strict LRU one.
+The timing prompt is stored verbatim at `scripts/opencode-10k-prompt.txt` - a single
+non-repetitive ~10,069-token text (Qwen tokenizer). It mirrors what a real opencode
+request actually prefills: the agent system prompt, the tool documentation, the skills
+catalog, an environment/status block, the project instructions, a slice of workspace
+context, and finally the user request. It was assembled once from real sources
+(recorded here, not regenerated - the prompt is frozen so recorded numbers stay
+comparable):
 
-    Follow up with the same cache adapted for a distributed service: what changes when
-    several nodes each hold partial state, how would you coordinate eviction across
-    instances, and where does a write-through or write-back backing store fit into the
-    design?
+- opencode's session system prompt and tool docs - `github.com/sst/opencode` @ 7945de20
+  (`session/prompt/default.txt` + `src/tool/*.txt`).
+- Shoko-WebUI `AGENTS.md`, plus `src/core/axios.ts`, `src/core/store.ts`, and the `src/`
+  tree as workspace context (the project the shoko-logs benchmark targets).
+- The skills catalog and environment block mirror what opencode injects (skills from
+  oh-my-opencode-slim `SKILL.md` frontmatter).
 
-### React / TypeScript (coding, ~155 tokens)
+The trailing user request inside the prompt:
 
-    Build a React component that renders a searchable, virtualized data table for
-    50,000 rows. It should filter as the user types (debounced to 150 ms), load more
-    rows when the list scrolls near the end, and keep selection state stable across
-    refetches. Use TypeScript with explicit types for the row model and the hook
-    signatures.
+> Build a React component that renders a searchable, virtualized data table for
+> 50,000 rows. It should filter as the user types (debounced to 150 ms), load more
+> rows when the list scrolls near the end, and keep selection state stable across
+> refetches. Use TypeScript with explicit types for the row model and the hook
+> signatures.
+>
+> Then explain your choices: why virtualization is required at this scale, where you
+> would move filtering to the server and what contract the API needs (cursor-based
+> pagination, stable sort, total count), how you would avoid re-rendering unchanged
+> rows (memoized row components, stable callbacks, keyed lists), and how the
+> implementation changes if rows have variable height.
 
-    Then explain your choices: why virtualization is required at this scale, where you
-    would move filtering to the server and what contract the API needs (cursor-based
-    pagination, stable sort, total count), how you would avoid re-rendering unchanged
-    rows (memoized row components, stable callbacks, keyed lists), and how the
-    implementation changes if rows have variable height.
+Why ~10k: the owner's normal workload is opencode, whose system prompt + tools +
+project context is ~10k tokens. The previous ~192-token C# / ~155-token React probes
+did not exercise that prefill regime.
 
-### Messy-code refactor (real-task long-context, ~60K tokens)
+**Retired prompts (2026-09-29).** The two short C#/React timing prompts were retired
+and replaced by the ~10k opencode session-context prompt. Every timing number recorded
+before 2026-09-29 on the model pages and archives was measured on the retired prompts
+and is annotated as such there; those numbers are not directly comparable with the
+current ~10k prompt.
+
+### Long-context refactor (~60K tokens)
 
 Adapted from the Qwen3.8-vLLM-KVarN-MTP-Arc-Experiments project. A fixed refactor
 instruction wraps a deterministically generated (seed 42) "legacy" Python file of 79
 near-identical entity templates full of beginner mistakes (global mutable state, bare
 `except`, mutable default args, `== None`/`== True`, manual index loops, string concat,
-mixed naming, duplication). Generated by `scripts/generate-messy-prompt.py`
+mixed naming, duplication). Generated by `scripts/generate-long-context-prompt.py`
 (`--repeats 79` default): writes `full_prompt.txt` (~213 KB, ~60K tokens on the Qwen
-tokenizer family) plus a `prompt-messy.json` payload.
+tokenizer family) plus `prompt-long-context-35b.json` / `prompt-long-context-flash.json`
+payloads.
 Regeneration is deterministic (seed 42); recorded token counts vary slightly across
 models/tokenizers. The earlier ~116K variant (`--repeats 153`, ~411 KB) is retired
 (2026-09-27) - its results are archived per model page.
 
 Purpose: a realistic large-prompt stability check at large ctx - NOT a replacement
-for the two coding timing prompts above (~192 / ~155 tokens), which stay unchanged for
-continuity of all recorded numbers.
+for the ~10k opencode session-context timing prompt above.
 
 Unlike the prompts above, this one is deliberately near-repetitive - that is what makes
 it realistic (real codebases are copy-paste-heavy). If a model crashes on it, that is a
 real server limitation to record in issues.md (e.g. the qwen4exp PLE n-gram path), not
 a reason to dilute the prompt.
 
-Measurement rules specific to this prompt:
+Notes for this prompt (request protocol is shared with the 10k prompt and defined in
+[methodology.md](methodology.md) §Measurement methods):
 
-- llama-server slots serve a KV cache hit when the same prompt is re-sent. The
-  second-pass rule below is about mmap page cache of the model weights - for THIS
-  prompt, a re-send on the same slot gives a fake near-zero prefill. Use a fresh slot /
-  server restart per timed run (cold-load protocol already enforces this), or add a
-  nonce to the prompt when re-sending deliberately.
-- Timing runs use the generated `prompt-messy.json` payload: prompt-only (no sampling
-  overrides, per methodology.md) and n_predict 512. Only speed is measured
-  with this prompt - no output-quality evaluation passes.
-- One timed pass per session (single-run protocol): no warm-up pass for this prompt.
-  All pre-2026-09-27 messy numbers (two-pass 35B runs and the retired ~116K-prompt runs)
-  predate this rule and are archived per model page - the conventions are not directly
-  comparable (prefill differs by NVMe page-in of the weights).
-- Flash-Next (qwen4exp) emits EOS as its very first token on this prompt over raw
-  /completion (stop_type eos, 1 predicted token, empty output) - even after the
-  trailing closed fence is neutralized with a nonce, so it is not the 35B-era
-  fence-at-end trigger. Timing runs need `ignore_eos: true` in the payload; with it the
-  model decodes the full
-  n_predict normally with real output and normal
-  acceptance. Decode timing from a KV-hit nonce re-send is valid (decode cost does not
-  depend on how the KV cache got there) - use it to measure decode alone after a
-  prefill pass.
+- Send the generated `full_prompt.txt` text; only speed is measured - no output-quality
+  passes.
+- `ignore_eos: true` matters here: some engines emit EOS as the very first token on this
+  prompt over the raw endpoint (stop_type eos, 1 predicted token, empty output) - Flash-Next
+  (qwen4exp) does so even after the trailing closed fence is neutralized with a nonce, and
+  the 35B moe-cache fork does so rarely (issues.md §8). The unified protocol sets it, so
+  every pass decodes the full `n_predict` with real output and normal acceptance.
+- All pre-2026-09-29 long-context numbers used a single-pass, `/v1/chat/completions` protocol and
+  are archived per model page; the conventions are not directly comparable.
 
 ## Notes
 
-- Payload JSONs are built here and POSTed inline - no payload or prompt files on the
-  rigs. Requests go through llama-swap's OpenAI-compatible endpoint
-  (`/v1/chat/completions`; env-specific base URLs in AGENTS.md) with prompt + request
-  shape only - no sampling parameters (server decides sampling, per methodology.md).
-  Canonical file naming (when a local temp file is convenient): name-per-prompt,
-  `prompt-<name>.json` (`prompt-csharp.json`, `prompt-react.json`, `prompt-messy.json`).
-  Special-case request-shape fields stay allowed where a quirk requires them, e.g.
-  `ignore_eos: true` for the Flash-Next EOS gotcha on the messy prompt.
-- Coding-prompt token counts (authoritative here): C# ~192 tokens, React/TypeScript
-  ~155 tokens. The ~308-token figure previously quoted was an older aggregate estimate,
-  not the sum of the two (192 + 155 = 347). Big enough to amortize the fixed per-request
-  cost of prefill, small enough to keep decode-dominated timing runs short.
-- The coding prompts above are non-repetitive by construction: no repeated sentences,
-  varied technical vocabulary - safe on qwen4exp (Flash-Next) and usable as a
-  stability-check prompt.
+- Payload JSONs are built here and POSTed inline - no payload or prompt files on the rigs.
+  The request protocol (endpoint, flags, two-pass, sampling) is defined in
+  [methodology.md](methodology.md) §Measurement methods. Canonical file naming (when a
+  local temp file is convenient): name-per-prompt, `prompt-<name>.json`
+  (`prompt-opencode.json`, `prompt-long-context-35b.json`).
+- Timing-prompt token count (authoritative here): the opencode session context is
+  ~10,069 tokens (Qwen tokenizer; ~44.5 KB of text). It is deliberately large because it
+  matches the owner's real opencode prefill regime - the retired ~192-token C# /
+  ~155-token React probes did not (the old ~308-token figure was an aggregate estimate,
+  not a sum).
+- The session-context prompt is non-repetitive by construction (real prompt/tool docs,
+  AGENTS.md, and source files - no repeated sentences) - safe on qwen4exp (Flash-Next)
+  and usable as a stability-check prompt.
 - The 35B-era timing runs used a repetitive prompt ("Explain TCP congestion control
   in detail." repeated ~110x, ~772 tokens) - valid on qwen35moe, replaced by the
-  prompts above after the Flash-Next crash discovery.
+  non-repetitive timing prompts above after the Flash-Next crash discovery.
 - Flash-Next prefill columns were measured with a single ~240-token varied paragraph
   (database/index topic). At the target contexts (200k+), prompt size does not move
   prefill measurably; what matters is non-repetitive text and the ubatch size.

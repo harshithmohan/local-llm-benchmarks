@@ -1,6 +1,7 @@
 # Local-only files (not pushed)
 AGENTS.md
 .ruff_cache/
+__pycache__/
 
 # Transient benchmark run artifacts (persistent record lives in scorecards/)
 benchmarks/shoko-logs/runs/

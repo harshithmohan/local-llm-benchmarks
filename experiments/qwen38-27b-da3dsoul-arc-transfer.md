@@ -1,5 +1,7 @@
 # Qwen3.8-27B on an RTX 3090: testing da3dsoul's Arc-repo experiments
 
+> **Timing-prompt note:** numbers on this page were measured with the retired short C#/React timing prompts (pre-2026-09-29). The current prompt is the single ~10k-token opencode session context ([test-prompts.md](../test-prompts.md)); the two are not directly comparable.
+
 Transferability study: which of the low-level experiments from
 [Qwen3.8-vLLM-KVarN-MTP-Arc-Experiments](https://github.com/da3dsoul/Qwen3.8-vLLM-KVarN-MTP-Arc-Experiments)
 (an Intel Arc Pro B70) hold on a consumer RTX 3090 running the same model under
@@ -56,7 +58,7 @@ Headline numbers these experiments compare against:
 | CTX=huge (KVarN, 250k, 3 drafts) | 960 t/s | 86 t/s | ~0.58 | 22340 MiB |
 
 Every result below is measured with the same protocol as the model page: timings read
-from vLLM's own server metrics, single pass, recommended sampling, cold load, and the
+from vLLM's own server metrics, single pass, config-served sampling, cold load, and the
 first request after each boot discarded.
 
 ## Experiments

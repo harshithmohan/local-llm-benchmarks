@@ -3,72 +3,40 @@
 Applies to both rigs ([rig1-3060.md](rig1-3060.md), [rig2-3090.md](rig2-3090.md)).
 Unless a page says otherwise, all results in this folder were measured on Rig 1.
 
-## Codacus fork features used (env vars / flags, all off by default)
+## Inference engines
 
-All fork-specific features below come from the [Codacus fork](https://github.com/thecodacus/llama.cpp)
-of llama.cpp (branch `perf`).
+Four engines are used across the rigs. Each has its own flag vocabulary, so engine labels
+are per-row and results are not interchangeable across engines. Per-engine flags, features,
+and quirks live in [engine-notes/](engine-notes/):
 
-- `GGML_CUDA_REGISTER_HOST=1` - pin CPU expert weights, faster DMA upload (prefill)
-- `GGML_SCHED_PREFETCH_EXPERTS=1` - overlap expert uploads with compute on a second stream (prefill, also helps decode on Flash-Next, 176.94B)
-- `LLAMA_ARG_MOE_CACHE_PROFILE=<csv>` + `LLAMA_ARG_MOE_CACHE_SLOTS=<n>` - VRAM-resident hot-expert cache (decode); also usable as CLI flags `--moe-cache-profile` / `--moe-cache-slots`
-
-The upstream README's mention of legacy `GGML_MOE_CACHE_*` env vars for llama-bench is
-wrong for this build. The working env names for llama-server AND llama-cli are
-`LLAMA_ARG_MOE_CACHE_*` (they go through the common arg parser).
-
-## moe-cache fork features used (GenerelSchwerz - dynamic expert cache)
-
-A second fork, [GenerelSchwerz/llama.cpp](https://github.com/GenerelSchwerz/llama.cpp)
-(branch `moe-cache`), provides a *different* expert cache: a dynamic CUDA
-LRU/frequency-aware cache with no routing profile and no trace step. Opt-in, CUDA-only.
-Its flags do **not** exist in the Codacus build (and the Codacus `LLAMA_ARG_MOE_CACHE_*`
-/ `GGML_CUDA_REGISTER_HOST` flags do not exist here) - the two expert caches are distinct
-designs with different vocabularies.
-
-- `--moe-expert-cache-size N` - expert slabs kept on GPU per expert tensor, per owning
-  device (0 = off, default). Enabling it routes all MoE expert tensors through the cache
-  and **overrides** `--cpu-moe` / `--n-cpu-moe` placement; cold experts stay in host
-  pinned memory. `--moe-expert-cache-mib MiB` is the byte-budget alternative (mutually
-  exclusive with a nonzero size).
-- `--moe-expert-cache-layers N[,N-M]` - restrict caching to listed layers; this flips
-  precedence so CPU/tensor overrides win and the cache claims only leftovers.
-- `--moe-early-router`, `--moe-expert-cache-host-pinned-mb N`, `--experimental-logs`
-  (validation counters), `--spec-draft-moe-expert-cache-*` (independent draft cache).
-- Env aliases `LLAMA_ARG_MOE_EXPERT_CACHE_*`; `GGML_CUDA_MOE_FREQUENCY=0` forces pure LRU.
-
-`llama-bench` cannot exercise either cache (no context); measure with llama-server +
-`curl /completion`. Validate the dynamic cache with one `--experimental-logs` run:
-`moe-grouped-decode` `calls > 0`, `fallback/rollback/prepare_error/finish_error/
-upload_errors = 0`.
-
-## ik-llama.cpp notes
-
-[ik-llama.cpp](https://github.com/ikawrakow/ik_llama.cpp) results (Rig 1) were measured
-with the same protocol as the llama.cpp builds; engine-specific differences:
-
-- Binary `ik-llama-server`; MTP flag syntax is canonical: `--spec-type mtp:n_max=2`
-  with draft KV `-ctkd/-ctvd`. Stock's `--spec-type draft-mtp` is not accepted. `-fa`
-  takes a value on this build (`-fa (auto|on|off|0|1)`, default on) - bare `-fa`
-  errors out with usage text.
-- No Codacus fork features (no `--load-mode`, no `GGML_CUDA_REGISTER_HOST`,
-  `GGML_SCHED_PREFETCH_EXPERTS`, or `--moe-cache-profile`); no `--reasoning-preserve`.
-- A `--cache-ram` prompt cache is on by default; protocol payloads pass
-  `cache_prompt: false`, so the second-pass rule is still required for the page-in of
-  weights but slot KV reuse never fires.
+- [moe-cache fork](engine-notes/moe-cache-fork.md) - dynamic CUDA expert cache, no profile/trace.
+- [upstream (stock)](engine-notes/upstream-stock.md) - reference build; no fork features.
+- [ik-llama.cpp](engine-notes/ik-llama.md) - different flag syntax; no fork features.
+- [vLLM](engine-notes/vllm.md) - container stack for the Rig 2 Qwen3.8-27B quants.
 
 ## Measurement methods
 
-- Prefill/decode bench: `llama-bench -ngl 99 -fa 1 -p 2048 -n 512 -b 2048 -ub 2048 -r 3`
-  (varied per run: `-ncmoe`, env vars, `-c`/`-ctk`/`-ctv`). Batch size caps prefill - the
-  default ubatch 512 under-reports prefill badly, always set `-b 2048 -ub 2048`.
-- Expert cache and large-ctx decode: llama-server + `curl /completion` with each coding
-  prompt + 512 generated tokens, timing read from the server log
-  (`slot print_timing ... prompt eval time` / `eval time`). Run BOTH coding prompts
-  (C# and React/TypeScript, see [test-prompts.md](test-prompts.md)) per config and
-  report the AVERAGE of the two speeds; record per-prompt numbers in the notes when
-  they diverge noticeably. MEASURE ON THE SECOND PASS of each prompt - the first pass
-  warms the mmap page cache and its prefill reads cold-NVMe; discard it.
-  Single run each; server timings read slightly higher than llama-bench's 3-rep tg.
+- Prefill/decode bench (the only method in current use): llama-server, served through
+  llama-swap, hit with a **raw `/v1/completions`** request (no chat template) using one of
+  two prompts - the ~10k opencode session-context prompt (the default timing prompt) or the
+  ~60K long-context refactor prompt - with `n_predict` 512. The bullets in
+  this section are the **canonical request protocol**; the prompt texts live in
+  [test-prompts.md](test-prompts.md). `llama-bench` is not used.
+- **`cache_prompt: false` on every request.** Without it, a resend on the same slot is
+  served from the KV-prefix cache and reports a fake near-zero prefill (only the few
+  uncached tokens get evaluated). With it, every pass does a full prefill.
+- **`ignore_eos: true` on every request.** Forces the full `n_predict` decode window, so
+  every pass measures the same number of decode steps and no pass ends early (some engines
+  emit a spurious first-token EOS on the long prompts - see issues.md §6/§8).
+- Timings come from the response `timings` object: `prompt_per_second` (prefill),
+  `predicted_per_second` (decode), plus `cache_n` and the MTP draft `draft_n` /
+  `draft_n_accepted`. The server log's `slot print_timing` lines (`prompt eval time` /
+  `eval time`) carry the same numbers when a log read is needed instead.
+- Run each prompt (see [test-prompts.md](test-prompts.md)) per config and report its
+  prefill/decode. MEASURE ON THE SECOND PASS - the first pass warms the mmap page cache;
+  discard it. Single run; single-run noise is about +-2-4%. (Timing runs before
+  2026-09-29 used two short C#/React prompts and averaged them; those numbers are
+  annotated as the retired protocol on the model pages.)
 - Sampling policy: requests never override server-side sampling. Payloads carry only the
   prompt and request shape (`n_predict` / `max_tokens`); all sampling parameters
   (temperature, top_p, top_k, min_p, presence/repetition penalties) are whatever the
@@ -91,26 +59,15 @@ process's row:
 
 ## Test prompts
 
-The actual prompt texts used for timing runs, including coding prompts for C# and
-React/TypeScript (the owner's main languages): see [test-prompts.md](test-prompts.md).
-All server prompts are non-repetitive by construction (repeated text crashes the
-qwen4exp arch - see issues.md).
-
-Exception: the ~60K messy-code refactor prompt (test-prompts.md) is deliberately
-near-repetitive because it is realistic text; it is used for large-prompt stability
-checks and speed measurement at large ctx. A crash on it is a recorded finding
-(issues.md), not a prompt defect. Timed re-sends need a fresh slot or a nonce (KV
-prefix cache would otherwise fake a near-zero prefill). The earlier ~116K variant
+The timing prompts are the ~10k opencode session-context prompt (the default; the owner's
+real workload is opencode) and, for long-context runs, the ~60K long-context refactor
+prompt: texts and provenance in [test-prompts.md](test-prompts.md). Both are measured with
+the request protocol in [Measurement methods](#measurement-methods). The 10k prompt is
+non-repetitive by construction (repeated text crashes the qwen4exp arch - see issues.md);
+the ~60K prompt is deliberately near-repetitive because it is realistic text, and is used
+for large-prompt stability checks and long-context speed at large ctx - a crash on it is a
+recorded finding (issues.md), not a prompt defect. The earlier ~116K variant
 (retired 2026-09-27) is archived per model page.
-
-## Trace methodology (routing profiles)
-
-Profiles made with `llama-moe-trace -ngl 99 -ncmoe N -fa 1 -c 4096 -n 512`, using the
-code and chat prompts from [test-prompts.md](test-prompts.md), merged into one CSV per
-model (`<model>-code.csv` + `<model>-chat.csv` -> `<model>-merged.csv`).
-
-Routing profiles are config-independent (routing is a model property), so a profile traced
-at one ncmoe works for any ncmoe config.
 
 ## VRAM headroom rule
 
@@ -120,17 +77,14 @@ but leave less headroom OOM on the first large prompt.
 
 ## Known measurement caveats
 
-- llama-bench cannot test the expert cache (any model): it has no cache plumbing and no
-  `-c` flag. All cache numbers come from llama-server + curl.
-- Server single-run decode reads slightly higher than llama-bench tg512 (3 reps); single-run
-  noise is about +-2-4%.
+- The expert cache (any model) can only be exercised with a real context, so all cache
+  numbers come from llama-server, never `llama-bench` (which has no cache plumbing and no
+  `-c` flag).
+- Server single-run decode carries about +-2-4% noise; treat sub-5% deltas with caution.
 - Cold-load measurements are the trustworthy ones: mid-session warm measurements produced
   several prefill flukes (page-cache-warm sessions) that re-verified 20-30% lower cold.
 - Absolute numbers are not directly comparable across sessions written at different times;
   treat comparisons within one page as valid, across pages as approximate.
-- Extended-context (YaRN) configs were validated for throughput only; long-range retrieval
-  quality at extended context was not independently validated. This is the canonical home
-  of that caveat - model pages defer here.
 
 ## Coding benchmark (shoko-logs)
 

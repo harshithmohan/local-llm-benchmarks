@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generates the messy-code refactor prompt (real-task long-context benchmark).
+"""Generates the long-context refactor prompt (real-task ~60K benchmark).
 
 Adapted from Qwen3.8-vLLM-KVarN-MTP-Arc-Experiments (scripts/generate_messy.py +
 build_prompt.py). Deterministic: seed 42, so every run/regeneration reproduces the
@@ -7,19 +7,19 @@ same prompt text (79 repeats ~ 60K tokens on the Qwen tokenizer family; recorded
 token counts still vary slightly across models/tokenizers).
 
 Outputs (into --out-dir, default .):
-  full_prompt.txt             - instruction wrapper + messy code (the prompt text)
-  prompt-messy-35b.json       - /completion payload, 35B family sampling
-  prompt-messy-flash.json     - /completion payload, Flash-Next sampling,
-                                ignore_eos: true (required; see test-prompts.md)
+  full_prompt.txt                  - instruction wrapper + near-repetitive legacy code
+                                     (the prompt text)
+  prompt-long-context-35b.json     - raw /v1/completions payload, 35B family
+  prompt-long-context-flash.json   - raw /v1/completions payload, Flash-Next
 
 Flags:
   --repeats N     entity-template repeats (default 79, ~60K tokens)
   --out-dir DIR   output directory (default .)
 
-Sampling: the generated payloads use the models' recommended sampling (temp 1.0,
-top_p 0.95, top_k 20, min_p 0.0, presence penalty 1.5 for 35B / 0.0 for Flash-Next),
-n_predict 512, for prefill/decode timing runs. Only speed is measured with this
-prompt - no output-quality evaluation passes.
+Payloads carry the prompt + request shape only (n_predict 512, cache_prompt false,
+ignore_eos true - the unified timing protocol, see methodology.md/test-prompts.md) -
+no sampling parameters: the served config decides sampling. Only speed is measured
+with this prompt - no output-quality evaluation passes.
 """
 
 import argparse
@@ -222,7 +222,7 @@ if __name__=="__main__":
 """
 
 
-def build_messy_code(target_repeats):
+def build_long_context_code(target_repeats):
     parts = [HEADER]
     for idx in range(target_repeats):
         entity = ENTITIES[idx % len(ENTITIES)]
@@ -243,24 +243,19 @@ def build_messy_code(target_repeats):
 
 
 def build_prompt(target_repeats):
-    return INSTRUCTION_PREFIX + build_messy_code(target_repeats) + INSTRUCTION_SUFFIX
+    return (
+        INSTRUCTION_PREFIX
+        + build_long_context_code(target_repeats)
+        + INSTRUCTION_SUFFIX
+    )
 
 
-def sampling_params(family):
-    params = {
-        "temperature": 1.0,
-        "top_p": 0.95,
-        "top_k": 20,
-        "min_p": 0.0,
-        "presence_penalty": 1.5 if family == "35b" else 0.0,
-        "n_predict": 512,
-    }
-    if family == "flash":
-        # qwen4exp emits EOS as its first token on this prompt, so a run without
-        # ignore_eos stops after 1 predicted token (see test-prompts.md / issues.md).
-        # Required for Flash-Next timing runs to decode the full n_predict.
-        params["ignore_eos"] = True
-    return params
+def request_shape():
+    # Unified timing protocol (see methodology.md / test-prompts.md): raw /v1/completions,
+    # n_predict 512, cache_prompt false, ignore_eos true. ignore_eos keeps every pass at a
+    # full 512-token decode window; without it qwen4exp (Flash-Next) stops after 1 token on
+    # this prompt and the 35B moe-cache fork does so rarely (issues.md).
+    return {"n_predict": 512, "cache_prompt": False, "ignore_eos": True}
 
 
 def main():
@@ -281,14 +276,14 @@ def main():
 
     for family in ("35b", "flash"):
         payload: dict = {"prompt": prompt}
-        payload.update(sampling_params(family))
-        name = f"prompt-messy-{family}.json"
+        payload.update(request_shape())
+        name = f"prompt-long-context-{family}.json"
         with open(args.out_dir + "/" + name, "w") as f:
             json.dump(payload, f)
 
     print(
         f"wrote full_prompt.txt ({len(prompt)} chars) + 2 payload JSONs "
-        f"(timing sampling) to {args.out_dir}",
+        f"(prompt + request shape only) to {args.out_dir}",
         file=sys.stderr,
     )
 
