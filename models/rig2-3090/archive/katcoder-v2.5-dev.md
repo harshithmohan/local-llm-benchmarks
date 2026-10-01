@@ -57,9 +57,8 @@ noisy (temp 1.0), so decode carries ~±5-8% single-run noise.
 - Cache size is the decode lever: 80 -> 200 takes decode ~109 -> ~163 with no prefill cost.
   At cache 80 the cache is saturated (3277/3280 slots) and thrashes; at 200 it settles at
   5512/8200 slots (41 layers x 200).
-- Cache 200 is the fastest and sits ~320 MiB from the 22 GB cap - under the ~900 MB
-  large-prompt headroom rule - so it was taken through the large-prompt check below before
-  being adopted; the rule is conservative for this quant (see the headroom check).
+- Cache 200 is the fastest and sits ~320 MiB from the 22 GB cap, so it was taken through
+  the large-prompt check below before being adopted; it holds (see the headroom check).
 - 184 and 168 decode the same within noise.
 
 ## Long-context refactor benchmark (~60K prompt)
@@ -70,9 +69,9 @@ same prompt at cache 168 measured prefill 3597 / decode 118 / VRAM 20496 MiB.
 
 ### Headroom check (cache 200)
 
-Cache 200 is the config the ~900 MB headroom rule flags. It survives the large prompts the
-rule is meant to protect against: peak VRAM 22204 MiB = 324 MiB of the 22528 MiB cap free,
-server stayed up, no request failed.
+Cache 200 leaves only ~320 MiB of the 22 GB cap free, so it was checked against the large
+prompts before adoption. It survives: peak VRAM 22204 MiB = 324 MiB of the 22528 MiB cap
+free, server stayed up, no request failed.
 
 | Prompt | tokens | cache | prefill t/s | decode t/s |
 | --- | --- | --- | --- | --- |

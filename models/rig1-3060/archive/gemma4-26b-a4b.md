@@ -34,7 +34,7 @@ post-run reading against the 12288 MiB cap. "comp" = `--moe-early-router
 | cache 32, `-b/-ub 1024` | 937.7 | 57.0 | 11169 | yes |
 | cache 32, comp | 600.0 | 55.0 | 8727 | yes |
 | cache 32, ovl | 596.5 | 38.4 | 10993 | reject - decode-overlap hurts |
-| cache 40 | 600.9 | 64.7 | 11857 | reject - ~430 MiB headroom |
+| cache 40 | 600.9 | 64.7 | 11857 | reject - ~430 MiB free |
 | cache 32, comp, `-b/-ub 1024` | 934.6 | 48.2 | 8779 | yes |
 | cache 36, comp, `-b/-ub 1024` | 931.8 | 54.4 | 9227 | yes |
 | cache 44, comp, `-b/-ub 1024` | ~933 | 56-58 | 10091 | yes |

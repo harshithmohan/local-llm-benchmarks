@@ -119,8 +119,8 @@ One `--experimental-logs` pass on the recommended config (cache 48, `-b/-ub 1024
 ## Long-context refactor benchmark (~60K prompt)
 
 The ~60K refactor prompt at 80k on the recommended config (cache 48, `-b/-ub 1024`, MTP off,
-overlap): prefill 341.5 t/s, decode 13.07 t/s (n=59751), VRAM 11492 MiB. Survives with the
-792 MB headroom the 10k config leaves - no OOM on the large prompt.
+overlap): prefill 341.5 t/s, decode 13.07 t/s (n=59751), VRAM 11492 MiB. No OOM on the
+large prompt.
 
 ## Conclusions
 

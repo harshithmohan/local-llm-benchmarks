@@ -69,11 +69,16 @@ for large-prompt stability checks and long-context speed at large ctx - a crash 
 recorded finding (issues.md), not a prompt defect. The earlier ~116K variant
 (retired 2026-09-27) is archived per model page.
 
-## VRAM headroom rule
+## VRAM headroom
 
-The expert pack must leave headroom for compute buffers that grow with context. Rule used
-here: keep ~900+ MB free after pack + KV + compute reservation. Slot counts that load fine
-but leave less headroom OOM on the first large prompt.
+There is no fixed free-VRAM number that holds across models and configs. How much headroom
+a config can leave (and still serve the largest prompt) depends on the model, quant, cache
+size, context, and ubatch, so it is settled empirically per model and per config - never by
+a threshold. Every cache/ctx config is taken through the large-prompt stability check
+([Measurement methods](#measurement-methods)) before its numbers are recorded, and is
+accepted or rejected on whether it actually serves the large prompt without OOM. The check
+exists because a config that loads fine can still OOM on the first large prompt (compute
+buffers grow with context).
 
 ## Known measurement caveats
 
