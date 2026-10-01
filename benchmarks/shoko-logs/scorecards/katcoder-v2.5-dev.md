@@ -4,7 +4,7 @@ Run on the **moe-cache fork** (cache 80, 262k ctx, MTP on) on 2026-09-28.
 
 ## Run — 2026-09-28
 
-Served as `atlantis/katcoder-apex-i-compact` on the GenerelSchwerz moe-cache fork engine.
+Served as `katcoder-apex-i-compact` on the GenerelSchwerz moe-cache fork engine.
 No nudges, no auto-compactions.
 
 ### Repeat 1 of 2
