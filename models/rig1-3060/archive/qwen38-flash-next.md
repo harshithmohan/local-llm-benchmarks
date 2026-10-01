@@ -10,6 +10,7 @@ Methodology: [methodology.md](../../../methodology.md); issues: [issues.md](../.
 Quants:
 
 - `UD-IQ3_XXS` (76.32 GiB, 3 shards)
+- `GSQ-RCO Q2_0` (66.4 GB, 2 shards: 37.6 GB weights + 28.8 GB n-gram table)
 
 ## Setup
 
@@ -122,14 +123,98 @@ The ~60K refactor prompt at 80k on the recommended config (cache 48, `-b/-ub 102
 overlap): prefill 341.5 t/s, decode 13.07 t/s (n=59751), VRAM 11492 MiB. No OOM on the
 large prompt.
 
+## GSQ-RCO Q2_0 (2.40 bpw)
+
+A second quant, tested on the same fork, ctx, flags (q8_0 KV, MTP off, `--load-mode none
+--lazy-mode on`, overlap) and protocol as UD-IQ3_XXS. Two shards: 37.6 GB of weights + a
+28.8 GB n-gram table (66.4 GB total), per-tensor mixed types with the expert tensors mostly
+in Q2_0 and the n-gram table in IQ4_NL.
+
+### Cache size (10k prompt, `-b/-ub 1024`)
+
+| cache | prefill t/s | decode t/s | VRAM |
+| --- | --- | --- | --- |
+| 48 | 441.8 | 23.89 | 9426 MiB |
+| 64 | 440.7 | 24.63 | 10578 MiB |
+| 72 | 435.9 | 24.81 | 10866 MiB |
+| 80 | 435.6 | 25.65 | 11442 MiB |
+| 84 | crash on first request | - | - |
+| 88 | crash on first request | - | - |
+
+Q2_0 slabs are smaller than IQ3_XXS's, so the cache ceiling is higher (80 vs 48) and every
+cache size beats the UD quant at lower VRAM. Cache 84 and 88 load (server health check
+passes) but the process dies on the first inference request - the slot-sizing trap the
+large-prompt check exists to catch. At cache 64, `-b/-ub 2048` measured 441.4 / 24.79 at the
+same 10578 MiB, so `-ub` is free here and does not move prefill.
+
+### Long-context refactor benchmark (~60K prompt)
+
+At cache 80 / `-b/-ub 1024` (n=59751, cold load): prefill 406.9 t/s, decode 14.66 t/s,
+VRAM 11442 MiB. No OOM.
+
+### MTP (shared head) on GSQ
+
+The GSQ quant's smaller slabs leave room for the shared MTP head on the GPU, which the UD
+quant never could. Q4_K_M head (1.91 GB), cache 48, ctx 81920, `-b/-ub 1024`, `--spec-type
+draft-mtp --spec-draft-n-max 2`, q8_0 draft KV. Two runs each:
+
+| prompt | prefill t/s | decode t/s | draft accept | VRAM |
+| --- | --- | --- | --- | --- |
+| 10k opencode | 426 | 35.2 / 34.3 | 82% / 81% | 11818 MiB |
+| ~60K refactor | 398 | 23.3 / 25.1 | 76% / 81% | 11818 MiB |
+
+MTP turns 25.7 into ~35 t/s at 10k and 14.7 into ~24 t/s at 60K. Cache 48 is the ceiling with
+the head resident: `--spec-draft-n-max 3` and `4` both OOM the upstream, and the Q8_0 head
+does not fit.
+
+### Context ceiling with MTP
+
+Can ctx grow past 80k? KV is cheap on this model - only the 12 Qwen Sparse Attention layers
+carry it, the 36 Gated DeltaNet layers hold a constant state - so the limit is a target
+compute-buffer OOM (the server reports `failed to allocate compute pp buffers`, ~402 MiB at
+96k), not KV. ctx is paid for out of the same 12 GB budget as the MTP head and the expert
+cache.
+
+| ctx | cache | -ub | 10k prefill/decode | 60K prefill/decode | VRAM | loads |
+| --- | --- | --- | --- | --- | --- | --- |
+| 81920 | 48 | 1024 | 426 / 34.3-35.2 | 398 / 23.3-25.1 | 11818 MiB | yes |
+| 98304 | 40 | 1024 | 388 / 33.2 | 390 / 23.8-24.4 | 11728 MiB | yes |
+| 98304 | 48 | 512 | 310 / 37.2 | - | 11404 MiB | yes |
+| 98304 | 44 | 1024 | | | | no |
+| 98304 | 48 | 768 | | | | no |
+| 114688 | 40 / 32 | 1024 | | | | no |
+| 131072 | 40 / 32 | 1024 | | | | no |
+
+96k is the hard ceiling; 112k fails at every workable cache. The balanced 96k point is cache
+40: 60K is unchanged (390/24) while 10k gives up ~9% prefill and ~3-6% decode. Keeping cache
+48 and halving `-ub` to 512 also fits and holds decode, but costs ~27% prefill, so it is not
+worth it for long-context work. The 96k / cache-40 shape is the recommended config.
+
+### Rejected: ngram-mod and --fit
+
+- `ngram-mod` (draftless prompt-lookup, ~16 MB, no draft model): 24/48/64 gave 20.5 t/s at
+  10k; 24/3/12 gave 24.4/14.8; 24/12/48 gave 19.6/14.5. Even 65% draft acceptance at 60K
+  produced no gain. Never beat the no-spec baseline; kept off.
+- `--fit on --fit-target 1024`: `--fit` only adjusts *unset* arguments, and here the only one
+  is the context - it picked `n_ctx` 61440 at the same decode. A conservative ctx sizer, not
+  a tuner. Forced off.
+
 ## Conclusions
 
 - The expert cache is the dominant lever on this model: it turns the ~13 t/s `-ncmoe`
   baseline into 20-22 t/s decode, with `--moe-expert-cache-size 48` + `-b/-ub 1024` the best
   prefill/decode balance at 80k.
-- MTP does not pay at 12 GB: the draft cannot share the GPU with the cache, and a CPU draft
-  costs more than it recovers.
+- MTP placement decides it: on `UD-IQ3_XXS` the head never fits beside the cache at 12 GB,
+  and a CPU draft costs more than it recovers. On `GSQ-RCO Q2_0` the smaller slabs leave room
+  for the Q4_K_M head on the GPU, and MTP lifts decode from 25.7 to ~35 t/s at 80k/cache 48.
+  Dropping the cache to 40 frees the compute buffer for a 96k context - the ceiling with the
+  head resident - at 388/33 (10k) and 390/24 (60K).
 - `--load-mode none` is mandatory; `mmap` loses ~2.6x decode. `--lazy-mode on` is required to
   keep the 51B n-gram embedding table off the hot path.
 - Remaining knobs (`--ple-prefetch`, `--moe-early-router`) are neutral; decode overlap is a
   small, keepable win.
+- `GSQ-RCO Q2_0` is the faster quant on this rig: at cache 80 it does 436/25.7 at 10k and
+  407/14.7 at 60K (vs 362/21.4 and 341/13.1 for UD-IQ3_XXS) at lower VRAM; with the MTP head
+  it does 388/33 and 390/24 at 96k (or 426/35 and 398/24 at 80k/cache 48), the best config on
+  the page. It is a 2.40 bpw quant, so this is a speed/VRAM win - the GSQ-RCO model card
+  reports a lower task-average quality than IQ3_XXS (89.07 vs 92.57).
