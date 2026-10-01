@@ -70,7 +70,6 @@ model pages.
 | Qwen3.8-Flash-Next | GSQ-RCO Q2_0 + MTP | 98304 | 388 | **33** |
 | KAT-Coder-V2.5-Dev | APEX-I-Compact | 262144 | 1587 | **66** |
 | Qwen3.8-27B (Swift-1.5) | IQ2_XS | 81920 (q4_0 KV) | 467 | **35.6** |
-| Gemma4-26B-A4B | Q4_K_M | 262144 | 1623 | **52** |
 
 All rows here are measured on the 10k opencode session prompt ([test-prompts.md](test-prompts.md)).
 

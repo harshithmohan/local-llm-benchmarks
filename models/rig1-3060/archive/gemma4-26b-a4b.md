@@ -1,9 +1,9 @@
 # Gemma4-26B-A4B (Rig 1) - experiment archive
 
 This archive holds the supporting measurements and experiments behind the main card
-([gemma4-26b-a4b.md](../gemma4-26b-a4b.md)): the expert-cache/ubatch sweep, the cache
-frontier, companion-flag probes, and the pre-change stock baseline. The recommended
-config lives on the main card only. Methodology in [methodology](../../../methodology.md);
+([gemma4-26b-a4b.md](../gemma4-26b-a4b.md)): the 32k chat-config sweep, the 256k
+expert-cache/ubatch sweep and cache frontier, companion-flag probes, and the pre-change
+stock baseline. The recommended configs live on the main card only. Methodology in [methodology](../../../methodology.md);
 gotchas in [issues](../../../issues.md).
 Model card: [HauhauCS/Gemma4-26B-A4B-QAT-Uncensored-HauhauCS-Balanced-MTP](https://huggingface.co/HauhauCS/Gemma4-26B-A4B-QAT-Uncensored-HauhauCS-Balanced-MTP).
 
@@ -20,6 +20,41 @@ sliding-window:global hybrid - 25 SWA layers (window 1024, 8 KV heads, head dim 
 5 global layers at indices 5/11/17/23/29 (2 KV heads, head dim 512, freq base 1e6);
 128 routed experts / 8 active per token, expert FFN 704, embedding 2816. q8_0 KV at
 262144 is ~2.7 GiB.
+
+## Chat config sweep (moe-cache fork, ctx 32768, `-b/-ub 1024`, MTP on, 10k prompt)
+
+All rows: q8_0 KV, `--cache-type-k/-v-draft q8_0`, cold load, second pass, VRAM post-run
+against the 12288 MiB cap. "comp" as above. This sweep backs the recommended 32k chat
+config on the main card.
+
+| Config | prefill t/s | decode t/s | VRAM MiB | fits |
+| --- | --- | --- | --- | --- |
+| cache 44, comp | 932 | 61.3 | 7672 | yes |
+| cache 52, comp | 931 | 64.2 | 8596 | yes |
+| cache 60, comp | 933 | 61.7 / 68.0 | 9460 | yes |
+| cache 68, comp | 932 | 77.2 / 71.5 / 66.2 | 10416 | yes |
+| cache 76, comp | 932 | 69.7 / 58.8 / 75.4 / 69.5 | 11280 | yes |
+| cache 77, comp | 933 (pass 1) | - | - | crash on pass 2 |
+| cache 78-84, comp | - | - | - | no (500, compute error) |
+| cache 68, no comp | 936 | 79.6 | 11052 | yes |
+| cache 72, no comp | 932 | 75.8 | 11468 | yes - recommended (chat) |
+| cache 74, no comp | 934 | 74.3 | 11708 | yes |
+| cache 76, no comp | - | - | - | no (500, compute error) |
+
+MTP-off (clean cache signal, no acceptance noise): comp cache 44 = 50.7, 60 = 52.2,
+68 = 55.4, 76 = 58.2; no-comp cache 68 = 57.6, 72 = 59.3, 74 = 58.8.
+
+Findings:
+
+- Decode is acceptance-noisy under MTP (46-79% acceptance run-to-run), so single-run
+  MTP-on decode is not a reliable cache signal; prefill is stable (~932-937 t/s at
+  `-b/-ub 1024`).
+- MTP-off makes the cache effect clean and monotonic: decode rises with cache and shows no
+  plateau across the fitting range.
+- The comp trio lifts the stable ceiling from cache 74 to 76 (~450-640 MiB) but gives no
+  decode gain at ctx 32768 (MTP-off no-comp 59.3 @72 vs comp 58.2 @76); the chat config
+  drops it at cache 72.
+- The 28106-token stability prompt passed at every keepable point.
 
 ## Expert-cache + ubatch sweep (moe-cache fork, ctx 262144, MTP on, 10k prompt)
 
@@ -81,9 +116,9 @@ grouped cache path is genuinely engaged, not merely a VRAM-placement effect.
 
 ## Long-context refactor benchmark (~60K prompt)
 
-Same config as the main card, unified protocol (raw `/v1/completions`, two-pass,
-`ignore_eos: true`, prompt_n 66786): prefill 1278 t/s, decode 35.5 t/s, VRAM 10857 MiB.
-Passed with headroom, no OOM.
+The 256k config, unified protocol (raw `/v1/completions`, two-pass, `ignore_eos: true`,
+prompt_n 66786): prefill 1278 t/s, decode 35.5 t/s, VRAM 10857 MiB. Passed with headroom,
+no OOM.
 
 ## Pre-change stock baseline (ctx 65536, 10k prompt)
 
@@ -95,8 +130,14 @@ while serving the full native window.
 
 ## Conclusions
 
-- Recommended: moe-cache fork, ctx 262144 (native), cache 44, `-b/-ub 4096`, comp trio,
-  MTP on, q8_0 KV - 1623 prefill / 52 decode t/s (10k), 10409 MiB.
-- Cache 44 is the ceiling at `-b/-ub 4096`; dropping to `-b/-ub 1024` allows cache 52 and
-  a higher decode but roughly halves prefill, so ubatch 4096 is the better balance.
+- Main-card recommended (chat): moe-cache fork, ctx 32768, cache 72, `-b/-ub 1024`, no
+  comp trio, MTP on, q8_0 KV - 937 prefill / 68 decode t/s (10k), 11468 MiB.
+- Best full-context (non-chat): moe-cache fork, ctx 262144 (native), cache 44,
+  `-b/-ub 4096`, comp trio, MTP on, q8_0 KV - 1623 prefill / 52 decode t/s (10k),
+  10409 MiB.
+- At ctx 32768 the comp trio is no longer needed: it lifts the ceiling from cache 74 to 76
+  but yields no decode gain, so the chat config drops it.
+- Cache 44 is the ceiling at ctx 262144 / `-b/-ub 4096`; dropping to `-b/-ub 1024` there
+  allows cache 52 and a higher decode but roughly halves prefill, so ubatch 4096 is the
+  better balance.
 - No `--rope-scaling` is needed (262144 is the model's native window).
