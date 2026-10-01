@@ -27,7 +27,7 @@ and quirks live in [engine-notes/](engine-notes/):
   uncached tokens get evaluated). With it, every pass does a full prefill.
 - **`ignore_eos: true` on every request.** Forces the full `n_predict` decode window, so
   every pass measures the same number of decode steps and no pass ends early (some engines
-  emit a spurious first-token EOS on the long prompts - see issues.md §6/§8).
+  emit a spurious first-token EOS on the long prompts - see issues.md §3/§5).
 - Timings come from the response `timings` object: `prompt_per_second` (prefill),
   `predicted_per_second` (decode), plus `cache_n` and the MTP draft `draft_n` /
   `draft_n_accepted`. The server log's `slot print_timing` lines (`prompt eval time` /

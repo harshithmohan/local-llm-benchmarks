@@ -45,7 +45,11 @@ Fork-specific companions (all default off, absent from stock and ik-llama.cpp):
 
 Standard llama.cpp flags (`-b`/`-ub`, `-fa`, `-lm/--load-mode`, `-kvo/--kv-offload`,
 `-lzm/--lazy-mode`, `-cram/--cache-ram`, `-bs/--backend-sampling`, `--spec-type draft-mtp`,
-`--spec-draft-n-max`) behave as in [upstream](upstream-stock.md).
+`--spec-draft-n-max`) behave as in [upstream](upstream-stock.md). Env
+`GGML_CUDA_DISABLE_FUSION=1` (ggml-cuda) disables CUDA op fusion; it is needed to run
+models whose fused `ffn_moe_gate` (`MUL_MAT_ID`) node is not CUDA-graph-capturable on this
+fork (the pruned 256-expert Flash-Next Coder). `GGML_CUDA_DISABLE_GRAPHS=1` does not help.
+See [issues.md](../issues.md) §6.
 
 ## Validation
 

@@ -75,3 +75,22 @@ decodes normally (full `n_predict`, normal MTP acceptance), so it is a transient
 config fault. Distinct from the Flash-Next EOS behaviour (§3): different model and prompt,
 and not the PLE/long-context path. Timing interpretation is unaffected - drop the anomalous
 pass and re-run, or set `ignore_eos: true` as for the long-context prompt.
+
+## 6. Fork CUDA-graph capture rejects the pruned (256-expert) Flash-Next Coder
+
+Applies: **moe-cache fork (GenerelSchwerz)** - measured on the dynamic expert-cache fork
+build b11608; not seen on stock.
+
+`Qwen3.8-Flash-Next GSQ-RCO Coder IQ1_M` has 256 experts per layer (the base has 512). On
+the moe-cache fork with the expert cache enabled, the server loads and its health check
+passes, but the first decode fails and the process exits:
+
+    ggml_cuda_graph_evaluate_and_capture: op not supported ffn_moe_gate-N (MUL_MAT_ID)
+    graph_compute: ggml_backend_sched_graph_compute_async failed with error -1
+    llama_decode: failed to decode, ret = -3
+
+The 512-expert quants (UD-IQ3_XXS, GSQ-RCO Q2_0) are unaffected. The 256-expert layout
+makes the fork's cached-expert path emit a fused `ffn_moe_gate` (`MUL_MAT_ID`) node that
+CUDA graph capture does not support. `GGML_CUDA_DISABLE_GRAPHS=1` does not help; running
+the fork with `GGML_CUDA_DISABLE_FUSION=1` avoids the fused node and the model serves
+normally (all Coder IQ1_M numbers in the Flash-Next archive use it).

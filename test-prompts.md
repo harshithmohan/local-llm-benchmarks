@@ -79,7 +79,7 @@ Notes for this prompt (request protocol is shared with the 10k prompt and define
 - `ignore_eos: true` matters here: some engines emit EOS as the very first token on this
   prompt over the raw endpoint (stop_type eos, 1 predicted token, empty output) - Flash-Next
   (qwen4exp) does so even after the trailing closed fence is neutralized with a nonce, and
-  the 35B moe-cache fork does so rarely (issues.md §8). The unified protocol sets it, so
+  the 35B moe-cache fork does so rarely (issues.md §5). The unified protocol sets it, so
   every pass decodes the full `n_predict` with real output and normal acceptance.
 - All pre-2026-09-29 long-context numbers used a single-pass, `/v1/chat/completions` protocol and
   are archived per model page; the conventions are not directly comparable.

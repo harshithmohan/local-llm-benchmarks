@@ -11,6 +11,7 @@ Quants:
 
 - `UD-IQ3_XXS` (76.32 GiB, 3 shards)
 - `GSQ-RCO Q2_0` (66.4 GB, 2 shards: 37.6 GB weights + 28.8 GB n-gram table)
+- `GSQ-RCO Coder IQ1_M` (58.4 GB, 2 shards: 29.6 GB pruned weights + 28.8 GB n-gram table)
 
 ## Setup
 
@@ -199,6 +200,70 @@ worth it for long-context work. The 96k / cache-40 shape is the recommended conf
   is the context - it picked `n_ctx` 61440 at the same decode. A conservative ctx sizer, not
   a tuner. Forced off.
 
+## GSQ-RCO Coder IQ1_M (29.6 GB weights, pruned to 256 experts)
+
+A third quant on the same fork, same ctx/flags (q8_0 KV, `--load-mode none --lazy-mode on`,
+overlap) and protocol. It is a different checkpoint, not a re-quant of the two above: the
+"Coder" release removes 256 of the base's 512 experts per layer and stores the retained
+weights at 3.5 bpw (1.89 bpw effective over the original transformer). Two shards: a
+29.6 GB transformer shard plus the same 28.8 GB n-gram shard as `GSQ-RCO Q2_0`. No MTP
+head ships with it. The n-gram/PLE plumbing and sampling are identical, so prefill tracks
+the other quants; decode is lower (half the expert pool resident).
+
+### Fork compatibility: `GGML_CUDA_DISABLE_FUSION=1`
+
+Out of the box the fork loads the model (health check passes) but the first request dies:
+`ggml_cuda_graph_evaluate_and_capture: op not supported ffn_moe_gate-N (MUL_MAT_ID)` ->
+`llama_decode failed, ret = -3` -> process exit. The 512-expert quants are unaffected; the
+256-expert layout makes the fork's cached-expert path build a MoE-gate node that CUDA graph
+capture rejects. `GGML_CUDA_DISABLE_GRAPHS=1` did not help; `GGML_CUDA_DISABLE_FUSION=1`
+avoids the fused node and the model serves normally. All numbers below use that env
+(issues.md §6).
+
+### Cache size (10k prompt, ctx 98304, `-b/-ub 1024`)
+
+| cache | prefill t/s | decode t/s | VRAM |
+| --- | --- | --- | --- |
+| 16 | 461.1 | 16.73 | 9130 MiB |
+| 24 | 460.1 | 17.91 | 9896 MiB |
+| 32 | 460.2 | 18.97 | 10636 MiB |
+| 40 | 458.3 | 19.94 | 11316 MiB |
+| 48 | crash on first request | - | - |
+
+Cache scales decode cleanly to the 96k VRAM ceiling at 40.
+
+### Context ceiling (10k prompt)
+
+| ctx | cache | prefill t/s | decode t/s | VRAM |
+| --- | --- | --- | --- | --- |
+| 65536 | 48 | 463.2 | 20.45 | 11286 MiB |
+| 98304 | 40 | 458.3 | 19.94 | 11316 MiB |
+| 131072 | 32 | 458.9 | 18.93 | 11512 MiB |
+| 196608 | 16 | 457.9 | 16.88 | 11758 MiB |
+| 262144 | 16 | crash on first request | - | - |
+
+Ctx is paid for out of the same budget as the cache, so each doubling costs cache and
+decode tracks cache. 96k/cache 40 and 128k/cache 32 are the balanced points; 64k buys the
+fastest decode (20.4) if context is not needed; the ceiling is ~192k at cache 16.
+
+### MTP (shared 512-expert head)
+
+The base model's shared Q4_K_M MTP head does load against the coder and drafts correctly -
+72% acceptance at cache 16/96k (draft 419, accepted 301) - but it adds ~1.9 GB and forces
+the cache down: at 96k, cache 24 + MTP does not fit, and cache 16 + MTP (16.55 t/s) is no
+better than cache 16 without MTP (16.73). MTP is not a win here.
+
+### Long-context refactor benchmark (~60K prompt)
+
+At cache 40 / 96k (n=59751, cold load): prefill 437.1 t/s, decode 12.64 t/s, VRAM
+11310 MiB. No OOM. (64k/cache 48: 443/12.95; 128k/cache 32: 439/12.42.)
+
+### Quality
+
+The Coder card reports SWE-bench Verified 75.60 (91.3% of the 82.80 base) and
+LiveCodeBench v6 86.28 (98.7% of 87.43). It is the pruned-expert, coder-targeted release;
+for general use the card points at the unpruned `GSQ-RCO` quants.
+
 ## Conclusions
 
 - The expert cache is the dominant lever on this model: it turns the ~13 t/s `-ncmoe`
@@ -218,3 +283,8 @@ worth it for long-context work. The 96k / cache-40 shape is the recommended conf
   it does 388/33 and 390/24 at 96k (or 426/35 and 398/24 at 80k/cache 48), the best config on
   the page. It is a 2.40 bpw quant, so this is a speed/VRAM win - the GSQ-RCO model card
   reports a lower task-average quality than IQ3_XXS (89.07 vs 92.57).
+- `GSQ-RCO Coder IQ1_M` runs (with `GGML_CUDA_DISABLE_FUSION=1`) but is the slowest quant
+  tested here: 458/19.9 at 96k/cache 40, and the only one whose expert cache needs the fusion
+  workaround. It is a pruned coder checkpoint (256 experts, 1.89 bpw effective), not a
+  re-quant, so its decode is not directly comparable with the 512-expert quants - it trades
+  speed for size and a code/agentic quality target.

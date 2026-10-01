@@ -2,10 +2,11 @@
 
 Updated: 2026-10-01 · [full experiment log](archive/qwen38-flash-next.md) · [methodology](../../methodology.md)
 
-`UD-IQ3_XXS` and `GSQ-RCO Q2_0` (`qwen4exp`, native ctx 262144, separate shared MTP head).
-177B total = 125B compute + 51B n-gram embedding table + 4B MTP; 48 layers =
-12 x (3 x Gated DeltaNet -> MoE + 1 x Qwen Sparse Attention -> MoE), 512 experts
-(10 routed + 1 shared). Model cards:
+`UD-IQ3_XXS` and `GSQ-RCO Q2_0` (`qwen4exp`, native ctx 262144, 512 experts, separate
+shared MTP head). 177B total = 125B compute + 51B n-gram embedding table +
+4B MTP; 48 layers =
+12 x (3 x Gated DeltaNet -> MoE + 1 x Qwen Sparse Attention -> MoE), 10 routed + 1 shared
+expert per token. Model cards:
 [unsloth/Qwen3.8-Flash-Next-GGUF](https://huggingface.co/unsloth/Qwen3.8-Flash-Next-GGUF) (`UD-*` quants),
 [ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF](https://huggingface.co/ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF) (`GSQ-RCO` quants).
 
