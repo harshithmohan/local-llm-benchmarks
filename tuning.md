@@ -45,7 +45,7 @@ These exist on every engine (flag names differ; see the equivalence table in Par
 
   | Arch (models) | Native | Usable ceiling | What binds |
   | --- | --- | --- | --- |
-  | qwen35moe (Qwen3.6-35B-A3B, KAT-Coder, Cyber-Tiel) | 262144 | stock ~672-736K; fork 843776 (all-CPU); ik 851968 | KV + expert-cache slabs + compute |
+  | qwen35moe (Qwen3.6-35B-A3B, KAT-Coder) | 262144 | stock ~672-736K; fork 843776 (all-CPU); ik 851968 | KV + expert-cache slabs + compute |
   | qwen4exp (Qwen3.8-Flash-Next) | 262144 | ~96k with MTP; ~192k at cache 16 without | compute buffer, not KV |
   | dense hybrid SSM (Qwen3.8-27B, Swift-1.5) | 262144 | 155648 (q8_0) / ~98304 (f16) | KV on the ~16 full-attn layers |
   | gemma4 (Gemma4-26B) | 262144 | native fits | - |
@@ -217,7 +217,7 @@ acceptance from ~77% to ~89% with no decode gain; a larger expert cache beat a s
 - **qwen4exp (Flash-Next):** near-repetitive prompt text can hit an EOS/crash path; only the
   sparse-attention layers carry KV, so the compute buffer binds the context, not KV;
   `--lazy-mode on` keeps the large n-gram table file-backed; `--ple-prefetch` is neutral.
-- **qwen35moe (Qwen3.6-35B-A3B, KAT-Coder, Cyber-Tiel):** decodes normally on both raw and chat
+- **qwen35moe (Qwen3.6-35B-A3B, KAT-Coder):** decodes normally on both raw and chat
   endpoints; the fork can rarely return EOS as the first token on the 10k prompt (retry decodes
   normally, cache-independent).
 - **Pruned 256-expert layout:** needs `GGML_CUDA_DISABLE_FUSION=1` on the fork (see Part B).

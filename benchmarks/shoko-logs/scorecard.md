@@ -51,7 +51,8 @@ nudged run here so nudged runs are only compared against other nudged runs.
 | qwen38-27b-w4a16 (local vLLM, fp8 KV, low reasoning) | 1 of 2 (repeat 1) |
 | qwen38-27b-w4a16 (local vLLM, fp8 KV, medium reasoning) | 1 of 2 (repeat 2) |
 
-All other rows above predate the 16384 cap + nudge protocol (`—`).
+The table lists only repeats that needed a nudge; unlisted rows ran under the same 16384 cap
+without one.
 
 ## Auto-compactions
 
@@ -64,4 +65,4 @@ compacted runs are only compared against other compacted runs.
 |---|---|
 | swift-qwen38-27b (local vLLM, fp8 KV, low reasoning) | 1 of 2 (repeat 1) |
 
-All other rows above predate the auto-compaction protocol (`—`).
+The table lists only repeats that auto-compacted; unlisted rows ran without one.
