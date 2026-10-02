@@ -60,16 +60,28 @@ output-limit nudge or an auto-compaction was needed (see "Output limit and nudge
    what the prompt points to.
 2. **Implement.** The implementation runs by giving a model the prompt, either
    interactively (start opencode in the checkout, select the model under test, paste
-   `prompt.md`) or headlessly:
+   `prompt.md`) or headlessly. The headless command depends on the OpenCode major
+   version:
 
-       opencode run --agent build --model <model> --dir <parent dir holding \
-         Shoko-WebUI and ShokoServer> "$(cat <shoko-logs dir>/prompt.md)"
+   - **OpenCode v2** — a run works in the process cwd, so `cd` to the parent first. Pass
+     `--standalone` when the provider is injected with `OPENCODE_CONFIG_CONTENT` (the
+     shared background service ignores the inline config) and `--auto` (a headless
+     session cannot answer the edit permission prompt):
 
-   `--dir` must be the parent that holds **both** checkouts: the model has to read the
-   sibling ShokoServer source, and headless opencode auto-rejects reads outside its
-   working directory. Always use the `build` agent: the default `orchestrator` agent
-   delegates to subagents and can finish without implementing. The harness itself never
-   drives opencode; it only exports the patch after the model stops.
+         cd <parent dir holding Shoko-WebUI and ShokoServer> && \
+           opencode run --standalone --auto --agent build -m <model> \
+             "$(cat <shoko-logs dir>/prompt.md)"
+
+   - **OpenCode v1** — the working directory is passed with `--dir`:
+
+         opencode run --agent build --model <model> --dir <parent dir holding \
+           Shoko-WebUI and ShokoServer> "$(cat <shoko-logs dir>/prompt.md)"
+
+   In both versions the directory must be the parent that holds **both** checkouts: the
+   model has to read the sibling ShokoServer source, and headless opencode auto-rejects
+   reads outside its working directory. Always use the `build` agent: the default
+   `orchestrator` agent delegates to subagents and can finish without implementing. The
+   harness itself never drives opencode; it only exports the patch after the model stops.
 3. `./run.sh eval <run-name>` — exports the patch to `runs/<run-name>/`. No gates here:
    the grader runs them (next step). The checkout is left on the bench branch with the
    changes applied for the grader.
@@ -79,20 +91,30 @@ output-limit nudge or an auto-compaction was needed (see "Output limit and nudge
    without producing a score sheet. Run opencode from a directory that contains the
    checkout, its sibling ShokoServer, and this benchmark dir (e.g. their common parent)
    so the grader can read `rubric.md`/`reference.diff`/the server source and still run
-   the gates in the checkout:
+   the gates in the checkout.
 
-       opencode run --agent build --model <grader-model> --dir <common parent dir> \
-         "Run the build gates in <Shoko-WebUI checkout> (pnpm tscheck, pnpm lint, \
-          pnpm build), then grade <shoko-logs dir>/runs/<run-name>/patch.diff against \
-          <shoko-logs dir>/rubric.md using <shoko-logs dir>/reference.diff as the \
-          reference implementation; write the score sheet to \
-          <shoko-logs dir>/runs/<run-name>/score.md."
+   - **OpenCode v2** — cwd is the common parent; `--auto` approves the gate commands and
+     the score-file write, and add `--standalone` if the grader provider is injected
+     inline:
+
+         cd <common parent dir> && \
+           opencode run --standalone --auto --agent build -m <grader-model> \
+             "Run the build gates in <Shoko-WebUI checkout> (pnpm tscheck, pnpm lint, pnpm build), then grade <shoko-logs dir>/runs/<run-name>/patch.diff against <shoko-logs dir>/rubric.md using <shoko-logs dir>/reference.diff as the reference implementation; write the score sheet to <shoko-logs dir>/runs/<run-name>/score.md."
+
+   - **OpenCode v1**:
+
+         opencode run --agent build --model <grader-model> --dir <common parent dir> \
+           "Run the build gates in <Shoko-WebUI checkout> (pnpm tscheck, pnpm lint, \
+            pnpm build), then grade <shoko-logs dir>/runs/<run-name>/patch.diff against \
+            <shoko-logs dir>/rubric.md using <shoko-logs dir>/reference.diff as the \
+            reference implementation; write the score sheet to \
+            <shoko-logs dir>/runs/<run-name>/score.md."
 
    The grader runs the gates, reads `rubric.md`, `reference.diff`, and the run's patch,
    and writes `runs/<run-name>/score.md` in the format at the end of `rubric.md`. If
-   you instead run it with `--dir` set to the checkout alone, add `--auto` or stage the
-   two rubric files into the checkout — reads outside the working directory are
-   auto-rejected in headless mode.
+   you instead run it with the working directory (v2) or `--dir` (v1) set to the checkout
+   alone, add `--auto` or stage the two rubric files into the checkout — reads outside
+   the working directory are auto-rejected in headless mode.
 5. After review, `./run.sh cleanup <run-name>` — returns to `master`, deletes the
    branch, and removes `runs/<run-name>/`. The score recorded in
    `scorecards/<model>.md` is the only surviving artifact (see "Run naming and
@@ -112,10 +134,12 @@ nudge it to stop reasoning and start implementing, then run the gates:
       "You have already reasoned enough; stop planning and implement the ticket now, \
        then run pnpm tscheck / lint / build."
 
-Resuming must happen from the checkout directory itself — passing `--dir` to a resume
-reports "Session not found". The nudge is a **harness intervention, not part of the
-task**: record every nudged run in `scorecard.md` (→ "Output-limit nudges") and in
-`scorecards/<model>.md`, so nudged runs are only ever compared against other nudged runs.
+Resume from the checkout directory itself: v1 reports "Session not found" if `--dir` is
+passed to a resume, and in v2 the session is resolved from the cwd (add
+`--standalone --auto`, as in the implementation step). The nudge is a **harness
+intervention, not part of the task**: record every nudged run in `scorecard.md`
+(→ "Output-limit nudges") and in `scorecards/<model>.md`, so nudged runs are only ever
+compared against other nudged runs.
 
 ### Auto-compaction
 
