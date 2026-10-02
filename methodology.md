@@ -2,6 +2,7 @@
 
 Applies to both rigs ([rig1-3060.md](rig1-3060.md), [rig2-3090.md](rig2-3090.md)).
 Unless a page says otherwise, all results in this folder were measured on Rig 1.
+Tuning procedure (which knobs to sweep, in what order): [tuning.md](tuning.md).
 
 ## Inference engines
 

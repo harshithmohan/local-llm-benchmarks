@@ -42,6 +42,7 @@ llama.cpp, and vLLM's Prometheus metrics for vLLM. `llama-bench` is not used.
 ## Contents
 
 - [methodology.md](methodology.md) - measurement methods, memory measurement, VRAM headroom (per-model), caveats
+- [tuning.md](tuning.md) - tuning procedure: common vs engine/fork-specific knobs, sweep order, rules of thumb
 - [engine-notes/](engine-notes/) - per-engine notes (flags, features, quirks), one file per engine
 - [test-prompts.md](test-prompts.md) - the actual prompt texts used for timing runs (a ~10k opencode session-context timing prompt; a ~60K long-context refactor prompt)
 - [rig1-3060.md](rig1-3060.md) - Rig 1 hardware and build info
