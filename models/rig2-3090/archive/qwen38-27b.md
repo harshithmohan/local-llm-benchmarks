@@ -2,11 +2,13 @@
 
 > **Retired-prompt note:** rows on this page were measured with the retired timing prompts (short C#/React, pre-2026-09-29; and the retired ~116K long-context prompt) unless a section says otherwise. The current timing prompt is the single ~10k-token opencode session context ([test-prompts.md](../../../test-prompts.md)); the two are not directly comparable.
 
-This archive is the experiment log for [qwen38-27b.md](../qwen38-27b.md): the retired
-llama.cpp `UD-Q4_K_S` quant, the retired vLLM profiles (DFlash2, KVarN `g64`/`k4v4` tile
-variants), the pre-unification timing rows (retired short C#/React prompts and the retired
-~116K long-context prompt), and the container/pool notes moved off the model page. The
-current recommended configs are on the model page.
+This archive is the experiment log for [qwen38-27b.md](../qwen38-27b.md) (the base
+`W4A16-AutoRound-fast` quant): the retired llama.cpp `UD-Q4_K_S` quant, the retired vLLM
+profiles (DFlash2, KVarN `g64`/`k4v4` tile variants), the pre-unification timing rows
+(retired short C#/React prompts and the retired ~116K long-context prompt), and the
+container/pool notes moved off the model page. The Swift-1.5-INT4 fine-tune has its own
+archive: [swift-qwen38-27b.md](swift-qwen38-27b.md). The current recommended configs are on
+the model page.
 
 llama.cpp protocol: second-pass prefill, sampling per the then-current protocol, cold load,
 q8_0 KV, `--threads 8 --threads-batch 16`, 22 GB VRAM cap (22 GB +- 250 MB, desktop
@@ -20,7 +22,6 @@ Quants:
 
 - `UD-Q4_K_S` (15.36 GB, ~4.55 bpw) - llama.cpp, retired (dominated by the vLLM stack)
 - `W4A16-AutoRound-fast` - vLLM, current recommended (see the model page)
-- `Swift-1.5-INT4` - vLLM fine-tune, current recommended (see the model page)
 
 ## Max context probe (stock)
 
@@ -204,16 +205,14 @@ discarded, per the cold-load-then-second-pass convention.
 
 ## vLLM short-prompt rows (retired C#/React prompts, 2026-09-27)
 
-`INT8_ACT=int8` served throughout (fp8 profile build `31f8b7a3`, KVarN `c68ac895`, Swift
-`641274bd`/`4f4a6a1f`); retired short C#/React prompts averaged, single pass, requests
-routed through llama-swap. Superseded by the ~10k-prompt rows on the model page.
+`INT8_ACT=int8` served throughout (fp8 profile build `31f8b7a3`, KVarN `c68ac895`); retired
+short C#/React prompts averaged, single pass, requests routed through llama-swap.
+Superseded by the ~10k-prompt rows on the model page.
 
 | Quant | Spec | ctx | KV | prefill t/s | decode t/s | acceptance | VRAM used |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | W4A16-AutoRound-fast | MTP | 150000 | fp8 | 1672.7 | 103.3 | ~0.48 | 21990 MiB |
 | W4A16-AutoRound-fast | MTP | 250000 | KVarN k4v2 | 1716.6 | 92.7 | ~0.50 | 21736 MiB |
-| Swift-1.5-INT4 | MTP | 150000 | fp8 | 1621.5 | 96.1 | ~0.47 | 22510 MiB |
-| Swift-1.5-INT4 | MTP | 250000 | KVarN k4v2 | 1683.0 | 86.7 | ~0.49 | 22052 MiB |
 
 - Decode swings +-5-10% run to run (boot-to-boot variance is material - earlier single-boot
   readings of the same configs differed by up to ~20%), while prefill is +-0.5% stable. VRAM
@@ -221,13 +220,8 @@ routed through llama-swap. Superseded by the ~10k-prompt rows on the model page.
 - Single pass C# 1768.4 / 93.2, React 1576.9 / 113.3 (base, 150k); the decode gap between the
   two prompts is the known per-run spread. The first csharp prefill of a boot is a JIT
   artifact and is discarded.
-- Swift single pass C# 1714.0 / 92.5, React 1528.9 / 99.6. Unguarded React naturally stops
-  early: it emitted EOS at 339 tokens (decode 128.8, acceptance 0.899) - the fine-tune
-  finishes coding answers without padding, unlike the base model which must be held to 512
-  with `ignore_eos`. The 512-guarded React pass is what fed the table for protocol parity.
-- Base led short decode at both contexts in these rows (150k 103.3 vs 96.1; 250k 92.7 vs
-  86.7) with Swift close behind on prefill (1621.5 vs 1672.7; 1683.0 vs 1716.6) - one-boot
-  data; on the current ~10k prompt the order flips (Swift ahead on decode).
+- On this one-boot protocol the base led decode at both contexts; on the current ~10k prompt
+  the fine-tune edges ahead - see the [Swift archive](swift-qwen38-27b.md).
 - Long-context prefill (0.28.0-build readings): 7369-token React x24 1274 t/s; a
   139,686-token prompt 708 t/s. These are first-send prefills (single pass); a re-send of the
   same prompt hits the prefix cache (`cached=138,224`, prefill collapses to ~2.8 s), so
@@ -278,8 +272,6 @@ are single passes:
 | --- | --- | --- | --- | --- | --- | --- |
 | W4A16 / vLLM | MTP | 150000 | 746.7 | 63.8 | 0.442 | 21722 MiB |
 | W4A16 / vLLM | MTP (KVarN) | 250000 | 784.4 | 27.5 | 0.365 | 21650 MiB |
-| Swift-1.5-INT4 / vLLM | MTP | 150000 | 757.4 | 62.4 | 0.444 | 22704 MiB |
-| Swift-1.5-INT4 / vLLM | MTP (KVarN) | 250000 | 836.0 | 32.4 | 0.512 | 22388 MiB |
 
 - Long context is expensive on this dense model: fp8 decode falls from its 112.4 t/s
   short baseline (pre-2026-09-27; now 103.3 single-pass) to 63.8 at ~116K (-43%), KVarN to
@@ -287,13 +279,11 @@ are single passes:
 - The decode hit is larger than the 35B-A3B's on the same task (-37%): every token here
   runs ~27B dense params against a 116K context, while the MoE only wakes ~3B.
 - All ran the full 512 (`ignore_eos: true`); no crash or EOS quirk - see
-  [issues.md](../../../issues.md). Acceptance 0.442 (base fp8) / 0.365 (base KVarN) / 0.444
-  (Swift fp8) / 0.512 (Swift KVarN).
+  [issues.md](../../../issues.md). Acceptance 0.442 (fp8) / 0.365 (KVarN).
 - The archived llama.cpp UD-Q4_K_S run read 809.8 / 28.9 here - prefill on par, decode
   ~2x slower.
-- Swift-1.5-INT4 is near-parity with the base quant on the fp8 profile (757.4 / 62.4 vs
-  746.7 / 63.8) and leads on the single-pass KVarN reading (836.0 / 32.4 vs 784.4 / 27.5,
-  +6.6% prefill, +17.8% decode).
+- The Swift-1.5-INT4 fine-tune is near-parity on the fp8 profile and leads on the single-pass
+  KVarN reading - see its [archive](swift-qwen38-27b.md).
 
 ## Long-context refactor (~60K prompt, retired single-pass rows)
 
@@ -304,13 +294,11 @@ before the protocol unification; superseded by the current rows on the model pag
 | --- | --- | --- | --- | --- | --- | --- |
 | W4A16-AutoRound-fast | vLLM | 150000 | 1640.7 | 84.5 | 0.463 | 21990 MiB |
 | W4A16-AutoRound-fast | vLLM | 250000 | 1713.3 | 40.9 | 0.332 | 21736 MiB |
-| Swift-1.5-INT4 | vLLM | 150000 | 1617.3 | 78.9 | 0.447 | 22510 MiB |
-| Swift-1.5-INT4 | vLLM | 250000 | 1698.5 | 41.9 | 0.369 | 22052 MiB |
 
 - Single timed pass per boot on the ~60K-token prompt, cold load, vLLM server metrics, every
   request cache-cold (`prefix_hits 0`).
-- fp8 150k decoded fastest (84.5 base / 78.9 Swift); the KVarN 250k profiles dropped to ~41
-  t/s once KV bandwidth dominates, with prefill nearly flat across profiles.
+- fp8 150k decoded fastest (84.5); the KVarN 250k profile dropped to ~41 t/s once KV
+  bandwidth dominates, with prefill nearly flat across profiles.
 
 ## Key arch notes
 
@@ -326,15 +314,16 @@ before the protocol unification; superseded by the current rows on the model pag
   (`CTX=huge`) reaches 250000 at ~2x slower long-context decode (40.9 vs 84.5 on the retired
   single-pass refactor run). DFlash2 traded prefill for short-context decode and is archived.
   KVarN quality cost is negligible (project: perplexity +0.16%, needle 4k-240k).
-- Swift-1.5-INT4 tracks the base quant closely; its drafter is rebuilt on the fine-tune's own
-  output distribution (~25.9k tokens instead of the base model's ~54k). On the current ~10k
-  prompt it leads the base on decode at both contexts.
+- The Swift-1.5-INT4 fine-tune tracks the base quant closely, but its drafter is rebuilt on
+  the fine-tune's own output distribution (~25.9k tokens instead of the base model's ~54k) -
+  see its [archive](swift-qwen38-27b.md).
 
 ## Conclusions
 
-- The vLLM stack is the current recommendation: `W4A16-AutoRound-fast` and `Swift-1.5-INT4`,
+- The vLLM stack is the current recommendation for the base quant: `W4A16-AutoRound-fast`,
   fp8 at 150000 for short-context decode and KVarN 4/2-bit at 250000 for long requests, all
-  under the 22 GB cap.
+  under the 22 GB cap. (The Swift-1.5-INT4 fine-tune uses the same profiles - see its
+  [archive](swift-qwen38-27b.md).)
 - UD-Q4_K_S was the best llama.cpp config at c 155648 (MTP n-max 2): 61.6 t/s decode
   (prefill 1019.7, acceptance 0.703), 22127 MiB. It is now retired - the vLLM stack beats it
   on decode (~1.7x short, ~2.4x at 116K) at the same VRAM and reaches 250000 via KVarN.

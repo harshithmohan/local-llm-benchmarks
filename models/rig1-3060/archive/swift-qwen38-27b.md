@@ -1,6 +1,6 @@
-# Qwen3.8-27B (Rig 1) - experiment archive
+# Swift-1.5-Qwen3.8-27B (Rig 1) - experiment archive
 
-Main page: [Qwen3.8-27B (Rig 1)](../qwen38-27b.md). Methodology: [methodology.md](../../../methodology.md).
+Main page: [Swift-1.5-Qwen3.8-27B (Rig 1)](../swift-qwen38-27b.md). Methodology: [methodology.md](../../../methodology.md).
 Model-specific issues: [issues.md](../../../issues.md).
 
 `Quants:` `IQ2_XS` (Swift-1.5 fine-tune) - the only quant on this rig.

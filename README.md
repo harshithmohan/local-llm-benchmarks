@@ -69,7 +69,7 @@ model pages.
 | Qwen3.8-Flash-Next | UD-IQ3_XXS | 81920 | 362 | **21.4** |
 | Qwen3.8-Flash-Next | GSQ-RCO Q2_0 + MTP | 98304 | 388 | **33** |
 | KAT-Coder-V2.5-Dev | APEX-I-Compact | 262144 | 1587 | **66** |
-| Qwen3.8-27B (Swift-1.5) | IQ2_XS | 81920 (q4_0 KV) | 467 | **35.6** |
+| Swift-1.5-Qwen3.8-27B | IQ2_XS | 81920 (q4_0 KV) | 467 | **35.6** |
 
 All rows here are measured on the 10k opencode session prompt ([test-prompts.md](test-prompts.md)).
 
@@ -88,8 +88,8 @@ per-row on the model pages.
 | KAT-Coder-V2.5-Dev | APEX-I-Compact | 262144 | 4591 | **163** |
 | Qwen3.8-27B | W4A16-AutoRound-fast | 150000 | 2430 | **113.0** |
 | Qwen3.8-27B | W4A16-AutoRound-fast | 250000 | 2408 | **87.9** |
-| Qwen3.8-27B (Swift-1.5) | Swift-1.5-INT4 | 150000 | 2417 | **116.9** |
-| Qwen3.8-27B (Swift-1.5) | Swift-1.5-INT4 | 250000 | 2394 | **94.3** |
+| Swift-1.5-Qwen3.8-27B | Swift-1.5-INT4 | 150000 | 2417 | **116.9** |
+| Swift-1.5-Qwen3.8-27B | Swift-1.5-INT4 | 250000 | 2394 | **94.3** |
 
 ## Coding benchmark (shoko-logs)
 

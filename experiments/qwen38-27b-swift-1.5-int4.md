@@ -5,7 +5,7 @@ fine-tune (LLM Compressor AWQ+GPTQ, compressed-tensors) onto the same
 [syv-ai/HyperQwen](https://github.com/syv-ai/HyperQwen) serving stack used for the base
 checkpoint, and recording which step of the port is load-bearing.
 
-This is a companion to [models/rig2-3090/qwen38-27b.md](../models/rig2-3090/qwen38-27b.md):
+This is a companion to [models/rig2-3090/swift-qwen38-27b.md](../models/rig2-3090/swift-qwen38-27b.md):
 the model page carries the measured Swift configs and headline numbers, this page carries
 the porting procedure, the checkpoint-level boot blocker hit on the way, and the
 pre-benchmark sanity checks. It is kept in-repo because the findings (which exports are

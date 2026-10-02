@@ -1,10 +1,12 @@
-# Qwen3.8-27B (Rig 1) - recommended configs
+# Swift-1.5-Qwen3.8-27B (Rig 1) - recommended configs
 
-Updated: 2026-09-30 · [full experiment log](archive/qwen38-27b.md) · [methodology](../../methodology.md)
+Updated: 2026-09-30 · [full experiment log](archive/swift-qwen38-27b.md) · [methodology](../../methodology.md)
 
-`IQ2_XS` of the **Swift-1.5 fine-tune** (`qwen35`, native ctx 262144, embedded MTP head).
-Dense hybrid SSM + attention - only every 4th layer carries full attention
-(`full_attention_interval=4`) - and not a MoE, so no expert split applies. Model card:
+`IQ2_XS` of the **Swift-1.5 fine-tune** of Qwen3.8-27B (`qwen35`, native ctx 262144,
+embedded MTP head). Dense hybrid SSM + attention - only every 4th layer carries full
+attention (`full_attention_interval=4`) - and not a MoE, so no expert split applies. This is
+the only Qwen3.8-27B variant benchmarked on Rig 1; the base model's results are on Rig 2
+([qwen38-27b.md](../rig2-3090/qwen38-27b.md)). Model card:
 [ukisai/Swift-1.5-Qwen3.8-27B-GSQ-RCO-GGUF](https://huggingface.co/ukisai/Swift-1.5-Qwen3.8-27B-GSQ-RCO-GGUF) (`IQ2_XS`).
 
 ## Recommended configs

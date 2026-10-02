@@ -2,31 +2,28 @@
 
 Updated: 2026-09-30 · [full experiment log](archive/qwen38-27b.md) · [methodology](../../methodology.md)
 
-`W4A16-AutoRound-fast` and `Swift-1.5-INT4` (`qwen35` dense hybrid SSM + attention -
-only every 4th layer carries full attention, `full_attention_interval=4` - native ctx
-262144, embedded MTP head). Dense, not a MoE, so no expert split applies. Both run on the
+`W4A16-AutoRound-fast` (`qwen35` dense hybrid SSM + attention - only every 4th layer
+carries full attention, `full_attention_interval=4` - native ctx 262144, embedded MTP head).
+Dense, not a MoE, so no expert split applies. Runs on the
 [syv-ai/HyperQwen](https://github.com/syv-ai/HyperQwen) vLLM container (vLLM 0.29.0).
-Model cards: [dbirks/Qwen3.8-27B-W4A16-AutoRound](https://huggingface.co/dbirks/Qwen3.8-27B-W4A16-AutoRound)
-and [ukisai/Swift-1.5-Qwen3.8-27b-INT4](https://huggingface.co/ukisai/Swift-1.5-Qwen3.8-27b-INT4);
-the dense llama.cpp [unsloth/Qwen3.8-27B-GGUF](https://huggingface.co/unsloth/Qwen3.8-27B-GGUF) quant and the DFlash2 profile are archived.
+Model card: [dbirks/Qwen3.8-27B-W4A16-AutoRound](https://huggingface.co/dbirks/Qwen3.8-27B-W4A16-AutoRound);
+the dense llama.cpp [unsloth/Qwen3.8-27B-GGUF](https://huggingface.co/unsloth/Qwen3.8-27B-GGUF)
+quant and the DFlash2 profile are archived. The Swift-1.5 fine-tune of this model is a
+separate model: [swift-qwen38-27b.md](swift-qwen38-27b.md).
 
 Low-level knob transferability study:
 [../../experiments/qwen38-27b-da3dsoul-arc-transfer.md](../../experiments/qwen38-27b-da3dsoul-arc-transfer.md).
-Fine-tune port study:
-[../../experiments/qwen38-27b-swift-1.5-int4.md](../../experiments/qwen38-27b-swift-1.5-int4.md).
 Rig and setup: [../../rig2-3090.md](../../rig2-3090.md).
 
 ## Recommended configs
 
-Two contexts per quant: fp8 KV at 150000 (4 chained MTP drafts) for the fastest decode,
-and KVarN 4/2-bit KV at 250000 (3 chained drafts) for long requests.
+Two contexts: fp8 KV at 150000 (4 chained MTP drafts) for the fastest decode, and
+KVarN 4/2-bit KV at 250000 (3 chained drafts) for long requests.
 
 | Config | ctx | engine | MTP | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | W4A16-AutoRound-fast | 150000 | vLLM | on | 2430 | **113.0** | 21992 MiB | fp8 KV; 4 drafts, `MAX_SEQS=4`; pool pinned 5.8 GB |
 | W4A16-AutoRound-fast | 250000 | vLLM | on | 2408 | **87.9** | 21234 MiB | KVarN k4v2 KV, 3 drafts; pool pinned 4.2 GB |
-| Swift-1.5-INT4 | 150000 | vLLM | on | 2417 | **116.9** | 22510 MiB | fp8 KV; 4 drafts, `MAX_SEQS=4`; pool pinned 5.8 GB |
-| Swift-1.5-INT4 | 250000 | vLLM | on | 2394 | **94.3** | 22052 MiB | KVarN k4v2 KV, 3 drafts; pool pinned 4.2 GB |
 
 All rows are served with `INT8_ACT=int8`.
 
@@ -55,29 +52,6 @@ All rows are served with `INT8_ACT=int8`.
     #      EXTRA_ARGS=--kv-cache-memory=4200000000
     #      INT8_ACT=int8
 
-### Swift-1.5-INT4 at 150000 - vLLM, fp8 KV, 4 MTP drafts
-
-    docker run --gpus all --ipc host \
-      --env-file <env> \
-      -v <models>:/app/models \
-      ghcr.io/syv-ai/hyperqwen:latest single
-
-    # env: MODEL=Swift-1.5-INT4  CTX=long  MAX_LEN=150000  GPU_UTIL=0.88
-    #      DRAFT_TOKENS=4  MAX_SEQS=4
-    #      EXTRA_ARGS=--kv-cache-memory=5800000000
-    #      INT8_ACT=int8
-
-### Swift-1.5-INT4 at 250000 - vLLM, KVarN 4/2-bit KV, 3 MTP drafts
-
-    docker run --gpus all --ipc host \
-      --env-file <env> \
-      -v <models>:/app/models \
-      ghcr.io/syv-ai/hyperqwen:latest single
-
-    # env: MODEL=Swift-1.5-INT4  CTX=huge  MAX_LEN=250000  GPU_UTIL=0.88
-    #      EXTRA_ARGS=--kv-cache-memory=4200000000
-    #      INT8_ACT=int8
-
 ## Notes
 
 - Both profiles pin the KV pool by bytes (`EXTRA_ARGS=--kv-cache-memory=...`): `KV_MEM` is
@@ -88,8 +62,6 @@ All rows are served with `INT8_ACT=int8`.
   `VLLM_ALLOW_LONG_MAX_MODEL_LEN=1` (risks NaN beyond native RoPE).
 - Leave prefix caching off on the 250k (KVarN) profile: `MTP + CTX=huge + PREFIX_CACHE=1`
   corrupts `prompt_logprobs` only (ordinary generation is unaffected).
-- Swift-1.5-INT4 runs ~520 MiB heavier than the base quant at 150000 (22510 vs 21992 MiB) -
-  ~18 MiB under the 22528 cap.
 
 ## Long-context refactor benchmark (~60K prompt)
 
@@ -100,5 +72,3 @@ as the recommended configs.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | W4A16-AutoRound-fast | 150000 | vLLM | on | 1627 | **101.3** | 21992 MiB | fp8 KV |
 | W4A16-AutoRound-fast | 250000 | vLLM | on | 1706 | **52.5** | 21234 MiB | KVarN k4v2 KV |
-| Swift-1.5-INT4 | 150000 | vLLM | on | 1610 | **99.1** | 22510 MiB | fp8 KV |
-| Swift-1.5-INT4 | 250000 | vLLM | on | 1694 | **51.2** | 22052 MiB | KVarN k4v2 KV |
