@@ -1,6 +1,6 @@
 # KAT-Coder-V2.5-Dev (Rig 1) - recommended configs
 
-Updated: 2026-09-30 · [full experiment log](archive/katcoder-v2.5-dev.md) · [methodology](../../methodology.md)
+Updated: 2026-10-03 · [full experiment log](archive/katcoder-v2.5-dev.md) · [methodology](../../methodology.md)
 
 `APEX-I-Compact` (`qwen35moe`, 41 blocks, 256 experts / 8 active, native ctx 262144,
 embedded MTP head). Model card:
@@ -10,7 +10,7 @@ embedded MTP head). Model card:
 
 | Config | ctx | engine | MTP | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| APEX-I-Compact | 262144 | moe-cache fork | on | 1587 | **66** | 11656 MiB | cache 80, `-b/-ub 3072` |
+| APEX-I-Compact | 262144 | moe-cache fork | on | 1673 | **66** | 11774 MiB | cache 80, `-b/-ub 4096`, draft ubatch 3072 |
 
 ## Configs
 
@@ -23,8 +23,9 @@ embedded MTP head). Model card:
       --cache-type-k q8_0 --cache-type-v q8_0 --flash-attn on \
       --load-mode none --no-mmproj-offload --threads 12 --parallel 1 \
       --spec-type draft-mtp --spec-draft-n-max 2 \
+      --spec-draft-ubatch-size 3072 \
       --cache-type-k-draft q8_0 --cache-type-v-draft q8_0 \
-      -b 3072 -ub 3072 \
+      -b 4096 -ub 4096 \
       --temp 1.0 --top-k 20 --presence-penalty 1.5
 
 ## Notes
@@ -42,4 +43,4 @@ file of 79 near-identical legacy templates. Same protocol as the recommended con
 
 | Config | ctx | engine | MTP | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| APEX-I-Compact | 262144 | moe-cache fork | on | 1374 | **51.2** | 11636 MiB | cache 80, `-b/-ub 3072` |
+| APEX-I-Compact | 262144 | moe-cache fork | on | 1434 | **51.6** | 11774 MiB | cache 80, `-b/-ub 4096`, draft ubatch 3072 |

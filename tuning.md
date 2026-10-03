@@ -121,7 +121,8 @@ Adds a dynamic CUDA expert cache on top of stock; the flags below do not exist e
   arch); VRAM is roughly linear in slots.
 - `--spec-draft-ubatch-size N` (env `LLAMA_ARG_SPEC_DRAFT_UBATCH`; default 0 inherits the target
   `-ub`) - the fix for the draft-context OOM above. Cap the *draft* ubatch while keeping the
-  target `-ub` large.
+  target `-ub` large; a cap well below the target costs draft throughput, so it can be a net
+  loss even when it fits (see the KAT-Coder and Qwen3.6-35B results).
 - Fork companions, all default off: `--moe-early-router`, `--ple-prefetch`, `--decode-overlap`,
   `--decode-boundary-overlap`, `--phase-aware-workspace`, `--live-context-workspace`
   (`--backend-sampling` is an upstream flag). These are config- and arch-dependent - a free win
@@ -223,7 +224,9 @@ acceptance from ~77% to ~89% with no decode gain; a larger expert cache beat a s
 - **Pruned 256-expert layout:** needs `GGML_CUDA_DISABLE_FUSION=1` on the fork (see Part B).
 - **Hybrid SSM+attention:** prefill does not scale with `-ub` (Rig 1 dense 27B).
 - **Embedded MTP draft context:** can OOM on the first large prefill after a passing health
-  check; cap `--spec-draft-ubatch-size` (fork).
+  check; cap `--spec-draft-ubatch-size` (fork). The cap is not free: it unblocked `-ub 4096`
+  on KAT-Coder (+5.5% prefill) but lost ~3% prefill at `-ub 8192` on Qwen3.6-35B vs the
+  shipped `-ub 6144` - measure both sides.
 - **ik-llama.cpp:** `-ncmoe` clamps at the layer count.
 
 ## Validating a config before recording it

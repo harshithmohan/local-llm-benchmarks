@@ -35,20 +35,45 @@ Cache 80, ctx 262144, MTP on, 10k prompt, second-pass:
 | 4096 | OOM | - | - |
 
 Prefill scales with `-ub` (the compute buffer is ubatch-bound on this arch); decode is
-ubatch-independent (~62-70, MTP-acceptance noise). 4096 OOMs, so 3072 is the largest fitting
-ubatch at cache 80. A headline re-run at 3072 measured prefill 1588 / 1586 and decode
-67.0 / 65.7.
+ubatch-independent (~62-70, MTP-acceptance noise). 4096 OOMs with the draft ubatch at the
+target `-ub`, so 3072 is the largest fitting ubatch without the draft cap (see below). A
+headline re-run at 3072 measured prefill 1588 / 1586 and decode 67.0 / 65.7.
+
+## `--spec-draft-ubatch-size` - unlocking `-ub 4096` (2026-10-03)
+
+The `-b/-ub 4096` row above OOMs because the MTP draft context inherits the target `-ub`.
+Capping the *draft* ubatch below the target makes 4096 fit, on the fork
+(`--spec-draft-ubatch-size`, [engine-notes](../../../engine-notes/moe-cache-fork.md)):
+
+| config | VRAM | 10k prefill | 10k decode | 60K prefill | 60K decode |
+| --- | --- | --- | --- | --- | --- |
+| `-ub 3072`, MTP on (previous) | 11656 MiB | 1579 | 73.1 | 1372 | 53.4 |
+| `-ub 4096 --spec-draft-ubatch-size 3072`, MTP on | 11774 MiB | 1663 / 1683 | 68.5 / 64.3 | 1430 / 1438 | 50.6 / 52.6 |
+| `-ub 4096`, MTP off | 9964 MiB | 1761 | 55.3 | 1521 | 40.9 |
+
+The 10k row is two cold-loaded runs; decode is the noisy column (MTP acceptance varies
+run-to-run).
+
+- The draft cap lifts the target-ub ceiling: 4096 now loads, serves the 60K prompt, and
+  holds the full 262144 cache inside 12 GB (11774 MiB, ~510 MiB free).
+- Prefill +5.5% (1663-1683 vs 1579); decode is statistically indistinguishable (64-68 vs
+  73 in one run, but the previous 3072 config itself ranges 62-73 across runs).
+- MTP beats MTP-off at the same `-ub 4096` (~64-68 vs 55.3 decode) for ~1.8 GiB more VRAM.
+- Validated with one `--experimental-logs` pass: `moe-grouped-decode` calls 8977 after the
+  first recorded pass (9915 cumulative after the 60K pass), with `fallback`, `rollback`,
+  `prepare_error`, `finish_error`, and `upload_errors` all 0.
 
 ## Long-context refactor benchmark (~60K prompt)
 
-The ~60K refactor prompt (n=59751) at the recommended config (cache 80, `-b/-ub 3072`, MTP
-on, cold load): prefill 1374 t/s, decode 51.2 t/s, VRAM 11636 MiB. Survives with ~650 MiB
-headroom - no OOM on the large prompt.
+The ~60K refactor prompt (n=59751) at the recommended config (cache 80, `-b/-ub 4096`,
+`--spec-draft-ubatch-size 3072`, MTP on, cold load): prefill 1434 t/s, decode 51.6 t/s, VRAM
+11774 MiB. Survives with ~510 MiB headroom - no OOM on the large prompt.
 
 ## Conclusions
 
-- `-b/-ub 3072` is the prefill-maximizing setting at cache 80: prefill 1587 vs 1339 at 2048
-  and 676 at 512; 4096 OOMs.
-- Decode is ubatch-independent (~66 t/s on the 10k prompt), driven by MTP acceptance.
-- The expert cache holds the full 262144 window with MTP inside 12 GB (~11.6 GiB, ~650 MiB
-  free).
+- `-b/-ub 4096` with `--spec-draft-ubatch-size 3072` is the prefill-maximizing setting at
+  cache 80: prefill ~1673 vs 1579 at 3072 (MTP on) and 1761 at 4096 (MTP off). Plain
+  `-ub 4096` OOMs with the draft ubatch at the target `-ub`; the draft cap is what makes it fit.
+- Decode is ubatch-independent (~64-73 on the 10k prompt), driven by MTP acceptance.
+- The expert cache holds the full 262144 window with MTP inside 12 GB (~11.5 GiB, ~510 MiB
+  free at `-ub 4096`).

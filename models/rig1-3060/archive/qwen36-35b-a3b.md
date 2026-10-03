@@ -186,6 +186,33 @@ physical ubatch is the prefill lever (the logical `-b` only caps `-ub`). Measure
 - The base entry was moved to `-b 6144 -ub 6144` (+39% prefill for ~1.1 GiB, still under
   the 12288 MiB cap).
 
+### IQ4_XS - `--spec-draft-ubatch-size` at `-ub 8192` (2026-10-03)
+
+The ubatch sweep above stopped at 6144 because `-ub 8192` with MTP crashed on the first
+inference (runtime CUDA OOM, not a load failure). Capping the *draft* ubatch below the
+target (fork `--spec-draft-ubatch-size`) was tested at target `-b/-ub 8192`, cache 64:
+
+| config | VRAM | 10k prefill | 10k decode | 60K prefill | 60K decode |
+| --- | --- | --- | --- | --- | --- |
+| `-ub 8192`, MTP on, draft ub 6144 | - | **OOM (first inference)** | - | - | - |
+| `-ub 8192`, MTP on, draft ub 4096 | 11640 MiB | 1840 | 75.0 | 1549 | 59.7 |
+| `-ub 8192`, MTP on, draft ub 3072 | 11522 MiB | 1845 | 75.5 | 1554 | 59.0 |
+| `-ub 8192`, MTP off | 9920 MiB | 1957 | 66.2 | 1675 | 43.1 |
+| `-ub 6144`, MTP on (shipped; same-session reference) | 11504 MiB | 1894 | 78.1 | 1553 | 58.4 |
+
+- Draft ub 6144 still OOMs on the first inference (`cuMemCreate` inside
+  `common_speculative_impl_draft_mtp::process`); 4096 and 3072 both load and complete the
+  60K pass. So the failing allocation *is* draft-ubatch-sensitive - a smaller cap fits.
+- But it is a **net loss**: the capped-draft `-ub 8192` configs measure lower prefill
+  (1840-1845) than the shipped `-ub 6144` config (1894). The draft cap costs more than the
+  larger target ubatch gains; the shipped config already runs draft ub 6144 (inherited) with
+  a 6144 target, which is the sweet spot. (The 6144 reference is from the same-session A/B;
+  prefill is stable, so the ~3% gap is read as real.)
+- `-ub 8192` with MTP off is +3% prefill (1957 vs 1894) but -15% decode (66.2 vs 78.1) -
+  not adopted.
+- Verdict: no change to the recommended config; the flag unblocks `-ub 8192` but does not
+  beat `-ub 6144`.
+
 ### IQ4_XS - 512K ubatch + cache ceiling (2026-09-29)
 
 The 512K extended-context entry was tuned the same way as the 256K one (raise `-b/-ub`, then
@@ -515,6 +542,8 @@ config-served sampling, /v1/chat/completions, max_tokens 512, `cache_prompt: fal
   stock+MTP (54.9); it also takes 512K (52) and is the first engine here to serve YaRN up to
   843776. Cache 64 is the ceiling at 256k/ub 6144 (80 no longer fits, 96 OOMs); at 32k the
   same fork reaches 103 t/s (128 slots).
+- The `--spec-draft-ubatch-size` draft cap unblocks `-ub 8192` with MTP (draft ubatch <=
+  4096) but is a net loss vs the shipped `-ub 6144` config, so that stays the headline.
 - UD-Q6_K is the weakest at large ctx in every measured config; archived from the
   main surfaces.
 - Q4_K_M's only argument might be quantization quality (bpw 4.4-4.8 vs 4.19) - never
