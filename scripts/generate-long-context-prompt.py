@@ -6,7 +6,8 @@ build_prompt.py). Deterministic: seed 42, so every run/regeneration reproduces t
 same prompt text (79 repeats ~ 60K tokens on the Qwen tokenizer family; recorded
 token counts still vary slightly across models/tokenizers).
 
-Outputs (into --out-dir, default .):
+Outputs (into --out-dir, default <tmp>/llm-bench-prompts - a scratch dir, never the
+repo working tree):
   full_prompt.txt                  - instruction wrapper + near-repetitive legacy code
                                      (the prompt text)
   prompt-long-context-35b.json     - raw /v1/completions payload, 35B family
@@ -14,7 +15,7 @@ Outputs (into --out-dir, default .):
 
 Flags:
   --repeats N     entity-template repeats (default 79, ~60K tokens)
-  --out-dir DIR   output directory (default .)
+  --out-dir DIR   output directory (default <tmp>/llm-bench-prompts, a scratch dir)
 
 Payloads carry the prompt + request shape only (n_predict 512, cache_prompt false,
 ignore_eos true - the unified timing protocol, see methodology.md/test-prompts.md) -
@@ -24,8 +25,10 @@ with this prompt - no output-quality evaluation passes.
 
 import argparse
 import json
+import os
 import random
 import sys
+import tempfile
 
 random.seed(42)
 
@@ -266,24 +269,31 @@ def main():
         default=79,
         help="entity-template repeats (79 ~ 60K tokens; 153 was the retired ~116K prompt)",
     )
-    ap.add_argument("--out-dir", default=".")
+    ap.add_argument(
+        "--out-dir",
+        default=os.path.join(tempfile.gettempdir(), "llm-bench-prompts"),
+        help="output directory (default: <tmp>/llm-bench-prompts - never the repo)",
+    )
     args = ap.parse_args()
+
+    out_dir = os.path.expanduser(args.out_dir)
+    os.makedirs(out_dir, exist_ok=True)
 
     prompt = build_prompt(args.repeats)
 
-    with open(args.out_dir + "/full_prompt.txt", "w") as f:
+    with open(os.path.join(out_dir, "full_prompt.txt"), "w") as f:
         f.write(prompt)
 
     for family in ("35b", "flash"):
         payload: dict = {"prompt": prompt}
         payload.update(request_shape())
         name = f"prompt-long-context-{family}.json"
-        with open(args.out_dir + "/" + name, "w") as f:
+        with open(os.path.join(out_dir, name), "w") as f:
             json.dump(payload, f)
 
     print(
         f"wrote full_prompt.txt ({len(prompt)} chars) + 2 payload JSONs "
-        f"(prompt + request shape only) to {args.out_dir}",
+        f"(prompt + request shape only) to {out_dir}",
         file=sys.stderr,
     )
 
