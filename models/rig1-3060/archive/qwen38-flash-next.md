@@ -17,11 +17,16 @@ Quants:
 
 - Engine: moe-cache fork ([GenerelSchwerz/llama.cpp](../../../engine-notes/moe-cache-fork.md),
   branch `moe-cache`, build b11608-2b8088c2a). Expert cache is opt-in and CUDA-only.
-- Quant: `UD-IQ3_XXS`, 3 shards + a shared MTP sidecar (Q4_K_M 1.91 GB / Q8_0 2.79 GB).
+- Quants: the three listed above; the MTP head is a separate sidecar (`UD-IQ3_XXS` uses the
+  shared Q4_K_M 1.91 GB / Q8_0 2.79 GB head, `GSQ-RCO Q2_0` the ggml-org Q4_0 head).
 - Context 81920 (tuned down from the 262144 native window); q8_0 KV; `-t 12`.
 - Protocol: raw `/v1/completions`, `n_predict 512`, `cache_prompt false`, `ignore_eos true`,
   measured on the second pass; VRAM is the per-process `llama-server` allocation.
 - Prompt: the ~10k opencode session-context prompt unless stated.
+
+## UD-IQ3_XXS (76.32 GiB, 3 shards)
+
+The following sections record this quant.
 
 ## Expert cache vs ncmoe (baseline, superseded)
 
@@ -168,6 +173,89 @@ MTP turns 25.7 into ~35 t/s at 10k and 14.7 into ~24 t/s at 60K. Cache 48 is the
 the head resident: `--spec-draft-n-max 3` and `4` both OOM the upstream, and the Q8_0 head
 does not fit.
 
+### MTP (Q4_0 head) on GSQ
+
+The GSQ-RCO release ships no MTP head of its own, so the head used here is the official
+[ggml-org/Qwen3.8-Flash-Next-GGUF](https://huggingface.co/ggml-org/Qwen3.8-Flash-Next-GGUF)
+`Q4_0` head (2.2 GB), loaded against the Q2_0 weights. Same flags as the shared-head run
+(ctx 81920, `-b/-ub 1024`, `--spec-type draft-mtp --spec-draft-n-max 2`, q8_0 draft KV).
+
+| prompt | cache | prefill t/s | decode t/s | draft accept | VRAM |
+| --- | --- | --- | --- | --- | --- |
+| 10k opencode | 40 | 428.9 | 35.13 | 86% | 10974 MiB |
+| 10k opencode | 48 | 426.9 | 31.83 | 69% | 11550 MiB |
+
+At 80k the cache-40 point is the one to use: it matches the shared Q4_K_M head at 80k/cache 48
+(~35 t/s) while using ~0.8 GB less VRAM (10974 vs 11818 MiB). At the same cache 48 the Q4_0
+head drafts worse (69% vs 81-82%) and is slower (31.8 vs 34.3-35.2). `--spec-draft-n-max 3`/`4`
+were not retested with this head.
+
+### Parameter ablation (Q4_0 head, ctx 81920)
+
+Single-variant changes on the 80k / cache-40 Q4_0-head base (10k prompt, pass 2). The positive
+deltas are within single-run noise; the losses are unambiguous.
+
+| variant | prefill t/s | decode t/s | Δ decode | VRAM |
+| --- | --- | --- | --- | --- |
+| base (cache 40) | 428.9 | 35.13 | - | 10974 MiB |
+| `--ple-prefetch` | 426.7 | 36.29 | +1.16 | 10974 MiB |
+| `-C ff -Cb ffff` | 428.3 | 35.84 | +0.71 | 10974 MiB |
+| `-t 8 --threads-batch 16` | 428.8 | 34.71 | -0.42 | 10974 MiB |
+| `-ctk f16 -ctv f16` @cache 31 | 430.4 | 34.35 | -0.78 | 11386 MiB |
+| `--ctx-checkpoints 0` | 434.7 | 33.61 | -1.52 | 10974 MiB |
+| `--phase-aware-workspace` | 426.2 | 33.54 | -1.59 | 9432 MiB |
+| `--live-context-workspace` | 426.0 | 31.48 | -3.65 | 9876 MiB |
+| `--experimental-logs` | 427.2 | 31.02 | -4.11 | 10974 MiB |
+| `--moe-early-router` | 427.2 | 29.61 | -5.52 | 10974 MiB |
+| `-b 8192` | 426.3 | 27.86 | -7.27 | 10974 MiB |
+| `--spec-default -C ff -Cb ffff` | 427.5 | 26.71 | -8.42 | 10974 MiB |
+
+`--ple-prefetch` and `-C ff -Cb ffff` are the only positive changes and both are small enough
+to be noise; every other knob costs decode. `-b 8192` and `--spec-default` also draft far
+harder (up to 688 launches vs ~375) and still lose. The upstream `GGML_CUDA_MOE_EARLY_ROUTER=1`
+env is this fork's `--moe-early-router`; `-kvo` is on by default, so passing it is a no-op.
+
+### `-ub` / draft ubatch (Q4_0 head, cache 40)
+
+Prefill scales with `-ub`, and on this fork the MTP draft context inherits the target `-ub`;
+`--spec-draft-ubatch-size` (`-ubd`) sizes the draft context's own ubatch instead. With the
+Q4_0 head at cache 40 (10k prompt, warm median of repeated passes):
+
+| ctx | `-b/-ub` | `-ubd` | prefill t/s | prefill best | decode t/s | VRAM | result |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 81920 | 1024 | 0 | 394 | 428 | 27.8 | 10974 MiB | baseline |
+| 81920 | 1536 | 0 | - | - | - | 11744 MiB | loads, crashes mid-decode |
+| 81920 | 1536 | 512 | **464** | **507** | 31.0 | 11534 MiB | works |
+| 81920 | 1792 | 0 / 512 | - | - | - | - | load fails: `failed to allocate compute pp buffers` |
+| 98304 | 1024 | 0 | 397 | 428 | 29.8 | 11460 MiB | works |
+| 98304 | 1280 | 512 | - | - | - | 11740 MiB | loads, first-decode OOM |
+| 98304 | 1536 | 512 | - | - | - | - | load fails at cache 40; cache 36/32 load 11836 MiB then first-decode OOM |
+
+Capping the draft ubatch below `-ub` is what makes `-ub 1536` viable; uncapped it loads and
+then dies mid-decode. At 80k that is ~+18% prefill over `-ub 1024` for ~+560 MiB, with decode
+unchanged. At 96k only `-ub 1024` survives: `-ub 1280`/`1536` load then OOM on the first
+decode, and trimming the expert cache (40→36→32) does not lower the resident footprint (the
+loader clamps the cache at 96k), so a bigger `-ub` cannot be bought with cache here. The
+recommended config therefore trades 96k for 80k and takes the `-ub` bump.
+
+Prefill on this shape is noisy - repeated passes of one config ranged 188-507 t/s - so the
+column is a warm median (un-warmed passes discarded), not a precise figure.
+
+### Context ceiling (Q4_0 head)
+
+With the Q4_0 head and `-ub` held at 1024, ctx 98304 runs at the same cache 40 as above:
+
+| ctx | cache | 10k prefill/decode | VRAM | result |
+| --- | --- | --- | --- | --- |
+| 98304 | 40 | 428 / 35.04 | 11460 MiB | works |
+| 98304 | 44 | - | 11748 MiB (loaded) | first decode OOM: `CUDA error: out of memory` (ggml-cuda.cu:117) |
+| 98304 | 48 | - | - | load fails: `failed to allocate compute pp buffers` |
+
+96k costs ~0.5 GB more than 80k at the same cache and the same decode, so 96k / cache 40 is
+the largest ctx that works; 44 is the first cache size that dies. The card now carries the
+faster 80k / `-ub 1536` shape instead (see `-ub` / draft ubatch above): 16k less ctx for
+~+18% prefill.
+
 ### Context ceiling with MTP
 
 Can ctx grow past 80k? KV is cheap on this model - only the 12 Qwen Sparse Attention layers
@@ -189,7 +277,9 @@ cache.
 96k is the hard ceiling; 112k fails at every workable cache. The balanced 96k point is cache
 40: 60K is unchanged (390/24) while 10k gives up ~9% prefill and ~3-6% decode. Keeping cache
 48 and halving `-ub` to 512 also fits and holds decode, but costs ~27% prefill, so it is not
-worth it for long-context work. The 96k / cache-40 shape is the recommended config.
+worth it for long-context work. The 96k / cache-40 shape was the best point with the shared
+head; the config carried on the card uses the Q4_0 head at 80k / `-ub 1536` (see `-ub` /
+draft ubatch above).
 
 ### Rejected: ngram-mod and --fit
 
@@ -271,18 +361,27 @@ for general use the card points at the unpruned `GSQ-RCO` quants.
   prefill/decode balance at 80k.
 - MTP placement decides it: on `UD-IQ3_XXS` the head never fits beside the cache at 12 GB,
   and a CPU draft costs more than it recovers. On `GSQ-RCO Q2_0` the smaller slabs leave room
-  for the Q4_K_M head on the GPU, and MTP lifts decode from 25.7 to ~35 t/s at 80k/cache 48.
-  Dropping the cache to 40 frees the compute buffer for a 96k context - the ceiling with the
-  head resident - at 388/33 (10k) and 390/24 (60K).
+  for the MTP head on the GPU, and MTP lifts decode from 23.9 to ~35 t/s. The shared Q4_K_M
+  head reached 35.2 at 80k/cache 48 (11818 MiB) and 33 at 96k/cache 40; the Q4_0 head - the
+  one available for this quant - reaches 35.0 at 96k/cache 40 with ~0.4 GB less VRAM
+  (11460 MiB) and 35.1 at 80k/cache 40 (10974 MiB).
+- A bigger `-ub` is the last prefill lever, but it only pays at 80k and only with the draft
+  ubatch capped: `-ub 1536 --spec-draft-ubatch-size 512` gives ~+18% prefill over `-ub 1024`
+  (464 vs 394 warm median) for ~+560 MiB, decode unchanged. Uncapped it loads then crashes on
+  the first decode; `-ub 1792`/`2048` fail at load. At 96k only `-ub 1024` survives (a bigger
+  `-ub` loads then OOMs on the first decode, and trimming the expert cache does not help), so
+  the card trades 96k for 80k to take the bump.
 - `--load-mode none` is mandatory; `mmap` loses ~2.6x decode. `--lazy-mode on` is required to
   keep the 51B n-gram embedding table off the hot path.
-- Remaining knobs (`--ple-prefetch`, `--moe-early-router`) are neutral; decode overlap is a
-  small, keepable win.
+- Remaining knobs are neutral or negative: `--ple-prefetch` (+1.2) and CPU affinity (+0.7) are
+  within noise, while `-b 8192`, `--spec-default`, `--moe-early-router`, `--experimental-logs`,
+  `--live-context-workspace`, `--phase-aware-workspace`, f16 KV and `--ctx-checkpoints 0` all
+  cost decode. Decode overlap is kept because it is free.
 - `GSQ-RCO Q2_0` is the faster quant on this rig: at cache 80 it does 436/25.7 at 10k and
   407/14.7 at 60K (vs 362/21.4 and 341/13.1 for UD-IQ3_XXS) at lower VRAM; with the MTP head
-  it does 388/33 and 390/24 at 96k (or 426/35 and 398/24 at 80k/cache 48), the best config on
-  the page. It is a 2.40 bpw quant, so this is a speed/VRAM win - the GSQ-RCO model card
-  reports a lower task-average quality than IQ3_XXS (89.07 vs 92.57).
+  it does 428/35 at 96k/cache 40 and 429/35 at 80k/cache 40 (the shared head reached 388/33
+  and 390/24 at 96k, or 426/35 and 398/24 at 80k/cache 48). It is a 2.40 bpw quant, so this is a speed/VRAM win - the
+  GSQ-RCO model card reports a lower task-average quality than IQ3_XXS (89.07 vs 92.57).
 - `GSQ-RCO Coder IQ1_M` runs (with `GGML_CUDA_DISABLE_FUSION=1`) but is the slowest quant
   tested here: 458/19.9 at 96k/cache 40, and the only one whose expert cache needs the fusion
   workaround. It is a pruned coder checkpoint (256 experts, 1.89 bpw effective), not a
