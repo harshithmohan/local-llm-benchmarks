@@ -219,27 +219,31 @@ env is this fork's `--moe-early-router`; `-kvo` is on by default, so passing it 
 
 Prefill scales with `-ub`, and on this fork the MTP draft context inherits the target `-ub`;
 `--spec-draft-ubatch-size` (`-ubd`) sizes the draft context's own ubatch instead. With the
-Q4_0 head at cache 40 (10k prompt, warm median of repeated passes):
+Q4_0 head at cache 40 (10k prompt, steady-state median of repeated passes):
 
 | ctx | `-b/-ub` | `-ubd` | prefill t/s | prefill best | decode t/s | VRAM | result |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 81920 | 1024 | 0 | 394 | 428 | 27.8 | 10974 MiB | baseline |
+| 81920 | 1024 | 0 | 428 | 429 | 34 | 10974 MiB | baseline |
 | 81920 | 1536 | 0 | - | - | - | 11744 MiB | loads, crashes mid-decode |
-| 81920 | 1536 | 512 | **464** | **507** | 31.0 | 11534 MiB | works |
+| 81920 | 1536 | 512 | **505** | **507** | 34 | 11534 MiB | works |
 | 81920 | 1792 | 0 / 512 | - | - | - | - | load fails: `failed to allocate compute pp buffers` |
-| 98304 | 1024 | 0 | 397 | 428 | 29.8 | 11460 MiB | works |
+| 98304 | 1024 | 0 | 427 | 428 | 35 | 11460 MiB | works |
 | 98304 | 1280 | 512 | - | - | - | 11740 MiB | loads, first-decode OOM |
 | 98304 | 1536 | 512 | - | - | - | - | load fails at cache 40; cache 36/32 load 11836 MiB then first-decode OOM |
 
 Capping the draft ubatch below `-ub` is what makes `-ub 1536` viable; uncapped it loads and
-then dies mid-decode. At 80k that is ~+18% prefill over `-ub 1024` for ~+560 MiB, with decode
-unchanged. At 96k only `-ub 1024` survives: `-ub 1280`/`1536` load then OOM on the first
+then dies mid-decode. At 80k that is ~+18% prefill over `-ub 1024` (505 vs 428) for ~+560 MiB,
+with decode unchanged. At 96k only `-ub 1024` survives: `-ub 1280`/`1536` load then OOM on the
 decode, and trimming the expert cache (40→36→32) does not lower the resident footprint (the
 loader clamps the cache at 96k), so a bigger `-ub` cannot be bought with cache here. The
 recommended config therefore trades 96k for 80k and takes the `-ub` bump.
 
-Prefill on this shape is noisy - repeated passes of one config ranged 188-507 t/s - so the
-column is a warm median (un-warmed passes discarded), not a precise figure.
+The figures above are steady-state medians from 3 cold loads x 4 passes (2026-10-05), measured
+after the model store was moved to local NVMe storage. Earlier figures on this page were taken
+with the store on a FUSE-backed user share, which depressed and destabilised prefill (up to
+~2x between passes of one config); those figures are relative-comparable but understated in
+absolute terms. On local storage the recommended config read 504.8-507.0 t/s across the three
+loads (±0.4%), stable from the second pass on.
 
 ### Context ceiling (Q4_0 head)
 
@@ -247,7 +251,7 @@ With the Q4_0 head and `-ub` held at 1024, ctx 98304 runs at the same cache 40 a
 
 | ctx | cache | 10k prefill/decode | VRAM | result |
 | --- | --- | --- | --- | --- |
-| 98304 | 40 | 428 / 35.04 | 11460 MiB | works |
+| 98304 | 40 | 427 / 35 | 11460 MiB | works |
 | 98304 | 44 | - | 11748 MiB (loaded) | first decode OOM: `CUDA error: out of memory` (ggml-cuda.cu:117) |
 | 98304 | 48 | - | - | load fails: `failed to allocate compute pp buffers` |
 
@@ -367,7 +371,7 @@ for general use the card points at the unpruned `GSQ-RCO` quants.
   (11460 MiB) and 35.1 at 80k/cache 40 (10974 MiB).
 - A bigger `-ub` is the last prefill lever, but it only pays at 80k and only with the draft
   ubatch capped: `-ub 1536 --spec-draft-ubatch-size 512` gives ~+18% prefill over `-ub 1024`
-  (464 vs 394 warm median) for ~+560 MiB, decode unchanged. Uncapped it loads then crashes on
+  (505 vs 428) for ~+560 MiB, decode unchanged. Uncapped it loads then crashes on
   the first decode; `-ub 1792`/`2048` fail at load. At 96k only `-ub 1024` survives (a bigger
   `-ub` loads then OOMs on the first decode, and trimming the expert cache does not help), so
   the card trades 96k for 80k to take the bump.

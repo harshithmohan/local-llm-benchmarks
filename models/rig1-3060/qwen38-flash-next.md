@@ -14,7 +14,7 @@ MTP head: [ggml-org/Qwen3.8-Flash-Next-GGUF](https://huggingface.co/ggml-org/Qwe
 
 | Config | ctx | engine | MTP | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| GSQ-RCO Q2_0 + MTP | 81920 | moe-cache fork | on | 464 | **31** | 11534 MiB | cache 40, Q4_0 head, `-b/-ub 1536`, draft ubatch 512 |
+| GSQ-RCO Q2_0 + MTP | 81920 | moe-cache fork | on | 505 | **34** | 11534 MiB | cache 40, Q4_0 head, `-b/-ub 1536`, draft ubatch 512 |
 
 ## Configs
 
@@ -41,20 +41,20 @@ MTP head: [ggml-org/Qwen3.8-Flash-Next-GGUF](https://huggingface.co/ggml-org/Qwe
   is the n-gram table). Without MTP, cache 84 and above load but crash on the first request;
   cache 80 is the ceiling at 80k (436/25.7).
 - **MTP is the point of this quant.** The GSQ quant's smaller expert slabs leave room for the
-  MTP head on the GPU: at 80k/cache 40 the recommended config runs 464/31 (best 507;
-  draft acceptance ~85%), roughly double the no-MTP decode (23.9-25.7). `--spec-draft-n-max 3`
+  MTP head on the GPU: at 80k/cache 40 the recommended config runs 505/34 (draft
+  acceptance ~83%), roughly double the no-MTP decode (23.9-25.7). `--spec-draft-n-max 3`
   and `4` OOM; the Q8_0 head does not fit.
 - **A bigger `-ub` buys prefill at 80k, but only with the draft ubatch capped.** `-ub 1536`
-  is ~+18% prefill over `-ub 1024` (464 vs 394 warm median) for ~+560 MiB; uncapped it loads
+  is ~+18% prefill over `-ub 1024` (505 vs 428) for ~+560 MiB; uncapped it loads
   then crashes on the first decode, so `--spec-draft-ubatch-size 512` is required. `-ub 1792`
   and `2048` fail at load (`failed to allocate compute pp buffers`).
 - **96k is the ctx ceiling, but only at `-ub 1024`.** KV is cheap here (only the 12 Qwen
   Sparse Attention layers carry it), so the binding limit is the compute buffer: 96k/cache 40
-  runs 428/35.0 at 11460 MiB, but `-ub 1280` and `1536` load and then OOM on the first
+  runs 427/35 at 11460 MiB, but `-ub 1280` and `1536` load and then OOM on the first
   decode, and trimming the expert cache (40→36→32) does not lower the resident footprint.
   Cache 44 loads but OOMs on the first decode; cache 48 fails at load.
-- **Prefill on this shape is noisy**: repeated passes of one config ranged 188-507 t/s, so
-  the prefill column is a warm median, not a precise figure.
+- Prefill/decode are steady-state medians of repeated passes; the first pass after a cold
+  load is a page-in pass and is excluded.
 - `--spec-type ngram-mod` (draftless prompt lookup) was tested at several values
   (24/48/64, 24/3/12, 24/12/48) and never beat the no-spec baseline (10k 19.6-24.4 vs 25.7;
   60K 14.1-14.8). `--fit` is not used.
