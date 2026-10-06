@@ -2,7 +2,9 @@
 
 Fresh experiment log. Flash-Next was re-benchmarked from scratch on the
 [moe-cache fork](../../../engine-notes/moe-cache-fork.md) at c 81920; earlier
-fork measurements were retired with that engine and are not carried over.
+fork measurements were retired with that engine and are not carried over. The
+`GSQ-RCO Q2_0` fork config itself moved here on 2026-10-06, when the main card
+switched that quant to the Strata pack engine on the same weights.
 
 Main card: [qwen38-flash-next.md](../qwen38-flash-next.md).
 Methodology: [methodology.md](../../../methodology.md); issues: [issues.md](../../../issues.md).
@@ -135,6 +137,28 @@ A second quant, tested on the same fork, ctx, flags (q8_0 KV, MTP off, `--load-m
 --lazy-mode on`, overlap) and protocol as UD-IQ3_XXS. Two shards: 37.6 GB of weights + a
 28.8 GB n-gram table (66.4 GB total), per-tensor mixed types with the expert tensors mostly
 in Q2_0 and the n-gram table in IQ4_NL.
+
+### Recommended config (moe-cache fork, retired 2026-10-06)
+
+The shape the main card carried for this quant before the Strata pack engine replaced it
+(80k ctx, cache 40, Q4_0 MTP head, `-b/-ub 1536` with the draft ubatch capped at 512):
+
+    llama-server --port PORT \
+      -m <models>/Qwen3.8-Flash-Next-GSQ-RCO-Q2_0-00001-of-00002.gguf \
+      --ctx-size 81920 -ngl all -fit off \
+      --moe-expert-cache-size 40 \
+      --spec-draft-model <models>/mtp-Qwen3.8-Flash-Next-Q4_0.gguf \
+      --spec-type draft-mtp --spec-draft-n-max 2 \
+      --cache-type-k-draft q8_0 --cache-type-v-draft q8_0 \
+      --cache-type-k q8_0 --cache-type-v q8_0 --flash-attn on \
+      --load-mode none --lazy-mode on --no-mmproj-offload --threads 12 --parallel 1 \
+      --backend-sampling --decode-overlap --decode-boundary-overlap \
+      --cache-ram 0 \
+      -b 1536 -ub 1536 --spec-draft-ubatch-size 512 \
+      --temp 1.0 --top-k 20 --min-p 0.0
+
+Measured 505 t/s prefill / 34 t/s decode at 11534 MiB (10k prompt, steady-state median of
+3 cold loads x 4 passes on local NVMe storage).
 
 ### Cache size (10k prompt, `-b/-ub 1024`)
 
@@ -357,6 +381,43 @@ At cache 40 / 96k (n=59751, cold load): prefill 437.1 t/s, decode 12.64 t/s, VRA
 The Coder card reports SWE-bench Verified 75.60 (91.3% of the 82.80 base) and
 LiveCodeBench v6 86.28 (98.7% of 87.43). It is the pruned-expert, coder-targeted release;
 for general use the card points at the unpruned `GSQ-RCO` quants.
+
+## Spec window and min-p sweep (Strata, `GSQ-RCO Q2_0`)
+
+The `GSQ-RCO Q2_0` card runs this quant on the Strata pack engine, so the speculative pair was
+tuned there: `--spec T` (verify window) x `--spec-min-p F` (draft acceptance floor), `T` in
+2/3/4 and `F` in 0.0/0.5. `T = 1` is not available here - a native (IQ) pack refuses to start
+without `--spec T` with `T >= 2`.
+
+Protocol differs from the fork rows above: Strata serves no raw `/v1/completions`, so each row
+is a `/v1/chat/completions` pass on the ~10k prompt with `--prompt-cache 0`, and only a pass
+reporting `cache_n` 0 and `predicted_n` 512 is recorded. ctx 81920, `--kv int8`, MTP on. The
+recorded pass is the second one; the first is page-in and appears in the spread note below.
+
+| `--spec` | `--spec-min-p` | prefill t/s | decode t/s | drafts | accepted | acceptance | VRAM |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 2 | 0.0 | 1063.7 | 42.7 | 315 | 196 | 62.2% | 11350 MiB |
+| 2 | 0.5 | 1058.6 | 43.5 | 235 | 173 | 73.6% | 11350 MiB |
+| 3 | 0.0 | 1059.0 | 41.4 | 510 | 258 | 50.6% | 11358 MiB |
+| 3 | 0.5 | 1058.3 | 43.6 | 330 | 218 | 66.1% | 11358 MiB |
+| 4 | 0.0 | 1059.4 | 37.3 | 687 | 282 | 41.0% | 11362 MiB |
+| 4 | 0.5 | 1058.5 | 44.1 | 397 | 260 | 65.5% | 11362 MiB |
+
+- The floor is the lever, not the window. At `--spec-min-p 0.0` the verify window is always the
+  full `--spec`, so a wider window only buys more rejected drafts: `--spec 4` falls to 37.3 t/s
+  at 41.0% acceptance. At `0.5` the window is truncated to the leading drafts that clear the
+  floor, and decode is flat across the window width here (43.5 / 43.6 / 44.1 t/s) while
+  acceptance still swings 66-74%.
+- Accepted tokens per token decoded is *highest* in the worst row (0.55 at `4 / 0.0` against
+  0.51 at `4 / 0.5`) - the
+  [judge MTP by tok/s, not acceptance rate](../../../tuning.md#judge-mtp-by-toks-not-acceptance-rate)
+  rule again.
+- `--spec 4 --spec-min-p 0.5` stays (44.1 t/s); `--spec 3 --spec-min-p 0.5` (43.6) is within the
+  +-10-15% MTP decode noise. Prefill is unaffected by either knob (1058-1064 t/s), and VRAM
+  grows only 12 MiB from `--spec 2` to `--spec 4`.
+- Spread, first (page-in, discarded) pass decode against the recorded pass: `2/0.0` 43.1 vs
+  42.7; `2/0.5` 45.1 (a 493-token run) vs 43.5; `3/0.0` 39.1 vs 41.4; `3/0.5` 43.7 vs 43.6;
+  `4/0.0` 34.6 vs 37.3; `4/0.5` 42.9 vs 44.1. One recorded pass per config.
 
 ## Conclusions
 

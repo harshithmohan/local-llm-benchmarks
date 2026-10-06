@@ -5,7 +5,9 @@ of [llama.cpp](https://github.com/ggml-org/llama.cpp): upstream llama.cpp,
 [ik-llama.cpp](https://github.com/ikawrakow/ik_llama.cpp), and the
 [moe-cache fork](https://github.com/GenerelSchwerz/llama.cpp) (branch `moe-cache`).
 One Rig 2 model also has a
-[vLLM](https://github.com/syv-ai/HyperQwen) container stack.
+[vLLM](https://github.com/syv-ai/HyperQwen) container stack, and Rig 1 runs the same
+Qwen3.8-Flash-Next Q2_0 weights on a fifth engine, the
+[Strata](https://github.com/Niko1221/Strata) pack engine.
 
 ## Rigs
 
@@ -34,10 +36,18 @@ Known issues and gotchas: [issues.md](issues.md).
   cache (`--moe-expert-cache-size`), with no profile/trace step; while enabled it overrides
   `-ncmoe` placement. Flags and the `--experimental-logs` validation recipe:
   [engine-notes/moe-cache-fork.md](engine-notes/moe-cache-fork.md).
+- **Strata** ([Niko1221/Strata](https://github.com/Niko1221/Strata), engine 0.1.38, Rig 1) -
+  a llama.cpp-derived engine that runs Qwen3.8-Flash-Next from a *pack* (expert rows indexed
+  on the SSD, all experts pinned in host RAM, an adaptive VRAM expert cache) behind its own
+  OpenAI/Anthropic API server. Not a `llama-server` build: its rows are measured through
+  Strata's own `/v1/chat/completions` route with a chat template always applied, so they are
+  not directly comparable with the llama.cpp rows above. Flags, the KV modes and the
+  llama.cpp flag mapping: [engine-notes/strata.md](engine-notes/strata.md).
 
-The llama.cpp builds support MTP speculative decode.
+The llama.cpp builds support MTP speculative decode; Strata has its own MTP.
 Timings are read from the `llama-server` response `timings` (or its request log) for
-llama.cpp, and vLLM's Prometheus metrics for vLLM. `llama-bench` is not used.
+llama.cpp, from the same `timings` fields for Strata, and vLLM's Prometheus metrics for
+vLLM. `llama-bench` is not used.
 
 ## Contents
 
@@ -67,7 +77,7 @@ model pages.
 | --- | --- | --- | --- | --- |
 | Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | 262144 | 1909 | **76** |
 | Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | 524288 (YaRN 2x) | 2063 | **52** |
-| Qwen3.8-Flash-Next | GSQ-RCO Q2_0 + MTP | 81920 | 505 | **34** |
+| Qwen3.8-Flash-Next | GSQ-RCO Q2_0 + MTP (Strata) | 81920 | 1061 | **44** |
 | KAT-Coder-V2.5-Dev | APEX-I-Compact | 262144 | 1673 | **66** |
 | Swift-1.5-Qwen3.8-27B | IQ2_XS | 81920 (q4_0 KV) | 467 | **35.6** |
 
@@ -109,5 +119,6 @@ External repositories referenced on these pages.
 - [ggml-org/llama.cpp](https://github.com/ggml-org/llama.cpp) - upstream (`stock`)
 - [GenerelSchwerz/llama.cpp](https://github.com/GenerelSchwerz/llama.cpp) - moe-cache fork (dynamic CUDA expert cache), branch `moe-cache`
 - [ikawrakow/ik_llama.cpp](https://github.com/ikawrakow/ik_llama.cpp) - ik-llama.cpp performance fork
+- [Niko1221/Strata](https://github.com/Niko1221/Strata) - pack-based Qwen3.8-Flash-Next engine with its own API server (Rig 1)
 - [syv-ai/HyperQwen](https://github.com/syv-ai/HyperQwen) - vLLM 0.29.0 container stack (Rig 2 Qwen3.8-27B W4A16 and Swift-1.5-INT4; all rows re-measured 2026-09-30 on the ~10k opencode prompt)
 - [da3dsoul/Qwen3.8-vLLM-KVarN-MTP-Arc-Experiments](https://github.com/da3dsoul/Qwen3.8-vLLM-KVarN-MTP-Arc-Experiments) - source of the long-context refactor prompt and of the tuning experiments tested in [experiments/](experiments/)

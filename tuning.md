@@ -171,16 +171,32 @@ surface and different timing source (Prometheus metrics, not the llama-server `t
   add it without checking.
 - `VLLM_PREFIX_CACHE_RETENTION_INTERVAL` is a no-op on this image.
 
+### Strata only
+
+The pack engine ([Strata](engine-notes/strata.md)) runs the same speculative pair as llama.cpp
+under different names, but its acceptance floor doubles as a **width** control: at
+`--spec-min-p 0.0` the verify window is always the full `--spec`, while any non-zero floor
+truncates it to the leading drafts that clear the floor.
+
+- `--spec T` is the `--spec-draft-n-max` analogue, and `T >= 2` is structural rather than a
+  tuning choice: a native (IQ) pack refuses to start at `--spec 1`, and `--mtp` is ignored
+  below 2.
+- Sweep `--spec` and `--spec-min-p` together and report both. Because the floor decides how
+  much of the window is used, raising `--spec` at the default `0.0` can cost decode instead of
+  gaining it - the default floor is not automatically the safe value at a wide window.
+
+Measured rows, one model and quant: [Flash-Next archive](models/rig1-3060/archive/qwen38-flash-next.md).
+
 ### Flag equivalence
 
-| Concept | stock llama.cpp | moe-cache fork | ik-llama.cpp | vLLM |
-| --- | --- | --- | --- | --- |
-| Context | `-c/--ctx-size` | same | same | `MAX_LEN` |
-| KV quant | `-ctk/-ctv` | same | same | KV mode (fp8 / KVarN) |
-| ubatch | `-ub` | same | same | `--max-num-batched-tokens` |
-| Expert placement | `-ncmoe` | `--moe-expert-cache-size` (overrides `-ncmoe`) | `-ncmoe` | `GPU_UTIL` / pinned pool |
-| MTP | `--spec-type draft-mtp --spec-draft-n-max` | same + `--spec-draft-ubatch-size` | `--spec-type mtp:n_max=` | `DRAFT_TOKENS` |
-| Sampling | `--temp/--top-k/--min-p` | same | same | `--temp/--top-p/--top-k` |
+| Concept | stock llama.cpp | moe-cache fork | ik-llama.cpp | vLLM | Strata |
+| --- | --- | --- | --- | --- | --- |
+| Context | `-c/--ctx-size` | same | same | `MAX_LEN` | `--max-context` |
+| KV quant | `-ctk/-ctv` | same | same | KV mode (fp8 / KVarN) | `--kv fp16/int8/q4_0/k8v4` |
+| ubatch | `-ub` | same | same | `--max-num-batched-tokens` | `--prefill auto[:N]` |
+| Expert placement | `-ncmoe` | `--moe-expert-cache-size` (overrides `-ncmoe`) | `-ncmoe` | `GPU_UTIL` / pinned pool | `--expert-cache N/auto` |
+| MTP | `--spec-type draft-mtp --spec-draft-n-max` | same + `--spec-draft-ubatch-size` | `--spec-type mtp:n_max=` | `DRAFT_TOKENS` | `--mtp DIR --spec T --spec-min-p F` |
+| Sampling | `--temp/--top-k/--min-p` | same | same | `--temp/--top-p/--top-k` | `--temperature/--top-k/--top-p` |
 
 ## Rules of thumb
 

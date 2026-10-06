@@ -6,14 +6,22 @@ Tuning procedure (which knobs to sweep, in what order): [tuning.md](tuning.md).
 
 ## Inference engines
 
-Four engines are used across the rigs. Each has its own flag vocabulary, so engine labels
-are per-row and results are not interchangeable across engines. Per-engine flags, features,
-and quirks live in [engine-notes/](engine-notes/):
+Five engines produce the measured results in this folder. Each has its own flag vocabulary,
+so engine labels are per-row and results are not interchangeable across engines. Per-engine
+flags, features, and quirks live in [engine-notes/](engine-notes/):
 
 - [moe-cache fork](engine-notes/moe-cache-fork.md) - dynamic CUDA expert cache, no profile/trace.
 - [upstream (stock)](engine-notes/upstream-stock.md) - reference build; no fork features.
 - [ik-llama.cpp](engine-notes/ik-llama.md) - different flag syntax; no fork features.
 - [vLLM](engine-notes/vllm.md) - container stack for the Rig 2 Qwen3.8-27B quants.
+- [Strata](engine-notes/strata.md) - pack engine for Flash-Next on Rig 1; its own API server
+  and its own flag vocabulary.
+
+Strata serves no raw `/v1/completions` route and ignores `cache_prompt` and `ignore_eos`, so
+it cannot take the request protocol below as written. Its rows are measured through
+`/v1/chat/completions` - a chat template is always applied - with `--prompt-cache 0` in the
+engine args, and a pass counts only when `cache_n` is 0 and `predicted_n` reaches the
+requested window.
 
 ## Measurement methods
 
