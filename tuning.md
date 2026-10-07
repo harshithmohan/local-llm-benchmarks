@@ -205,7 +205,7 @@ Measured rows, one model and quant: [Flash-Next archive](models/rig1-3060/archiv
 A config can load, pass its health check, and still die on the **first large request** because
 compute buffers grow with context and the draft/attention workspaces are allocated late. Always
 run the long-context prompt before recording a decode number - the ~60K one, and the ~120K one
-for a window above 150k. Both failure modes occur:
+for a window above 140k. Both failure modes occur:
 clean load-time OOM (KAT-Coder Rig 2 `-ub 16384`), and load-then-crash (Flash-Next cache 84/88;
 qwen35moe `-ub 8192`; the draft-context OOM).
 
@@ -224,7 +224,7 @@ acceptance from ~77% to ~89% with no decode gain; a larger expert cache beat a s
 ### Noise: cold loads, cache warm-up, seed variance
 
 - Use cold-load, second-pass numbers; the first raw call can return a 1-token transient.
-- A dynamic expert cache keeps warming for 2+ passes - report the 3rd+ pass, not just the 2nd.
+- A dynamic expert cache keeps warming for 2+ passes; the second pass is still the recorded one.
 - Prefill is stable (~+-0.5%); **decode is the noisy column** (MTP is seed-dependent, +-10-15%
   run-to-run; vLLM decode +-5-10%). Take several samples and use the median.
 - Compare numbers within one page/table/session; cross-page and cross-session comparisons are
@@ -251,6 +251,6 @@ acceptance from ~77% to ~89% with no decode gain; a larger expert cache beat a s
 1. Cold-load through the rig endpoint and confirm the load's per-process VRAM is under the cap.
 2. Run the timing prompt on the second pass; capture both prefill and decode.
 3. Run the long-context prompt for the config's window (large-prompt stability check - ~60K,
-   or ~120K for a window above 150k) and confirm a full decode.
+   or ~120K for a window above 140k) and confirm a full decode.
 4. For the fork's expert cache, run one `--experimental-logs` pass and check the counters.
 5. Unload and confirm the GPU is idle before the next config.

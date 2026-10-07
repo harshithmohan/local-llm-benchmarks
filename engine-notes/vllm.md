@@ -19,6 +19,12 @@ quant.
   decode = `generation_tokens_total` / `request_decode_time_seconds`; acceptance =
   `spec_decode_num_accepted_tokens_total` / `spec_decode_num_draft_tokens_total`; VRAM is the
   per-process allocation, read from the compute-apps query - the process is `VLLM::EngineCore`.
-- A row is a single cold pass per boot on the shared timing prompt
-  ([test-prompts.md](../test-prompts.md)); vLLM keeps its own prefix cache, so the first send is
-  the cold one (`prompt_tokens_cached_total` 0, checked per run).
+- A row is two passes per boot on the shared timing prompt
+  ([test-prompts.md](../test-prompts.md)), the second recorded. The served profiles run
+  vLLM's default automatic prefix caching: the image's `PREFIX_CACHE` env only ever *adds*
+  `--enable-prefix-caching`, so it cannot turn caching off, and a repeated identical send is
+  served from cache (~99% `cached` on a measured re-send). The recorded pass therefore has to
+  be made cold explicitly - run the bench container with `--no-enable-prefix-caching`
+  appended to `EXTRA_ARGS` (it expands last on the launch line, so it wins) and assert
+  `prompt_tokens_cached_total` 0. The ~120K rows on the two Rig 2 model pages were taken that
+  way; the retired single-pass rows were cold by construction (fresh boot, first send).

@@ -14,8 +14,9 @@ what is specific to the fine-tune: the checkpoint port (a separate study,
 [../../../experiments/qwen38-27b-swift-1.5-int4.md](../../../experiments/qwen38-27b-swift-1.5-int4.md)),
 its retired timing rows, and the `INT8_ACT=int8` change applied to both Swift profiles.
 
-vLLM protocol: single pass per boot, timing from the vLLM server metrics
-([engine-notes/vllm.md](../../../engine-notes/vllm.md)), pool pinned by bytes,
+vLLM protocol: two passes per boot, the second recorded (prefix caching disabled so it is
+genuinely cold), timing from the vLLM server
+metrics ([engine-notes/vllm.md](../../../engine-notes/vllm.md)), pool pinned by bytes,
 `INT8_ACT=int8`, cold load. Methodology in [methodology](../../../methodology.md); gotchas in
 [issues](../../../issues.md). Model card:
 [ukisai/Swift-1.5-Qwen3.8-27b-INT4](https://huggingface.co/ukisai/Swift-1.5-Qwen3.8-27b-INT4).

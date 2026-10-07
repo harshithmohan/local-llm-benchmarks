@@ -55,14 +55,17 @@ YaRN 2x; the window no longer fits on GPU, so the expert cache keeps 168 slots/l
 - Rare moe-cache fork quirk: a 10k-prompt pass can occasionally return EOS as the first
   token (empty output); a retry decodes normally - see [issues.md](../../issues.md) §5.
 
-## Long-context refactor benchmark (~60K prompt)
+## Long-context refactor benchmark
 
 Real-task timing test of a long-context code-refactor task ([test-prompts.md](../../test-prompts.md)):
-a fixed refactor instruction wraps a deterministically generated (seed 42) ~60K-token Python
-file of 79 near-identical legacy templates. Same protocol as the recommended configs
-([methodology.md](../../methodology.md) §Measurement methods): q8_0 KV, cold load.
+a fixed refactor instruction wraps a deterministically generated (seed 42) Python file of
+near-identical legacy templates - 79 repeats for the ~60K prompt, 157 for the ~120K one. Same
+protocol as the recommended configs ([methodology.md](../../methodology.md) §Measurement
+methods): q8_0 KV, cold load.
 
-| Config | ctx | engine | MTP | prefill t/s | decode t/s | VRAM | Notes |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| UD-IQ4_XS | 262144 | moe-cache fork | on | 3891 | **154.0** | 22182 MiB | `-b/-ub 4096` |
-| UD-IQ4_XS | 524288 | moe-cache fork | on | 3587 | **131.2** | 22230 MiB | YaRN 2x; cache 168, `-b/-ub 8192` |
+| Config | ctx | engine | MTP | prompt | prefill t/s | decode t/s | VRAM | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| UD-IQ4_XS | 262144 | moe-cache fork | on | ~60K | 3891 | **154.0** | 22182 MiB | `-b/-ub 4096` |
+| UD-IQ4_XS | 262144 | moe-cache fork | on | ~120K | 2934 | **107.2** | 22340 MiB | 119293-token prompt, `-b/-ub 4096` |
+| UD-IQ4_XS | 524288 | moe-cache fork | on | ~60K | 3587 | **131.2** | 22230 MiB | YaRN 2x; cache 168, `-b/-ub 8192` |
+| UD-IQ4_XS | 524288 | moe-cache fork | on | ~120K | 2779 | **93.8** | 22608 MiB | 119293-token prompt; YaRN 2x, cache 168, `-b/-ub 8192` |

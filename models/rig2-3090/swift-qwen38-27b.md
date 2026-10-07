@@ -59,20 +59,26 @@ All rows are served with `INT8_ACT=int8`.
   pool below 150000 and the engine refuses to boot.
 - 250000 is just under the native 262144; vLLM refuses 290000 unless
   `VLLM_ALLOW_LONG_MAX_MODEL_LEN=1` (risks NaN beyond native RoPE).
-- Leave prefix caching off on the 250k (KVarN) profile: `MTP + CTX=huge + PREFIX_CACHE=1`
-  corrupts `prompt_logprobs` only (ordinary generation is unaffected).
+- vLLM's automatic prefix caching is ON by default in these profiles - the image's
+  `PREFIX_CACHE` env only *adds* `--enable-prefix-caching` (with `--mamba-cache-mode align`),
+  it cannot turn caching off; use `--no-enable-prefix-caching` in `EXTRA_ARGS` for that, as
+  the timing rows do so their recorded pass is cold.
+- `PREFIX_CACHE=1` with `MTP + CTX=huge` corrupts `prompt_logprobs` only (ordinary generation
+  is unaffected).
 - Swift-1.5-INT4 runs ~520 MiB heavier than the base quant at 150000 (22510 vs 21992 MiB) -
   ~18 MiB under the 22528 cap.
 - The checkpoint needs one config edit before it serves: its `quantization_config.ignore`
   blanket-blacklists the MTP head, which the prepare pipeline requantizes - see the port
   study above.
 
-## Long-context refactor benchmark (~60K prompt)
+## Long-context refactor benchmark
 
-The real-task ~60K refactor prompt ([test-prompts.md](../../test-prompts.md)), same protocol
-as the recommended configs.
+The real-task long-context refactor prompts ([test-prompts.md](../../test-prompts.md)) - 79
+repeats for the ~60K prompt, 157 for the ~120K one - same protocol as the recommended configs.
 
-| Config | ctx | engine | MTP | prefill t/s | decode t/s | VRAM | Notes |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| Swift-1.5-INT4 | 150000 | vLLM | on | 1610 | **99.1** | 22510 MiB | fp8 KV |
-| Swift-1.5-INT4 | 250000 | vLLM | on | 1694 | **51.2** | 22052 MiB | KVarN k4v2 KV |
+| Config | ctx | engine | MTP | prompt | prefill t/s | decode t/s | VRAM | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Swift-1.5-INT4 | 150000 | vLLM | on | ~60K | 1610 | **99.1** | 22510 MiB | fp8 KV |
+| Swift-1.5-INT4 | 150000 | vLLM | on | ~120K | 1110 | **91.1** | 22828 MiB | fp8 KV |
+| Swift-1.5-INT4 | 250000 | vLLM | on | ~60K | 1694 | **51.2** | 22052 MiB | KVarN k4v2 KV |
+| Swift-1.5-INT4 | 250000 | vLLM | on | ~120K | 1192 | **38.7** | 22554 MiB | KVarN k4v2 KV |

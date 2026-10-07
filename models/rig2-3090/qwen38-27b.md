@@ -60,15 +60,21 @@ All rows are served with `INT8_ACT=int8`.
   pool below 150000 and the engine refuses to boot.
 - 250000 is just under the native 262144; vLLM refuses 290000 unless
   `VLLM_ALLOW_LONG_MAX_MODEL_LEN=1` (risks NaN beyond native RoPE).
-- Leave prefix caching off on the 250k (KVarN) profile: `MTP + CTX=huge + PREFIX_CACHE=1`
-  corrupts `prompt_logprobs` only (ordinary generation is unaffected).
+- vLLM's automatic prefix caching is ON by default in these profiles - the image's
+  `PREFIX_CACHE` env only *adds* `--enable-prefix-caching` (with `--mamba-cache-mode align`),
+  it cannot turn caching off; use `--no-enable-prefix-caching` in `EXTRA_ARGS` for that, as
+  the timing rows do so their recorded pass is cold.
+- `PREFIX_CACHE=1` with `MTP + CTX=huge` corrupts `prompt_logprobs` only (ordinary generation
+  is unaffected).
 
-## Long-context refactor benchmark (~60K prompt)
+## Long-context refactor benchmark
 
-The real-task ~60K refactor prompt ([test-prompts.md](../../test-prompts.md)), same protocol
-as the recommended configs.
+The real-task long-context refactor prompts ([test-prompts.md](../../test-prompts.md)) - 79
+repeats for the ~60K prompt, 157 for the ~120K one - same protocol as the recommended configs.
 
-| Config | ctx | engine | MTP | prefill t/s | decode t/s | VRAM | Notes |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| W4A16-AutoRound-fast | 150000 | vLLM | on | 1627 | **101.3** | 21992 MiB | fp8 KV |
-| W4A16-AutoRound-fast | 250000 | vLLM | on | 1706 | **52.5** | 21234 MiB | KVarN k4v2 KV |
+| Config | ctx | engine | MTP | prompt | prefill t/s | decode t/s | VRAM | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| W4A16-AutoRound-fast | 150000 | vLLM | on | ~60K | 1627 | **101.3** | 21992 MiB | fp8 KV |
+| W4A16-AutoRound-fast | 150000 | vLLM | on | ~120K | 1017 | **78.8** | 22052 MiB | fp8 KV |
+| W4A16-AutoRound-fast | 250000 | vLLM | on | ~60K | 1706 | **52.5** | 21234 MiB | KVarN k4v2 KV |
+| W4A16-AutoRound-fast | 250000 | vLLM | on | ~120K | 1160 | **34.0** | 21774 MiB | KVarN k4v2 KV |

@@ -26,10 +26,9 @@ Quants:
 
 ## Warm-up
 
-The dynamic expert cache keeps warming for two passes after a cold load: prefill rises until
-the cache stops churning, so the second pass alone is not steady-state here. Each row below
-reports the warmed value (3rd+ pass); decode warms faster but is MTP-acceptance-driven and
-noisy (temp 1.0), so decode carries ~±5-8% single-run noise.
+The dynamic expert cache keeps warming after a cold load: prefill rises until the cache stops
+churning. Each row below reports the second pass; decode warms faster but is MTP-acceptance-
+driven and noisy (temp 1.0), so decode carries ~±5-8% single-run noise.
 
 ## `-b/-ub` sweep at cache 80 (10k prompt)
 

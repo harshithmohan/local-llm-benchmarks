@@ -35,11 +35,11 @@ the only Qwen3.8-27B variant benchmarked on Rig 1; the base model's results are 
 - **`-ub` is capped by the 12 GB cap.** Raising it does not raise prefill, and `-ub ≥ 2048`
   fails to allocate compute buffers (OOM) at 80k with q4_0 KV.
 
-## Long-context refactor benchmark (~60K prompt)
+## Long-context refactor benchmark
 
 The real-task ~60K refactor prompt ([test-prompts.md](../../test-prompts.md)), same protocol
 as the recommended configs.
 
-| Config | ctx | engine | MTP | prefill t/s | decode t/s | VRAM | Notes |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| IQ2_XS | 81920 | stock | on | 383 | **24.4** | 11472 MiB | q4_0 KV |
+| Config | ctx | engine | MTP | prompt | prefill t/s | decode t/s | VRAM | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| IQ2_XS | 81920 | stock | on | ~60K | 383 | **24.4** | 11472 MiB | q4_0 KV |

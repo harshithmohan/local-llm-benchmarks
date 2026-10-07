@@ -89,7 +89,7 @@ The same generator and text at `--repeats 157`: `full_prompt.txt` is ~412 KB, ~1
 tokens on the Qwen tokenizer family (119,344 recorded). Deterministic by the same seed 42.
 
 Purpose: the same realistic large-prompt stability check as the ~60K prompt, at the size a
-large window actually serves - a config serving a window above 150k is checked on this one,
+large window actually serves - a config serving a window above 140k is checked on this one,
 because the ~60K prompt does not reach that window's prompt-side regime. It is also the
 prompt for long-context speed rows at those windows. The recorded `prompt_n` identifies
 which prompt produced a row (~60K rows sit near 59.8K, ~120K rows near 119.3K).

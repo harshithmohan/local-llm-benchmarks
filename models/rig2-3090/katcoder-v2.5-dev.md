@@ -36,13 +36,15 @@ embedded MTP head). Model card:
 - Shared fork behaviour (flag vocabulary, `--experimental-logs` validation) is in
   [engine-notes/moe-cache-fork.md](../../engine-notes/moe-cache-fork.md).
 
-## Long-context refactor benchmark (~60K prompt)
+## Long-context refactor benchmark
 
 Real-task timing test of a long-context code-refactor task ([test-prompts.md](../../test-prompts.md)):
-a fixed refactor instruction wraps a deterministically generated (seed 42) ~60K-token Python
-file of 79 near-identical legacy templates. Same protocol as the recommended configs
-([methodology.md](../../methodology.md) §Measurement methods): q8_0 KV, cold load.
+a fixed refactor instruction wraps a deterministically generated (seed 42) Python file of
+near-identical legacy templates - 79 repeats for the ~60K prompt, 157 for the ~120K one. Same
+protocol as the recommended configs ([methodology.md](../../methodology.md) §Measurement
+methods): q8_0 KV, cold load.
 
-| Config | ctx | engine | MTP | prefill t/s | decode t/s | VRAM | Notes |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| APEX-I-Compact | 262144 | moe-cache fork | on | 3701 | **126** | 22204 MiB | cache 200, `-b/-ub 12288` |
+| Config | ctx | engine | MTP | prompt | prefill t/s | decode t/s | VRAM | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| APEX-I-Compact | 262144 | moe-cache fork | on | ~60K | 3701 | **126** | 22204 MiB | cache 200, `-b/-ub 12288` |
+| APEX-I-Compact | 262144 | moe-cache fork | on | ~120K | 2812 | **85.6** | 22204 MiB | 119293-token prompt, cache 200, `-b/-ub 12288` |

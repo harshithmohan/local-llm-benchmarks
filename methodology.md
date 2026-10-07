@@ -79,7 +79,7 @@ the two long-context prompts are deliberately near-repetitive because it is real
 and are used for large-prompt stability checks and long-context speed at large ctx - a crash
 on one is a recorded finding (issues.md), not a prompt defect. A config is checked at the
 size of the window it serves: the ~60K prompt is the ordinary large-prompt check, and a
-window above 150k is additionally checked on the ~120K prompt, which is the one that
+window above 140k is additionally checked on the ~120K prompt, which is the one that
 exercises the prompt-side buffers of that window.
 
 ## VRAM headroom

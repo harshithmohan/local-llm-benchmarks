@@ -62,7 +62,7 @@ Updated: <YYYY-MM-DD> · [full experiment log](archive/<model>.md) · [methodolo
 <!-- Keep this heading even before the runs exist (mark "not yet run"). Same table
      shape as Recommended configs; the ~60K and ~120K tasks are described in
      test-prompts.md and run under the same protocol as the rows above. Every window
-     is checked on the ~60K prompt; a window above 150k is additionally checked on the
+     is checked on the ~60K prompt; a window above 140k is additionally checked on the
      ~120K prompt - the one that exercises that window's prompt-side buffers. One row
      per prompt size run. -->
 

@@ -46,15 +46,18 @@ YaRN 2x - `--rope-scale` must equal ctx/262144 exactly (the command above uses 2
 - Rare fork quirk: this prompt occasionally returns EOS as the first token (`predicted_n` 1,
   empty output) - a retry decodes normally; see [issues.md](../../issues.md) §8.
 
-## Long-context refactor benchmark (~60K prompt)
+## Long-context refactor benchmark
 
 Real-task timing test of a long-context code-refactor task ([test-prompts.md](../../test-prompts.md)):
-a fixed refactor instruction wraps a deterministically generated (seed 42) ~60K-token Python
-file of 79 near-identical legacy templates. Same protocol as the recommended configs
-([methodology.md](../../methodology.md) §Measurement methods): q8_0 KV, cold load.
+a fixed refactor instruction wraps a deterministically generated (seed 42) Python file of
+near-identical legacy templates - 79 repeats for the ~60K prompt, 157 for the ~120K one. Same
+protocol as the recommended configs ([methodology.md](../../methodology.md) §Measurement
+methods): q8_0 KV, cold load.
 
-| Config | ctx | engine | MTP | prefill t/s | decode t/s | VRAM | Notes |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| IQ4_XS | 262144 | moe-cache fork | on | 1552 | **59.2** | 11551 MiB | cache 64 |
-| IQ4_XS | 524288 | moe-cache fork | off | 1693 | **40.8** | 11747 MiB | cache 48 |
+| Config | ctx | engine | MTP | prompt | prefill t/s | decode t/s | VRAM | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| IQ4_XS | 262144 | moe-cache fork | on | ~60K | 1552 | **59.2** | 11551 MiB | cache 64 |
+| IQ4_XS | 262144 | moe-cache fork | on | ~120K | 1230 | **45.3** | 11508 MiB | 119293-token prompt, cache 64 |
+| IQ4_XS | 524288 | moe-cache fork | off | ~60K | 1693 | **40.8** | 11747 MiB | cache 48 |
+| IQ4_XS | 524288 | moe-cache fork | off | ~120K | 1342 | **30.3** | 11708 MiB | 119293-token prompt, cache 48 |
 

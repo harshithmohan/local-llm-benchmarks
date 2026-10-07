@@ -30,7 +30,7 @@ chatting, not coding.**
       -b 1024 -ub 1024 \
       --temp 0.6 --top-p 0.9 --top-k 64 --repeat-penalty 1.1
 
-## Long-context refactor benchmark (~60K prompt)
+## Long-context refactor benchmark
 
 Not applicable to the 32k chat config (the model is not used for coding here); the
 non-chat 256k measurement lives in the [archive](archive/gemma4-26b-a4b.md).

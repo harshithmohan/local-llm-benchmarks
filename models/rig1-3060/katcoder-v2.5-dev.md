@@ -34,13 +34,15 @@ None - no model-specific caveats recorded for this quant. Shared fork behaviour 
 cache overriding `--n-cpu-moe`, flag vocabulary) is in
 [engine-notes/moe-cache-fork.md](../../engine-notes/moe-cache-fork.md).
 
-## Long-context refactor benchmark (~60K prompt)
+## Long-context refactor benchmark
 
 Real-task timing test of a long-context code-refactor task ([test-prompts.md](../../test-prompts.md)):
-a fixed refactor instruction wraps a deterministically generated (seed 42) ~60K-token Python
-file of 79 near-identical legacy templates. Same protocol as the recommended configs
-([methodology.md](../../methodology.md) §Measurement methods): q8_0 KV, cold load.
+a fixed refactor instruction wraps a deterministically generated (seed 42) Python file of
+near-identical legacy templates - 79 repeats for the ~60K prompt, 157 for the ~120K one. Same
+protocol as the recommended configs ([methodology.md](../../methodology.md) §Measurement
+methods): q8_0 KV, cold load.
 
-| Config | ctx | engine | MTP | prefill t/s | decode t/s | VRAM | Notes |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| APEX-I-Compact | 262144 | moe-cache fork | on | 1434 | **51.6** | 11774 MiB | cache 80, `-b/-ub 4096`, draft ubatch 3072 |
+| Config | ctx | engine | MTP | prompt | prefill t/s | decode t/s | VRAM | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| APEX-I-Compact | 262144 | moe-cache fork | on | ~60K | 1434 | **51.6** | 11774 MiB | cache 80, `-b/-ub 4096`, draft ubatch 3072 |
+| APEX-I-Compact | 262144 | moe-cache fork | on | ~120K | 1122 | **42.5** | 11636 MiB | 119293-token prompt, cache 80, `-b/-ub 4096`, draft ubatch 3072 |

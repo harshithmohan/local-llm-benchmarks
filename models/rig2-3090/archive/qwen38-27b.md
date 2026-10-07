@@ -12,8 +12,9 @@ the model page.
 
 llama.cpp protocol: second-pass prefill, sampling per the then-current protocol, cold load,
 q8_0 KV, `--threads 8 --threads-batch 16`, 22 GB VRAM cap (22 GB +- 250 MB, desktop
-reserve). vLLM protocol: single pass per boot, timing from the vLLM server metrics
-([engine-notes/vllm.md](../../../engine-notes/vllm.md)), pool pinned by bytes,
+reserve). vLLM protocol: two passes per boot, the second recorded (prefix caching disabled so
+it is genuinely cold), timing from the vLLM server
+metrics ([engine-notes/vllm.md](../../../engine-notes/vllm.md)), pool pinned by bytes,
 `INT8_ACT=int8`, cold load. Methodology in [methodology](../../../methodology.md); gotchas in
 [issues](../../../issues.md). Model card:
 [unsloth/Qwen3.8-27B-GGUF](https://huggingface.co/unsloth/Qwen3.8-27B-GGUF).
