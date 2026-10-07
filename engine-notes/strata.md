@@ -1,6 +1,6 @@
 # Strata
 
-[Niko1221/Strata](https://github.com/Niko1221/Strata), engine 0.1.38 on Rig 1.
+[Niko1221/Strata](https://github.com/Niko1221/Strata), engine 0.1.40.2 on Rig 1.
 
 A llama.cpp-derived engine that runs
 [Qwen3.8-Flash-Next](https://huggingface.co/Qwen/Qwen3.8-Flash-Next) (~125B parameters,
@@ -17,11 +17,14 @@ the work across the whole PC instead of fitting the model in VRAM:
 
 The same engine builds for CUDA and HIP.
 
-**Measured on Rig 1** - GSQ-RCO Q2_0, `--kv int8`, MTP on, at the two served windows: the
-200000 window measures **1058 t/s prefill / 39.6 t/s decode** on the ~10k prompt, **1020 / 39.9**
-at ~60K and **928 / 37.2** at ~120k; the 250000 window (a 4096-token chunk against the 200000
-window's 6144) measures **973 / 38.1**, **946 / 37.1** and **864 / 35.0**. The timing
-rows are on the [Qwen3.8-Flash-Next (Rig 1) card](../models/rig1-3060/qwen38-flash-next.md).
+**Measured on Rig 1** (engine 0.1.40.2) - GSQ-RCO Q2_0, `--kv int8`, MTP on, at the two served
+windows: the 200000 window measures **1058 t/s prefill / 44.2 t/s decode** on the ~10k prompt,
+**1045 / 42.4** at ~60K and **1008 / 41.8** at ~120k; the 250000 window (a 4096-token chunk
+against the 200000 window's 6144) measures **975 / 39.2**, **970 / 39.9** and **936 / 38.2**.
+Against the 0.1.38 rows the ~10k prefill is unchanged and the longer prompts gain (+2.4% at ~60K,
++8.4% at ~120k), so the long-prompt prefill penalty is now ~4-5% where it was ~9-12%; decode is
+higher in every cell. The timing rows are on the
+[Qwen3.8-Flash-Next (Rig 1) card](../models/rig1-3060/qwen38-flash-next.md).
 
 ## Why it is not a `llama-server` build
 

@@ -36,7 +36,7 @@ Known issues and gotchas: [issues.md](issues.md).
   cache (`--moe-expert-cache-size`), with no profile/trace step; while enabled it overrides
   `-ncmoe` placement. Flags and the `--experimental-logs` validation recipe:
   [engine-notes/moe-cache-fork.md](engine-notes/moe-cache-fork.md).
-- **Strata** ([Niko1221/Strata](https://github.com/Niko1221/Strata), engine 0.1.38, Rig 1) -
+- **Strata** ([Niko1221/Strata](https://github.com/Niko1221/Strata), engine 0.1.40.2, Rig 1) -
   a llama.cpp-derived engine that runs Qwen3.8-Flash-Next from a *pack* (expert rows indexed
   on the SSD, all experts pinned in host RAM, an adaptive VRAM expert cache) behind its own
   OpenAI/Anthropic API server. Not a `llama-server` build: its rows are measured through
@@ -77,7 +77,7 @@ model pages.
 | --- | --- | --- | --- | --- |
 | Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | 262144 | 1909 | **76** |
 | Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | 524288 (YaRN 2x) | 2063 | **52** |
-| Qwen3.8-Flash-Next | GSQ-RCO Q2_0 + MTP (Strata) | 200000 | 1058 | **40** |
+| Qwen3.8-Flash-Next | GSQ-RCO Q2_0 + MTP (Strata) | 200000 | 1058 | **44** |
 | KAT-Coder-V2.5-Dev | APEX-I-Compact | 262144 | 1673 | **66** |
 | Swift-1.5-Qwen3.8-27B | IQ2_XS | 81920 (q4_0 KV) | 467 | **35.6** |
 

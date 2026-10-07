@@ -14,8 +14,8 @@ MTP head: [ggml-org/Qwen3.8-Flash-Next-GGUF](https://huggingface.co/ggml-org/Qwe
 
 | Config | ctx | engine | MTP | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| GSQ-RCO Q2_0 + MTP | 200000 | Strata | on | 1058 | **40** | 11514 MiB | default: `--kv int8`, `--expert-cache auto`, `--prefill 6144`, standalone pack engine |
-| GSQ-RCO Q2_0 + MTP | 250000 | Strata | on | 973 | **38** | 11510 MiB | overflow: `--prefill 4096`, `--prompt-cache-every 4096` |
+| GSQ-RCO Q2_0 + MTP | 200000 | Strata | on | 1058 | **44** | 11498 MiB | default: `--kv int8`, `--expert-cache auto`, `--prefill 6144`, standalone pack engine |
+| GSQ-RCO Q2_0 + MTP | 250000 | Strata | on | 975 | **39** | 11500 MiB | overflow: `--prefill 4096`, `--prompt-cache-every 4096` |
 
 ## Configs
 
@@ -60,9 +60,9 @@ which is a measurement setting and not part of a served config.
   and borrows 2427 for the 6144 chunk, 250000 lands 2104 slots and borrows 1782 for the 4096
   one, both with ~475 MiB free. The window itself still costs: at a pinned cache and chunk,
   122880 -> 149000 was 8.1% on the same prompt, and free VRAM does not buy the chunk back, the
-  cache share does. Measured on the served configs: 1058 / 39.6 (10k), 1020 / 39.9 (60K),
-  928 / 37.2 (120k) at 200000 and 973 / 38.1, 946 / 37.1, 864 / 35.0 at 250000. Prefill is the
-  reproducible difference between the tiers (6144 -> 4096 is -5.3% at 120k); decode moves a few
+  cache share does. Measured on the served configs on engine 0.1.40.2: 1058 / 44.2 (10k), 1045 / 42.4 (60K),
+  1008 / 41.8 (120k) at 200000 and 975 / 39.2, 970 / 39.9, 936 / 38.2 at 250000. Prefill is the
+  reproducible difference between the tiers (6144 -> 4096 is -7.1% at 120k); decode moves a few
   percent, inside the draft-acceptance spread of a single 512-token window. Ladder, loan caps
   and both served windows are in the
   [full experiment log](archive/qwen38-flash-next.md).
@@ -73,19 +73,23 @@ which is a measurement setting and not part of a served config.
   always applied - with `--prompt-cache 0` in the engine args, which is why the prompt
   tokenizes to 10507 (10k) / 59802 (60K) rather than the llama.cpp counts. Not directly
   comparable with the moe-cache fork rows in the experiment log; both Strata passes reported
-  `cache_n` 0 and a full 512-token decode window, and the 60K pass served as the
+  `cache_n` 0 and a full 512-token decode window, and the 60K and 120K passes serve as the
   large-prompt stability check.
 - The retired moe-cache fork config and its tuning record are in the
   [full experiment log](archive/qwen38-flash-next.md).
 
-## Long-context refactor benchmark (~60K prompt)
+## Long-context refactor benchmark
 
 Real-task timing test of a long-context code-refactor task ([test-prompts.md](../../test-prompts.md)):
-a fixed refactor instruction wraps a deterministically generated (seed 42) ~60K-token Python
-file of 79 near-identical legacy templates. Same measurement protocol as the recommended
-configs ([methodology.md](../../methodology.md) §Measurement methods) - cold load, with each
-row using its engine's KV setting from the config sections above.
+a fixed refactor instruction wraps a deterministically generated (seed 42) Python file of
+near-identical legacy templates - 79 repeats for the ~60K prompt, 157 for the ~120K one. Same
+measurement protocol as the recommended configs ([methodology.md](../../methodology.md)
+§Measurement methods) - cold load, with each row using its engine's KV setting from the config
+sections above.
 
-| Config | ctx | engine | MTP | prefill t/s | decode t/s | VRAM | Notes |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| GSQ-RCO Q2_0 + MTP | 200000 | Strata | on | 1020 | 40 | 11514 MiB | 59802-token prompt, `--kv int8`, `--prompt-cache 0` |
+| Config | ctx | engine | MTP | prompt | prefill t/s | decode t/s | VRAM | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| GSQ-RCO Q2_0 + MTP | 200000 | Strata | on | ~60K | 1045 | **42** | 11498 MiB | 59802-token prompt, `--kv int8`, `--prompt-cache 0` |
+| GSQ-RCO Q2_0 + MTP | 200000 | Strata | on | ~120K | 1008 | **42** | 11498 MiB | 119344-token prompt, `--kv int8`, `--prompt-cache 0` |
+| GSQ-RCO Q2_0 + MTP | 250000 | Strata | on | ~60K | 970 | **40** | 11500 MiB | 59802-token prompt, `--kv int8`, `--prompt-cache 0` |
+| GSQ-RCO Q2_0 + MTP | 250000 | Strata | on | ~120K | 936 | **38** | 11500 MiB | 119344-token prompt, `--kv int8`, `--prompt-cache 0` |

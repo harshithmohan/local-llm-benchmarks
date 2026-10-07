@@ -407,11 +407,11 @@ the largest accepted value with margin, on a 200000 window:
 | ~60K refactor | 950.2 | 28.4 | 68% (213/311) | 68.5% |
 
 Both passes reached the full 512-token window with `cache_n` 0. Against `GSQ-RCO Q2_0` on the
-same engine and window (200000, chunk 6144: 1058.5 / 39.6 at 10k and 1020.5 / 39.9 at 60K) the
-coder gives up 12% prefill and 23% decode at 10k, and 7% and 29% at 60K - the half-sized expert
-pool costs decode far more than prefill, and the lower hit rate (68% against 78%) is the
-mechanism. The same 10k prompt at the auto chunk (3072) and the default checkpoint interval
-measured 965.4 / 28.6, inside run-to-run spread at this size.
+same engine (0.1.38) and window (200000, chunk 6144: 1058.5 / 39.6 at 10k and 1020.5 / 39.9 at
+60K) the coder gives up 12% prefill and 23% decode at 10k, and 7% and 29% at 60K - the
+half-sized expert pool costs decode far more than prefill, and the lower hit rate (68% against
+78%) is the mechanism. The same 10k prompt at the auto chunk (3072) and the default checkpoint
+interval measured 965.4 / 28.6, inside run-to-run spread at this size.
 
 `--prompt-cache-every` is pinned to the chunk (3200) as on the base quants. In a measurement
 (`--prompt-cache 0`) no checkpoints are written at all - every pass logged `0 checkpoints` - so
@@ -536,29 +536,27 @@ moves the chunk bands without touching the engine. Load-only probes, `--kv int8`
 
 One cold load per context, three prompts on each (10k = 10507, 60k = 59802, 120k = 119344
 tokens), `--spec 4 --spec-min-p 0.5`, `--kv int8`, MTP on, `--prompt-cache 0`; every recorded
-pass reports `cache_n` 0 and `predicted_n` 512 (prefill / decode t/s). The 150000 row is the
-retired shape; 200000 and 250000 are the two served ones.
+pass reports `cache_n` 0 and `predicted_n` 512 (prefill / decode t/s, the second of two passes).
+The 200000 and 250000 rows are the two served shapes on **engine 0.1.40.2**; the 150000 row is
+the retired shape, kept for reference from the 0.1.38 runs.
 
-| `--max-context` | chunk | ~10k | ~60K | ~120k |
-| --- | --- | --- | --- | --- |
-| 150000 (retired) | 8192 | 1072.2 / 39.8 | 1065.0 / 41.0 | 973.9 / 38.8 |
-| 200000 (served default) | 6144 | 1058.5 / 39.6 | 1020.5 / 39.9 | 928.5 / 37.2 |
-| 250000 (served overflow) | 4096 | 973.4 / 38.1 | 946.3 / 37.1 | 864.0 / 35.0 |
+| `--max-context` | chunk | engine | ~10k | ~60K | ~120k |
+| --- | --- | --- | --- | --- | --- |
+| 150000 (retired) | 8192 | 0.1.38 | 1072.2 / 39.8 | 1065.0 / 41.0 | 973.9 / 38.8 |
+| 200000 (served default) | 6144 | 0.1.40.2 | 1058.5 / 44.2 | 1045.0 / 42.4 | 1007.7 / 41.8 |
+| 250000 (served overflow) | 4096 | 0.1.40.2 | 974.7 / 39.2 | 969.5 / 39.9 | 935.7 / 38.2 |
 
-- The step down from 8192 at 150000 to 4096 at 250000 - window and chunk together - costs 9.2%
-  prefill at 10k and 11.3% at 120k, of which the chunk alone is -4.7% and -7.0% between the two
-  served tiers at 120k. A 208000 measurement of the same shape as the served default (1052.8 /
-  1016.7 / 923.1) agreed within 0.5%, so it is not shown separately.
-- **A longer prompt costs ~9-12% at every chunk** - 1072 -> 974, 1059 -> 929, 973 -> 864 from
-  10k to 120k - so this is attention over the prompt, not cache sizing, and it is independent of
-  the chunk.
-- **Decode tracks the resident set, not the prompt.** It goes 39.6 / 39.9 / 37.2 on the 2670-slot
-  cache against 38.1 / 37.1 / 35.0 on the 2104-slot one (decode expert-cache hit rate 69-73%
-  across these passes). Treat an individual cell as noise: 2000-token generations on the same
-  119344-token prompt put the tiers at 43.2 / 42.0 / 40.3 t/s with a +-14% spread *within* each
-  tier, so only a difference that holds across prompt sizes reads as a tier cost.
-- Decode carries MTP acceptance variance (65-73% of drafts accepted across these runs), so read
-  a few percent as noise.
+- **The window and the chunk cost, then the prompt costs more.** Between the two served tiers -
+  both move, so this is the window plus the chunk - prefill reads -7.9% / -7.2% / -7.1% at
+  10k / 60K / 120k. Within one tier the prompt alone costs ~4-5% from 10k to 120k (1058.5 ->
+  1007.7 on the default, 974.7 -> 935.7 on the overflow): attention over the prompt, not cache
+  sizing, and independent of the chunk.
+- **Decode tracks the resident set, not the prompt.** It reads 44.2 / 42.4 / 41.8 on the 2670-slot
+  cache against 39.2 / 39.9 / 38.2 on the 2104-slot one. Treat an individual cell as noise:
+  2000-token generations on the same 119344-token prompt keep the tiers inside a +-14% spread
+  *within* each tier, so only a difference that holds across prompt sizes reads as a tier cost.
+- Decode carries MTP acceptance variance (66-71% of drafts accepted across these runs), so read a
+  few percent as noise.
 
 ### The served windows
 
@@ -569,7 +567,7 @@ window: at 200000 the auto cache lands on 2670 slots, and 0.90 x 2670 = 2403 is 
 slots a 6144-token chunk needs, so `auto` would take 4096. An explicit chunk only has to fit
 (2427 + 128 <= 2670) and is not subject to the percentage at all - with no such variable set
 anywhere the cold loads report `the prompt path borrows 2427 / 1782 CUDA0 cache slots`, 474 / 476
-MiB free, 11364 / 11362 MiB after load and 11514 / 11510 under requests. At 250000 the pin is
+MiB free, 11362 / 11364 MiB after load and 11498 / 11500 under requests. At 250000 the pin is
 redundant (`auto` lands on 2104 slots, and 0.90 x 2104 = 1894 >= 1782 already holds 4096); it is
 there for uniformity. Before this the served shape was 150000 with `--prefill 8192`, and before
 that 81920 with `--prefill auto`.
@@ -589,9 +587,8 @@ that 81920 with `--prefill auto`.
   cache slots and the cache shrinks about 1.13 slots per 100 ctx, so 8192 holds to ~153k, 6144 to
   ~210k and 4096 to ~267k. 262144 would fit a 4096 chunk with 56 slots to spare, so 250000 is the
   served overflow with margin rather than the native maximum.
-- Decode reads a few percent under the 81920-era rows (44.1 at 10k) because the smaller cache
-  holds fewer experts, and the two 120k passes ran 122510 / 122548 ms, so the prefill at least is
-  not drift.
+- Prefill reproduces pass to pass (each 120k cell above agrees within 0.3% between its two
+  passes), so the tier difference is the chunk, not drift.
 
 ### Growing sessions: what the conversation cache costs
 
@@ -660,4 +657,4 @@ arm, ctx 200000 with the 6144 chunk against ctx 250000 with the 4096 chunk).
   re-quant, so its decode is not directly comparable with the 512-expert quants - it trades
   speed for size and a code/agentic quality target. On the pack engine it reaches 932.8/30.3 at
   10k and 950.2/28.4 at 60K on a 200000 window, against 1058.5/39.6 and 1020.5/39.9 for
-  `GSQ-RCO Q2_0` on the same engine and window.
+  `GSQ-RCO Q2_0` on the same engine (0.1.38) and window.

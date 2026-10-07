@@ -57,15 +57,19 @@ Updated: <YYYY-MM-DD> · [full experiment log](archive/<model>.md) · [methodolo
 
 - <quirk or caveat>
 
-## Long-context refactor benchmark (~60K prompt)
+## Long-context refactor benchmark
 
-<!-- Keep this heading even before the run exists (mark "not yet run"). Same table
-     shape as Recommended configs; the task is described in test-prompts.md and runs
-     under the same protocol as the rows above. -->
+<!-- Keep this heading even before the runs exist (mark "not yet run"). Same table
+     shape as Recommended configs; the ~60K and ~120K tasks are described in
+     test-prompts.md and run under the same protocol as the rows above. Every window
+     is checked on the ~60K prompt; a window above 150k is additionally checked on the
+     ~120K prompt - the one that exercises that window's prompt-side buffers. One row
+     per prompt size run. -->
 
 <one-line task description + link to test-prompts.md; state "same protocol as the
 recommended configs" rather than restating flags.>
 
-| Config | ctx | engine | MTP | prefill t/s | decode t/s | VRAM | Notes |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| <quant> | <ctx> | <engine> | <on or off> | <prefill> | **<decode>** | <VRAM> MiB | <cache N> |
+| Config | ctx | engine | MTP | prompt | prefill t/s | decode t/s | VRAM | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| <quant> | <ctx> | <engine> | <on or off> | ~60K | <prefill> | **<decode>** | <VRAM> MiB | <cache N> |
+| <quant> | <ctx> | <engine> | <on or off> | ~120K | <prefill> | **<decode>** | <VRAM> MiB | <cache N> |
