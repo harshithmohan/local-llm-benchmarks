@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Generates the long-context refactor prompt (real-task ~60K benchmark).
+"""Generates the long-context refactor prompts (real-task ~60K / ~120K benchmark).
 
 Adapted from Qwen3.8-vLLM-KVarN-MTP-Arc-Experiments (scripts/generate_messy.py +
 build_prompt.py). Deterministic: seed 42, so every run/regeneration reproduces the
-same prompt text (79 repeats ~ 60K tokens on the Qwen tokenizer family; recorded
-token counts still vary slightly across models/tokenizers).
+same prompt text (79 repeats ~ 60K tokens, 157 repeats ~ 120K tokens on the Qwen
+tokenizer family; recorded token counts still vary slightly across models/tokenizers).
 
 Outputs (into --out-dir, default <tmp>/llm-bench-prompts - a scratch dir, never the
 repo working tree):
@@ -14,7 +14,7 @@ repo working tree):
   prompt-long-context-flash.json   - raw /v1/completions payload, Flash-Next
 
 Flags:
-  --repeats N     entity-template repeats (default 79, ~60K tokens)
+  --repeats N     entity-template repeats (default 79 ~ 60K tokens; 157 ~ 120K tokens)
   --out-dir DIR   output directory (default <tmp>/llm-bench-prompts, a scratch dir)
 
 Payloads carry the prompt + request shape only (n_predict 512, cache_prompt false,
@@ -267,7 +267,10 @@ def main():
         "--repeats",
         type=int,
         default=79,
-        help="entity-template repeats (79 ~ 60K tokens; 153 was the retired ~116K prompt)",
+        help=(
+            "entity-template repeats (79 ~ 60K tokens; 157 ~ 120K tokens for the large "
+            "windows)"
+        ),
     )
     ap.add_argument(
         "--out-dir",

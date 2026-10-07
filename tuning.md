@@ -204,7 +204,8 @@ Measured rows, one model and quant: [Flash-Next archive](models/rig1-3060/archiv
 
 A config can load, pass its health check, and still die on the **first large request** because
 compute buffers grow with context and the draft/attention workspaces are allocated late. Always
-run the ~60K long-context prompt before recording a decode number. Both failure modes occur:
+run the long-context prompt before recording a decode number - the ~60K one, and the ~120K one
+for a window above 150k. Both failure modes occur:
 clean load-time OOM (KAT-Coder Rig 2 `-ub 16384`), and load-then-crash (Flash-Next cache 84/88;
 qwen35moe `-ub 8192`; the draft-context OOM).
 
@@ -249,6 +250,7 @@ acceptance from ~77% to ~89% with no decode gain; a larger expert cache beat a s
 
 1. Cold-load through the rig endpoint and confirm the load's per-process VRAM is under the cap.
 2. Run the timing prompt on the second pass; capture both prefill and decode.
-3. Run the ~60K long-context prompt (large-prompt stability check) and confirm a full decode.
+3. Run the long-context prompt for the config's window (large-prompt stability check - ~60K,
+   or ~120K for a window above 150k) and confirm a full decode.
 4. For the fork's expert cache, run one `--experimental-logs` pass and check the counters.
 5. Unload and confirm the GPU is idle before the next config.

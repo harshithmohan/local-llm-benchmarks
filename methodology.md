@@ -27,8 +27,9 @@ requested window.
 
 - Prefill/decode bench (the only method in current use): llama-server, served through
   llama-swap, hit with a **raw `/v1/completions`** request (no chat template) using one of
-  two prompts - the ~10k opencode session-context prompt (the default timing prompt) or the
-  ~60K long-context refactor prompt - with `n_predict` 512. The bullets in
+  three prompts - the ~10k opencode session-context prompt (the default timing prompt), the
+  ~60K long-context refactor prompt, or the ~120K long-context refactor prompt - with
+  `n_predict` 512. The bullets in
   this section are the **canonical request protocol**; the prompt texts live in
   [test-prompts.md](test-prompts.md). `llama-bench` is not used.
 - **`cache_prompt: false` on every request.** Without it, a resend on the same slot is
@@ -70,13 +71,16 @@ process's row:
 
 The timing prompts are the ~10k opencode session-context prompt (the default; the owner's
 real workload is opencode) and, for long-context runs, the ~60K long-context refactor
-prompt: texts and provenance in [test-prompts.md](test-prompts.md). Both are measured with
+prompt at ordinary windows and the ~120K long-context refactor prompt at the large ones:
+texts and provenance in [test-prompts.md](test-prompts.md). All are measured with
 the request protocol in [Measurement methods](#measurement-methods). The 10k prompt is
 non-repetitive by construction (repeated text crashes the qwen4exp arch - see issues.md);
-the ~60K prompt is deliberately near-repetitive because it is realistic text, and is used
-for large-prompt stability checks and long-context speed at large ctx - a crash on it is a
-recorded finding (issues.md), not a prompt defect. The earlier ~116K variant
-(retired 2026-09-27) is archived per model page.
+the two long-context prompts are deliberately near-repetitive because it is realistic text,
+and are used for large-prompt stability checks and long-context speed at large ctx - a crash
+on one is a recorded finding (issues.md), not a prompt defect. A config is checked at the
+size of the window it serves: the ~60K prompt is the ordinary large-prompt check, and a
+window above 150k is additionally checked on the ~120K prompt, which is the one that
+exercises the prompt-side buffers of that window.
 
 ## VRAM headroom
 
