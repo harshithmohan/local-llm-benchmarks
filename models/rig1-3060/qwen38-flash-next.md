@@ -1,6 +1,6 @@
 # Qwen3.8-Flash-Next (Rig 1) - recommended configs
 
-Updated: 2026-10-06 · [full experiment log](archive/qwen38-flash-next.md) · [methodology](../../methodology.md)
+Updated: 2026-10-07 · [full experiment log](archive/qwen38-flash-next.md) · [methodology](../../methodology.md)
 
 `GSQ-RCO Q2_0` (`qwen4exp`, 2.40 bpw, native ctx 262144, 512 experts, a separate MTP head
 from the ggml-org repo - the GSQ-RCO release ships none). 177B total = 125B compute + 51B
@@ -14,24 +14,35 @@ MTP head: [ggml-org/Qwen3.8-Flash-Next-GGUF](https://huggingface.co/ggml-org/Qwe
 
 | Config | ctx | engine | MTP | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| GSQ-RCO Q2_0 + MTP | 81920 | Strata | on | 1061 | **44** | 11514 MiB | `--kv int8`, `--expert-cache auto`, standalone pack engine |
+| GSQ-RCO Q2_0 + MTP | 200000 | Strata | on | 1058 | **40** | 11514 MiB | default: `--kv int8`, `--expert-cache auto`, `--prefill 6144`, standalone pack engine |
+| GSQ-RCO Q2_0 + MTP | 250000 | Strata | on | 973 | **38** | 11510 MiB | overflow: `--prefill 4096`, `--prompt-cache-every 4096` |
 
 ## Configs
 
-### GSQ-RCO Q2_0 80k + MTP - Strata pack engine
+### GSQ-RCO Q2_0 + MTP - Strata pack engine (200k default, 250k overflow)
 
-    strata --serve --pack <pack>/q2_0 \
-      --native <models>/Qwen3.8-Flash-Next-GSQ-RCO-Q2_0-00001-of-00002.gguf \
-      --ple-gguf <models>/Qwen3.8-Flash-Next-GSQ-RCO-Q2_0-00002-of-00002.gguf \
-      --expert-profile <pack>/expert-profile.bin --expert-cache auto \
-      --prefill auto --mtp <mtp>/rt --spec 4 --spec-min-p 0.5 \
-      --max-context 81920 --kv int8
+    {
+      "exe": "<engine>/strata",
+      "args": ["--pack", "<pack>/q2_0",
+               "--native", "<models>/Qwen3.8-Flash-Next-GSQ-RCO-Q2_0-00001-of-00002.gguf",
+               "--ple-gguf", "<models>/Qwen3.8-Flash-Next-GSQ-RCO-Q2_0-00002-of-00002.gguf",
+               "--expert-profile", "<pack>/expert-profile.bin", "--expert-cache", "auto",
+               "--prefill", "6144", "--spec", "4", "--spec-min-p", "0.5", "--mtp", "<mtp>/rt",
+               "--max-context", "200000", "--kv", "int8", "--prompt-cache-every", "6144"],
+      "cwd": "<engine>",
+      "tokenizer": "<pack>/q2_0/tokenizer",
+      "model_name": "qwen3.8-flash-next-q2_0"
+    }
 
 A different engine on the same weights, not a `llama-server` flag set: `strata` is a stdio
 backend, and the HTTP API plus every run setting (the `exe` and its `args`, `cwd`,
 tokenizer, model name, log path) live in a JSON config read by the engine's own Python
-server - see [engine-notes/strata.md](../../engine-notes/strata.md). Prefill measurements
-add `--prompt-cache 0`, which is a measurement setting and not part of a served config.
+server - see [engine-notes/strata.md](../../engine-notes/strata.md). The engine takes its
+flags from that config's `args` and from nowhere else: the server is started with
+`--config <file>`, and an engine flag on that command line is a startup error, so the second
+window is a second config that differs in `--max-context`, `--prefill`,
+`--prompt-cache-every`, `model_name` and `log`. Prefill measurements add `--prompt-cache 0`,
+which is a measurement setting and not part of a served config.
 
 ## Notes
 
@@ -41,6 +52,20 @@ add `--prompt-cache 0`, which is a measurement setting and not part of a served 
 - **MTP is on.** The Strata config takes its draft runtime from the pack
   (`--mtp <mtp>/rt --spec 4 --spec-min-p 0.5`), and every measured pass reported `draft_n`
   and `draft_n_accepted`.
+- **The window sets the prompt chunk when the chunk is left to `auto`, so the served configs
+  pin it instead.** With `--prefill auto` the chunk is what the expert cache can lend, and
+  `--max-context` is what shrinks that cache, so a wider window steps the chunk down
+  (8192 -> 6144 -> 4096) and costs prefill. An explicit `--prefill` is the operator's number
+  and only has to fit, so each served window keeps its chunk: 200000 lands a 2670-slot cache
+  and borrows 2427 for the 6144 chunk, 250000 lands 2104 slots and borrows 1782 for the 4096
+  one, both with ~475 MiB free. The window itself still costs: at a pinned cache and chunk,
+  122880 -> 149000 was 8.1% on the same prompt, and free VRAM does not buy the chunk back, the
+  cache share does. Measured on the served configs: 1058 / 39.6 (10k), 1020 / 39.9 (60K),
+  928 / 37.2 (120k) at 200000 and 973 / 38.1, 946 / 37.1, 864 / 35.0 at 250000. Prefill is the
+  reproducible difference between the tiers (6144 -> 4096 is -5.3% at 120k); decode moves a few
+  percent, inside the draft-acceptance spread of a single 512-token window. Ladder, loan caps
+  and both served windows are in the
+  [full experiment log](archive/qwen38-flash-next.md).
 - Prefill/decode come from the second pass after a cold load; the first pass is a page-in
   pass and is excluded.
 - **The Strata rows are a different engine on a different request protocol.** They come from
@@ -63,4 +88,4 @@ row using its engine's KV setting from the config sections above.
 
 | Config | ctx | engine | MTP | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| GSQ-RCO Q2_0 + MTP | 81920 | Strata | on | 1093 | 43 | 11474 MiB | 59802-token prompt, `--kv int8`, `--prompt-cache 0` |
+| GSQ-RCO Q2_0 + MTP | 200000 | Strata | on | 1020 | 40 | 11514 MiB | 59802-token prompt, `--kv int8`, `--prompt-cache 0` |

@@ -28,8 +28,6 @@ Quants:
 
 ## UD-IQ3_XXS (76.32 GiB, 3 shards)
 
-The following sections record this quant.
-
 ## Expert cache vs ncmoe (baseline, superseded)
 
 The first pass of this re-run swept `--n-cpu-moe` on the same fork - the wrong axis, because
@@ -50,13 +48,13 @@ Q8_0 sidecar on CPU, `-b/-ub 2048`, `--load-mode mmap`):
 The shared MTP head is a separate model; its placement is a real variable on a 12 GB card.
 First cache runs used `-ngld 0` (draft on CPU) because leaving it on the GPU OOMs the draft
 load itself (`cudaMalloc failed: out of memory` allocating ~2.6 GB) once the main model +
-cache fill VRAM. With the draft on CPU, MTP still loses to no-MTP because drafting competes
-with the target's CPU expert work:
+cache fill VRAM. With the draft on CPU, MTP still loses to no-MTP - the cache-48 / `-b/-ub 512`
+baseline without MTP is 251.3 / 20.34 in Cache size below - because drafting competes with the
+target's CPU expert work:
 
 | config | MTP | prefill t/s | decode t/s | VRAM |
 | --- | --- | --- | --- | --- |
 | cache 48, `-b/-ub 512` | on (Q8_0, CPU) | 233.6 | 17.90 | 11178 MiB |
-| cache 48, `-b/-ub 512` | off | 251.3 | **20.34** | 10700 MiB |
 | cache 16, `-b/-ub 512` | on (Q8_0, GPU) | 244.5 | 15.20 | 10930 MiB |
 | cache 40, `-b/-ub 512` | on (Q4_K_M, GPU) | OOM | - | - |
 
@@ -82,22 +80,20 @@ MTP off:
 
 | cache | `-b/-ub` | prefill t/s | decode t/s | VRAM |
 | --- | --- | --- | --- | --- |
-| 48 | 512 | 251.3 | 20.34 | 10700 MiB |
 | 48 | 1024 | 365.9 | 20.13 | 11366 MiB |
-| 48 | 1280 | OOM | - | - |
-| 48 | 1536 | OOM | - | - |
-| 48 | 2048 | OOM | - | - |
-| 56 | 512 | 251.3 | 21.64 | 11372 MiB |
+| 48 | 1280, 1536, 2048 | OOM | - | - |
 | 56 | 768 | 315.4 | 21.01 | 11706 MiB |
 | 56 | 1024 | OOM | - | - |
 
-`-b/-ub 1024` at cache 48 is the best balance (much higher prefill, ~same decode).
+The two `-b/-ub 512` rows are the Cache size baselines above. `-b/-ub 1024` at cache 48 is the
+best balance (much higher prefill, ~same decode).
 
 ## `--load-mode`
 
+Against `none` (251.3 / 20.34, Cache size above):
+
 | load-mode | prefill t/s | decode t/s | VRAM |
 | --- | --- | --- | --- |
-| none | 251.3 | 20.34 | 10700 MiB |
 | mmap | 89.9 | 12.57 | 10702 MiB |
 
 `mmap` page-faults dominate: ~2.6x slower decode. `--load-mode none` (expert source allocated
@@ -105,11 +101,10 @@ in RAM) is required; `--lazy-mode on` keeps the 51B n-gram embedding table file-
 
 ## Feature flags
 
-At cache 48/56, MTP off:
+At cache 48/56, MTP off, against the cache-48 baseline above (251.3 / 20.34):
 
 | flag | prefill t/s | decode t/s | VRAM |
 | --- | --- | --- | --- |
-| (none) | 251.3 | 20.34 | 10700 MiB |
 | `--ple-prefetch` | 251.1 | 20.51 | 10700 MiB |
 | `--moe-early-router` | 249.1 | 20.64 | 11398 MiB |
 | `--backend-sampling --decode-overlap --decode-boundary-overlap` | 248.5 | **22.04** | 11492 MiB |
@@ -157,8 +152,7 @@ The shape the main card carried for this quant before the Strata pack engine rep
       -b 1536 -ub 1536 --spec-draft-ubatch-size 512 \
       --temp 1.0 --top-k 20 --min-p 0.0
 
-Measured 505 t/s prefill / 34 t/s decode at 11534 MiB (10k prompt, steady-state median of
-3 cold loads x 4 passes on local NVMe storage).
+Measured: 505 / 34 at 11534 MiB - the `-ub` table below carries it with the local-NVMe spread.
 
 ### Cache size (10k prompt, `-b/-ub 1024`)
 
@@ -169,7 +163,6 @@ Measured 505 t/s prefill / 34 t/s decode at 11534 MiB (10k prompt, steady-state 
 | 72 | 435.9 | 24.81 | 10866 MiB |
 | 80 | 435.6 | 25.65 | 11442 MiB |
 | 84 | crash on first request | - | - |
-| 88 | crash on first request | - | - |
 
 Q2_0 slabs are smaller than IQ3_XXS's, so the cache ceiling is higher (80 vs 48) and every
 cache size beats the UD quant at lower VRAM. Cache 84 and 88 load (server health check
@@ -193,7 +186,7 @@ draft-mtp --spec-draft-n-max 2`, q8_0 draft KV. Two runs each:
 | 10k opencode | 426 | 35.2 / 34.3 | 82% / 81% | 11818 MiB |
 | ~60K refactor | 398 | 23.3 / 25.1 | 76% / 81% | 11818 MiB |
 
-MTP turns 25.7 into ~35 t/s at 10k and 14.7 into ~24 t/s at 60K. Cache 48 is the ceiling with
+Cache 48 is the ceiling with
 the head resident: `--spec-draft-n-max 3` and `4` both OOM the upstream, and the Q8_0 head
 does not fit.
 
@@ -251,13 +244,13 @@ Q4_0 head at cache 40 (10k prompt, steady-state median of repeated passes):
 | 81920 | 1536 | 0 | - | - | - | 11744 MiB | loads, crashes mid-decode |
 | 81920 | 1536 | 512 | **505** | **507** | 34 | 11534 MiB | works |
 | 81920 | 1792 | 0 / 512 | - | - | - | - | load fails: `failed to allocate compute pp buffers` |
-| 98304 | 1024 | 0 | 427 | 428 | 35 | 11460 MiB | works |
 | 98304 | 1280 | 512 | - | - | - | 11740 MiB | loads, first-decode OOM |
 | 98304 | 1536 | 512 | - | - | - | - | load fails at cache 40; cache 36/32 load 11836 MiB then first-decode OOM |
 
 Capping the draft ubatch below `-ub` is what makes `-ub 1536` viable; uncapped it loads and
 then dies mid-decode. At 80k that is ~+18% prefill over `-ub 1024` (505 vs 428) for ~+560 MiB,
-with decode unchanged. At 96k only `-ub 1024` survives: `-ub 1280`/`1536` load then OOM on the
+with decode unchanged. At 96k only `-ub 1024` survives (its measurement is the 98304 / cache-40
+row below): `-ub 1280`/`1536` load then OOM on the
 decode, and trimming the expert cache (40→36→32) does not lower the resident footprint (the
 loader clamps the cache at 96k), so a bigger `-ub` cannot be bought with cache here. The
 recommended config therefore trades 96k for 80k and takes the `-ub` bump.
@@ -275,7 +268,7 @@ With the Q4_0 head and `-ub` held at 1024, ctx 98304 runs at the same cache 40 a
 
 | ctx | cache | 10k prefill/decode | VRAM | result |
 | --- | --- | --- | --- | --- |
-| 98304 | 40 | 427 / 35 | 11460 MiB | works |
+| 98304 | 40 | 427 (best 428) / 35 | 11460 MiB | works |
 | 98304 | 44 | - | 11748 MiB (loaded) | first decode OOM: `CUDA error: out of memory` (ggml-cuda.cu:117) |
 | 98304 | 48 | - | - | load fails: `failed to allocate compute pp buffers` |
 
@@ -294,7 +287,6 @@ cache.
 
 | ctx | cache | -ub | 10k prefill/decode | 60K prefill/decode | VRAM | loads |
 | --- | --- | --- | --- | --- | --- | --- |
-| 81920 | 48 | 1024 | 426 / 34.3-35.2 | 398 / 23.3-25.1 | 11818 MiB | yes |
 | 98304 | 40 | 1024 | 388 / 33.2 | 390 / 23.8-24.4 | 11728 MiB | yes |
 | 98304 | 48 | 512 | 310 / 37.2 | - | 11404 MiB | yes |
 | 98304 | 44 | 1024 | | | | no |
@@ -303,7 +295,8 @@ cache.
 | 131072 | 40 / 32 | 1024 | | | | no |
 
 96k is the hard ceiling; 112k fails at every workable cache. The balanced 96k point is cache
-40: 60K is unchanged (390/24) while 10k gives up ~9% prefill and ~3-6% decode. Keeping cache
+40: against the 80k / cache-48 row in "MTP (shared head) on GSQ" (426 / 398), 60K is unchanged
+(390/24) while 10k gives up ~9% prefill and ~3-6% decode. Keeping cache
 48 and halving `-ub` to 512 also fits and holds decode, but costs ~27% prefill, so it is not
 worth it for long-context work. The 96k / cache-40 shape was the best point with the shared
 head; the config carried on the card uses the Q4_0 head at 80k / `-ub 1536` (see `-ub` /
@@ -355,14 +348,14 @@ Cache scales decode cleanly to the 96k VRAM ceiling at 40.
 | ctx | cache | prefill t/s | decode t/s | VRAM |
 | --- | --- | --- | --- | --- |
 | 65536 | 48 | 463.2 | 20.45 | 11286 MiB |
-| 98304 | 40 | 458.3 | 19.94 | 11316 MiB |
 | 131072 | 32 | 458.9 | 18.93 | 11512 MiB |
 | 196608 | 16 | 457.9 | 16.88 | 11758 MiB |
 | 262144 | 16 | crash on first request | - | - |
 
 Ctx is paid for out of the same budget as the cache, so each doubling costs cache and
-decode tracks cache. 96k/cache 40 and 128k/cache 32 are the balanced points; 64k buys the
-fastest decode (20.4) if context is not needed; the ceiling is ~192k at cache 16.
+decode tracks cache. 96k/cache 40 (the cache-size row above) and 128k/cache 32 are the balanced
+points; 64k buys the fastest decode (20.4) if context is not needed; the ceiling is ~192k at
+cache 16.
 
 ### MTP (shared 512-expert head)
 
@@ -381,6 +374,50 @@ At cache 40 / 96k (n=59751, cold load): prefill 437.1 t/s, decode 12.64 t/s, VRA
 The Coder card reports SWE-bench Verified 75.60 (91.3% of the 82.80 base) and
 LiveCodeBench v6 86.28 (98.7% of 87.43). It is the pruned-expert, coder-targeted release;
 for general use the card points at the unpruned `GSQ-RCO` quants.
+
+### Strata pack engine
+
+The same checkpoint runs on the engine the `GSQ-RCO` quants serve on, and a pack is
+checkpoint-bound: `native_experts.txt` records the expert count and the absolute offsets into
+the source shard (`n_expert 256` here against the base's 512), so the coder needs its own pack
+(`<pack>/coder-iq1_m`) and its own expert profile - the engine ships
+`expert-profile-coder.bin`, half the size of the 512-expert one. The shared MTP runtime from the
+base's checkpoint loads unchanged.
+
+Sizing inverts the expert count: the coder resolves a **smaller** prompt chunk (3200) than the
+base (6144 at a 200000 window, 8192 at 150000), because the chunk is what the expert cache can
+lend and the coder's cache holds 1387 slots against the base's 2670. Two compounding causes:
+
+- each expert blob is about twice as large (largest blob 2.66 MB against 1.38 MB), because the
+  quant keeps half the experts at ~3.5 bits: 98 MiB per expert over a 23.4 GiB arena against
+  63 MiB over 31.6 GiB;
+- less VRAM reaches the cache: 3.57 GiB free against 4.30, from the native projections
+  (2018.88 against 1376.20 MiB), the Q5_K output head (497 against 417), the embedding
+  (322 against 260) and the draft reserve (218 against 184).
+
+The engine clamps an oversized pin instead of rejecting it - `prompt chunk 3328 -> 1664 tokens so
+its buffers fit in every expert cache` - so a pin has to sit below the ceiling rather than be
+trimmed after a failed load. Of the pins tested, 3072, 3136, 3200 and 3216 were accepted
+unclamped, 3248 is the last accepted one, and 3264 halves to 1632. Measured at `--prefill 3200`,
+the largest accepted value with margin, on a 200000 window:
+
+| prompt | prefill t/s | decode t/s | drafts accepted | expert cache hit |
+| --- | --- | --- | --- | --- |
+| 10k opencode | 932.8 | 30.3 | 75% (250/333) | 67.5% |
+| ~60K refactor | 950.2 | 28.4 | 68% (213/311) | 68.5% |
+
+Both passes reached the full 512-token window with `cache_n` 0. Against `GSQ-RCO Q2_0` on the
+same engine and window (200000, chunk 6144: 1058.5 / 39.6 at 10k and 1020.5 / 39.9 at 60K) the
+coder gives up 12% prefill and 23% decode at 10k, and 7% and 29% at 60K - the half-sized expert
+pool costs decode far more than prefill, and the lower hit rate (68% against 78%) is the
+mechanism. The same 10k prompt at the auto chunk (3072) and the default checkpoint interval
+measured 965.4 / 28.6, inside run-to-run spread at this size.
+
+`--prompt-cache-every` is pinned to the chunk (3200) as on the base quants. In a measurement
+(`--prompt-cache 0`) no checkpoints are written at all - every pass logged `0 checkpoints` - so
+the interval costs nothing measurable in these single-shot rows; it is a growing-session setting,
+where checkpoints snap to chunk boundaries. On the served shape (default conversation cache) the
+same 10k prompt logs `4 checkpoints`, so the pin is what the engine snapshots at.
 
 ## Spec window and min-p sweep (Strata, `GSQ-RCO Q2_0`)
 
@@ -415,9 +452,179 @@ recorded pass is the second one; the first is page-in and appears in the spread 
 - `--spec 4 --spec-min-p 0.5` stays (44.1 t/s); `--spec 3 --spec-min-p 0.5` (43.6) is within the
   +-10-15% MTP decode noise. Prefill is unaffected by either knob (1058-1064 t/s), and VRAM
   grows only 12 MiB from `--spec 2` to `--spec 4`.
-- Spread, first (page-in, discarded) pass decode against the recorded pass: `2/0.0` 43.1 vs
-  42.7; `2/0.5` 45.1 (a 493-token run) vs 43.5; `3/0.0` 39.1 vs 41.4; `3/0.5` 43.7 vs 43.6;
-  `4/0.0` 34.6 vs 37.3; `4/0.5` 42.9 vs 44.1. One recorded pass per config.
+
+## Context size and prompt-chunk ladder (Strata, `GSQ-RCO Q2_0`)
+
+`--prefill auto` sizes its chunk from what the expert cache can lend, and the cache shrinks as
+the KV grows - so raising `--max-context` eventually costs prompt *read* speed, not decode.
+This swept ctx to find where the chunk steps down. One cold load per ctx, `--kv int8`, MTP on,
+`--prompt-cache 0`. Both the chosen chunk and the slots it borrows are named in the startup
+line, so rows marked *probe* come from the load alone; *full* rows also ran the prompt set below.
+
+| `--max-context` | VRAM free | expert-cache slots | prompt chunk | slot loan | rows |
+| --- | --- | --- | --- | --- | --- |
+| 81920 | 6.02 GiB | 4008 | 8192 | 3071 (3.95 GiB) | full |
+| 102400 | 5.73 | 3777 | 8192 | 3071 (3.95) | full |
+| 122880 | 5.43 | 3545 | 8192 | 3071 (3.95) | full |
+| 133120 | 5.28 | 3428 | 8192 | 3071 (3.95) | probe |
+| 143360 | 5.13 | 3311 | 6144 | 2427 (3.12) | probe |
+| 153600 | 4.98 | 3196 | 6144 | 2427 (3.12) | full |
+| 194560 | 4.38 | 2733 | 6144 | 2427 (3.12) | probe |
+| 198656 | 4.32 | 2685 | 4096 | 1782 (2.29) | probe |
+| 204800 | 4.23 | 2617 | 4096 | 1782 (2.29) | probe |
+| 229376 | 3.87 | 2337 | 4096 | 1782 (2.29) | probe |
+| 262144 | 3.40 | 1966 | 3072 | 1460 (1.88) | probe |
+
+Speeds on the *full* rows, prefill / decode t/s. Every pass reports `cache_n` 0 and
+`predicted_n` 512, and the recorded pass is the second one (the first is page-in):
+
+| `--max-context` | chunk | ~10k | ~60K (59802) | ~98k (98623) | ~148k (149266) |
+| --- | --- | --- | --- | --- | --- |
+| 81920 | 8192 | 1058.6 / 44.1 | 1089.6 / 41.2 | - | - |
+| 102400 | 8192 | 1056.5 / 41.5 | 1085.6 / 42.1 | 1065.9 / 42.2 | - |
+| 122880 | 8192 | 1059.4 / 40.3 | 1087.4 / 42.6 | 1062.3 / 40.6 | - |
+| 153600 | 6144 | 1056.3 / 42.5 | 1013.4 / 39.7 | 948.5 / 38.3 | 890.3 / 37.2 |
+
+- **The chunk, not the context, is what costs.** Both 10k and 60K rows are flat from 80k to
+  120k ctx (<0.5%), and every config loads to the same 11362 MiB with prompts ending at
+  11492-11514 MiB. The 150k config's own 98k prefill reproduces to 5 ms across two passes
+  (103983 / 103978 ms, 104 s apart), so the loss is not thermal or run-to-run: it is the
+  smaller chunk, chosen because the loan that fits a 6144-token chunk stops fitting the cache.
+  The served window at the end of this section is the other half: with the cache pinned so the
+  chunk and loan cannot move, a wider window still reads the same prompt ~8% slower.
+- **Where the steps fall.** The engine picks the largest size on its fixed list
+  (`8192, 6144, 4096, 3072, 2048, ...`) whose per-chunk buffers leave >= 128 cache slots free and
+  take at most 90% of them (85% when under 90% of the expert bytes are pinned host RAM):
+  8192 holds to ~134k ctx, 6144 to ~198k, 4096 to ~261k, and 3072 only above that. The rule
+  reproduces all 11 rows, including the 198656 pair (2685 slots against the 2697 that 6144
+  needs).
+- The 81920 config this ladder was built around sat just under the 8192 -> 6144 step, which is
+  why it kept the widest chunk; the config served now (150000, with an explicit `8192`) is at the
+  end of this section. A 190k-class config would still read in 6144-token chunks.
+- **The cap is a share of the resident cache, not of free VRAM.** Forcing `--expert-cache 3248`
+  at 122880 steps the chunk down to 6144 (loan 2427) even though 866 MiB is free - 0.90 x 3248 =
+  2923 < 3071, so the percentage is the test that binds. Holding the 8192 chunk therefore means
+  holding >= ~3413 resident slots (>= ~3233 at the 95% cap), and since the window is what sizes
+  the cache, that is what fixes the affordable ctx.
+
+### The loan cap
+
+`STRATA_PREFILL_LEND_PCT` raises the share of the expert cache the prompt path may borrow, which
+moves the chunk bands without touching the engine. Load-only probes, `--kv int8`, MTP on:
+
+| `--max-context` | slots | chunk @90% | chunk @95% |
+| --- | --- | --- | --- |
+| 153600 | 3196 | 6144 | 6144 |
+| 204800 | 2617 | 4096 | 6144 |
+| 262144 | 1966 | 3072 | 4096 |
+
+- **Where the bands move.** The 8192 -> 6144 step goes from ~134k to ~150k ctx and the
+  6144 -> 4096 step from ~198k to ~210k; 4096 only stops fitting at ~1876 slots (~270k ctx),
+  past the end of the native window, so 3072 never comes back. 153600 (the 8192 loan fits
+  neither way) and 229376 (95% of 2337 slots still is not enough for 6144) are unchanged, and
+  where the chosen chunk does not change at all the env does nothing.
+- **What the wider loan buys.** At ctx 204800 the ~148k prompt (149266 tokens) reads in
+  167603 ms / 890.6 t/s at 6144 x 95% against 178367 ms / 836.8 t/s at 4096 x 90% (+6.4%), with
+  decode inside noise and the same footprint (474 MiB free). It tracks the chunk, not the
+  context - 890.6 matches the 153600 + 90% row's 890.3 - and leaves a more relevant resident set
+  (decode hit rate 77.6% against 70.8%).
+- **The served config does not use the env.** It pins the chunk with an explicit `--prefill
+  8192`, which only has to fit and never consults the percentage, so the window can be 150000
+  where `auto` would step down to 6144.
+
+### The chunk costs more the longer the prompt
+
+One cold load per context, three prompts on each (10k = 10507, 60k = 59802, 120k = 119344
+tokens), `--spec 4 --spec-min-p 0.5`, `--kv int8`, MTP on, `--prompt-cache 0`; every recorded
+pass reports `cache_n` 0 and `predicted_n` 512 (prefill / decode t/s). The 150000 row is the
+retired shape; 200000 and 250000 are the two served ones.
+
+| `--max-context` | chunk | ~10k | ~60K | ~120k |
+| --- | --- | --- | --- | --- |
+| 150000 (retired) | 8192 | 1072.2 / 39.8 | 1065.0 / 41.0 | 973.9 / 38.8 |
+| 200000 (served default) | 6144 | 1058.5 / 39.6 | 1020.5 / 39.9 | 928.5 / 37.2 |
+| 250000 (served overflow) | 4096 | 973.4 / 38.1 | 946.3 / 37.1 | 864.0 / 35.0 |
+
+- The step down from 8192 at 150000 to 4096 at 250000 - window and chunk together - costs 9.2%
+  prefill at 10k and 11.3% at 120k, of which the chunk alone is -4.7% and -7.0% between the two
+  served tiers at 120k. A 208000 measurement of the same shape as the served default (1052.8 /
+  1016.7 / 923.1) agreed within 0.5%, so it is not shown separately.
+- **A longer prompt costs ~9-12% at every chunk** - 1072 -> 974, 1059 -> 929, 973 -> 864 from
+  10k to 120k - so this is attention over the prompt, not cache sizing, and it is independent of
+  the chunk.
+- **Decode tracks the resident set, not the prompt.** It goes 39.6 / 39.9 / 37.2 on the 2670-slot
+  cache against 38.1 / 37.1 / 35.0 on the 2104-slot one (decode expert-cache hit rate 69-73%
+  across these passes). Treat an individual cell as noise: 2000-token generations on the same
+  119344-token prompt put the tiers at 43.2 / 42.0 / 40.3 t/s with a +-14% spread *within* each
+  tier, so only a difference that holds across prompt sizes reads as a tier cost.
+- Decode carries MTP acceptance variance (65-73% of drafts accepted across these runs), so read
+  a few percent as noise.
+
+### The served windows
+
+Two entries run since 2026-10-07. The default is 200000 ctx with an explicit `--prefill 6144` and
+`--prompt-cache-every 6144`; the overflow is 250000 ctx with an explicit `--prefill 4096` and
+`--prompt-cache-every 4096`. Both pin the chunk because `--prefill auto` steps down with the
+window: at 200000 the auto cache lands on 2670 slots, and 0.90 x 2670 = 2403 is under the 2427
+slots a 6144-token chunk needs, so `auto` would take 4096. An explicit chunk only has to fit
+(2427 + 128 <= 2670) and is not subject to the percentage at all - with no such variable set
+anywhere the cold loads report `the prompt path borrows 2427 / 1782 CUDA0 cache slots`, 474 / 476
+MiB free, 11364 / 11362 MiB after load and 11514 / 11510 under requests. At 250000 the pin is
+redundant (`auto` lands on 2104 slots, and 0.90 x 2104 = 1894 >= 1782 already holds 4096); it is
+there for uniformity. Before this the served shape was 150000 with `--prefill 8192`, and before
+that 81920 with `--prefill auto`.
+
+- **What retires the 8192 chunk is the miss, not the rate.** Its edge is prefill only (the chunk
+  table above), decode is equal, and a cached turn pays nothing: +6.5 s per full re-prefill at
+  120k, under 0.3 s per cached turn. The wider windows buy more.
+- **The window itself costs, and free VRAM does not buy the chunk back.** Against the same 8192
+  chunk at 122880 (3545 slots) the step 122880 -> 149000 reads 10k 1059.4 -> 1072.2, 60K 1087.4
+  -> 1065.0, 120k 1056.3 -> 973.9: the window, not the chunk, which is 8192/3071 either way.
+  Pinning the cache at 3300 so that chunk and loan stay fixed while only `--max-context` moves
+  gave the same 8.1% (1056.8 -> 971.7 on the ~119k prompt), and free VRAM is not the driver -
+  122880 reads that prompt the same (1057.6 / 1056.8) with 476 and 798 MiB free. The mechanism is
+  not linear in ctx either (the 6144 pair is flat from 153600 to 208000), so the working rule is
+  to size `--max-context` to what you serve.
+- **Where the chunk stops fitting sets the ceiling.** An explicit chunk needs `chunk/2 + 128`
+  cache slots and the cache shrinks about 1.13 slots per 100 ctx, so 8192 holds to ~153k, 6144 to
+  ~210k and 4096 to ~267k. 262144 would fit a 4096 chunk with 56 slots to spare, so 250000 is the
+  served overflow with margin rather than the native maximum.
+- Decode reads a few percent under the 81920-era rows (44.1 at 10k) because the smaller cache
+  holds fewer experts, and the two 120k passes ran 122510 / 122548 ms, so the prefill at least is
+  not drift.
+
+### Growing sessions: what the conversation cache costs
+
+Every row above is a cold, cache-free read (`--prompt-cache 0`). A real session does not resend a
+full prompt, it grows, so this ran one request per turn, each carrying a longer prefix of the same
+~248k-token corpus (10k start, +6k per turn, 256 tokens generated per turn; one cold load per
+arm, ctx 200000 with the 6144 chunk against ctx 250000 with the 4096 chunk).
+
+- **Checkpoints land on chunk boundaries, so the default cache cadence is coarse.** With the
+  default `--prompt-cache-every 16384`, the youngest checkpoint a turn can resume from is the
+  largest multiple of the prompt chunk below the prompt, so the effective step is
+  `ceil(16384 / chunk) x chunk` - 18432 on a 6144 chunk, 16384 on a 4096 chunk. The first three
+  turns have no checkpoint at all (full reads of 9.9k / 16k / 22k), and after that a
+  *6000-token* turn re-reads 14738 (6144 arm) / 13611 (4096 arm) tokens on average - **2.46x /
+  2.27x the new tokens**, cycling ~9k, ~15k, ~21k.
+- **Pinning `--prompt-cache-every` to the chunk is the fix.** On the 6144 arm `cache_n` then
+  advances in exact 6144 steps, the re-read falls to 8525-9878 (mean 8901, **1.48x**), and the
+  23-turn ladder goes from 555 s to 416 s (-25%) with every turn in 16.5-19.8 s instead of
+  16.5-34.5 s. The turn at 142k reads in 12026 ms against 19755 ms (-39%) even though the smaller
+  batches read slightly slower per token (708.9 against 742.5 t/s); decode (37.4 t/s), hit rate
+  (74-76%) and VRAM (11494 MiB) do not move. The 4096 arm behaves the same way: the shared ladder
+  goes 565 s -> 413 s and the eight extension turns 330 s -> 241 s (sum 896 s -> 654 s), re-read
+  mean 13611 -> 7877 (**2.27x -> 1.31x**), and no extension turn exceeds 34 s against 48-55 s
+  before. The grid cannot be finer than one chunk, so the chunk size is the optimum value.
+- **Depth, not the window, is what a session pays.** Same policy, same arm size: the read runs
+  1026 t/s over the first 30k, 960 at 30-60k, 862 at 60-90k, 787 at 90-120k and 752 at 120-150k
+  on the 6144 chunk (-27% to 142k), against 964 / 879 / 810 / 734 / 698 on the 4096 chunk at
+  250000, which continues 626 (150-200k) and 540 (200-300k), -45% end to end. At equal depth the
+  6144 chunk is ~5% faster per token. A session driven into the extension therefore pays 29-55 s
+  per turn for its last 90k (worst 55.2 s at 220k, reading 25459 tokens at 545 t/s).
+- The amplification is the step size against the grid: a turn that adds more material, or reaches
+  further back, re-reads proportionally less of it - the 2.46x above is the small-step case a
+  coding agent hits when it appends one file to a conversation it keeps resending.
 
 ## Conclusions
 
@@ -451,4 +658,6 @@ recorded pass is the second one; the first is page-in and appears in the spread 
   tested here: 458/19.9 at 96k/cache 40, and the only one whose expert cache needs the fusion
   workaround. It is a pruned coder checkpoint (256 experts, 1.89 bpw effective), not a
   re-quant, so its decode is not directly comparable with the 512-expert quants - it trades
-  speed for size and a code/agentic quality target.
+  speed for size and a code/agentic quality target. On the pack engine it reaches 932.8/30.3 at
+  10k and 950.2/28.4 at 60K on a 200000 window, against 1058.5/39.6 and 1020.5/39.9 for
+  `GSQ-RCO Q2_0` on the same engine and window.
