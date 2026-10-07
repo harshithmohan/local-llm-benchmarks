@@ -17,14 +17,13 @@ the work across the whole PC instead of fitting the model in VRAM:
 
 The same engine builds for CUDA and HIP.
 
-**Measured on Rig 1** (engine 0.1.40.2) - GSQ-RCO Q2_0, `--kv int8`, MTP on, at the two served
-windows: the 200000 window measures **1058 t/s prefill / 44.2 t/s decode** on the ~10k prompt,
-**1045 / 42.4** at ~60K and **1008 / 41.8** at ~120k; the 250000 window (a 4096-token chunk
-against the 200000 window's 6144) measures **975 / 39.2**, **970 / 39.9** and **936 / 38.2**.
-Against the 0.1.38 rows the ~10k prefill is unchanged and the longer prompts gain (+2.4% at ~60K,
-+8.4% at ~120k), so the long-prompt prefill penalty is now ~4-5% where it was ~9-12%; decode is
-higher in every cell. The timing rows are on the
-[Qwen3.8-Flash-Next (Rig 1) card](../models/rig1-3060/qwen38-flash-next.md).
+**Measured on Rig 1** (engine 0.1.40.2): the GSQ-RCO `Q2_0` release of
+[Qwen3.8-Flash-Next](https://huggingface.co/Qwen/Qwen3.8-Flash-Next) and the **Swift 1.5**
+fine-tune of it at
+[`IQ2_XS`](https://huggingface.co/ukisai/Swift-1.5-Qwen3.8-Flash-Next-GSQ-RCO-GGUF), each on
+its own pack. The timing rows, the ctx/chunk ladders and the `STRATA_*` A/Bs are on the model
+cards and their archives ([Qwen3.8-Flash-Next](../models/rig1-3060/qwen38-flash-next.md),
+[Swift-1.5-Qwen3.8-Flash-Next](../models/rig1-3060/swift-qwen38-flash-next.md)).
 
 ## Why it is not a `llama-server` build
 
@@ -55,7 +54,12 @@ Flags used on this benchmark:
   GGUF-mapped) path at once: stream-token, head, dense + PLE projections, MoE combine, GDN,
   router, QSA, indexer, RoPE and the CPU `q8_0` contract. The individual `--native-*` flags
   stay for A/B runs, and `--no-capture` runs the layers directly instead of replaying graphs.
-- `--ple-gguf PATH` - the shard holding the per-layer embedding table (the PLE layer).
+- `--ple-gguf PATH` - the shard holding the per-layer embedding table (the PLE layer). Which
+  shard that is depends on the pack's layer split and is not always the second: a release can
+  keep all layers in shard 1 and put the table alone in shard 2, or break earlier and carry the
+  table in shard 1. Left unset it defaults to the shard that holds
+  `per_layer_token_embd.weight`, found by name - as are the model's shards themselves, by their
+  `<name>-0000N-of-0000M.gguf` names beside `--native` (a missing shard is an error).
   `--ple-io direct|mmap|ram` picks how the n-gram table is read: unbuffered SSD reads by
   default, `ram` locks the whole table.
 - `--expert-profile P` - pre-loads the VRAM expert tier from a saved `profile.bin` instead
@@ -76,45 +80,40 @@ Flags used on this benchmark:
 - `--prefill CHUNK` - batched prompt processing in chunks; `auto[:N]` picks the largest chunk
   whose buffers the expert cache can lend (needs `--native`). The prompt path borrows the top
   of the expert cache for its per-chunk buffers and refills those slots after each chunk, so a
-  bigger chunk borrows more: `auto` takes the largest size on the engine's list
-  (`8192`, then `6144`, `4096`, `3072`, `2048`, `1024`, `512`, `256`) whose buffers leave `>= 128`
+  bigger chunk borrows more: `auto` takes the largest chunk whose buffers leave `>= 128`
   cache slots free and take at most `90%` of them - `85%` when under 90% of the expert bytes are
-  pinned host RAM. `32768` and `16384` need `auto:N` (a bare `auto` stops at `8192`), and an
-  explicit `--prefill N` is the operator's number, which only has to fit - the percentage is an
-  `auto`-only rule, so an explicit chunk never consults it, which is how the served 200000
-  config keeps 6144 (2670 cache slots, a 2427-slot loan - `auto` would step down to 4096
-  there, since 0.90 x 2670 = 2403 < 2427). The cache shrinks as
-  `--max-context` grows, so the chunk steps down with it: on Rig 1 (GSQ-RCO Q2_0, `--kv int8`)
-  8192 holds to ~134k ctx, 6144 to ~198k, 4096 to ~261k, and 3072 only above that - and each
-  step down costs prefill (11% at ~98k). That percentage is a share of the *resident* cache, not
-  of free VRAM, so `--expert-cache N` moves the step: forcing 3248 slots at 122880 drops the
-  chunk to 6144 with 866 MiB still free. `STRATA_PREFILL_LEND_PCT=N` overrides the percentage:
-  at `95` a 6144-token chunk keeps fitting to ~210k ctx instead of ~198k (8192 to ~150k instead
-  of ~134k), 4096 becomes the floor for the rest of the 262144 window, and the freed chunk is
-  worth +6.4% prompt read at 204800; wherever the chosen chunk does not change, it does nothing
-  (the earlier shipped 81920 included). Rows and the A/B are in the
-  [Flash-Next archive](../models/rig1-3060/archive/qwen38-flash-next.md).
+  pinned host RAM. That scan is a bisection on the 256-token grid, not a fixed list: the list
+  (`8192`, `6144`, `4096`, `3072`, ...) is the pre-0.1.39b behaviour, still reachable with
+  `STRATA_RING_BYTES=0`, and since 0.1.39b the default also holds the prompt ring full, so the
+  value it lands on is pack-specific and can sit between the list's sizes. `32768` and `16384`
+  need `auto:N` (a bare `auto` stops at `8192`), and an explicit `--prefill N` is the
+  operator's number, which only has to fit - the percentage is an `auto`-only rule, so an
+  explicit chunk never consults it and can be larger than `auto` would pick on the same cache.
+  An oversized pin is clamped rather than rejected: it is halved until it fits, so an explicit
+  chunk lands on the pin or one of its halves. The percentage is a share of the *resident*
+  cache, not of free VRAM, so `--expert-cache N` moves the step; the cache shrinks as
+  `--max-context` grows, so the chunk steps down with it, and each step down costs prefill.
+  `STRATA_PREFILL_LEND_PCT=N` overrides the percentage and lets a larger chunk fit a wider
+  window; wherever the chosen chunk does not change it does nothing. Rows and the A/Bs are in
+  the [Flash-Next archive](../models/rig1-3060/archive/qwen38-flash-next.md).
 - `--kv fp16|int8|q4_0|k8v4` - KV storage. `int8` is int8 codes with an fp16 scale per 64
   values (half of fp16); `q4_0` is a Hadamard-rotated 4-bit K/V; `k8v4` is INT8 K with a
   rotated `q4_0` V. `--kv-resident N` streams all but N cells of each attention layer from
   pinned RAM and gives the freed VRAM to the expert cache.
 - `--max-context N` - KV/state capacity (default 4096). The pack's trained window is what it
   should stay within unless `--rope-scaling` is used. Size it to what you serve: at a fixed
-  chunk and expert cache, raising the window alone costs prefill (122880 -> 149000 reads the
-  same 119344-token prompt 8.1% slower), so headroom you do not use is not free. Rig 1 serves
-  two tiers on the app side: 200000 with an explicit `6144` chunk (default) and 250000 with
-  `4096` (max ctx), each pinned as above.
+  chunk and expert cache, raising the window alone still costs prefill even though the same
+  prompt is read, so headroom you do not use is not free.
 - `--prompt-cache N` - how many conversation checkpoints the server keeps between requests
   (default 6, ~118 MB of RAM each; `0` = read every prompt from the start). This is what makes
   a resent prompt cheap - the second pass reports a nonzero `cache_n` - and it is an engine
   flag, not a request field. `--prompt-cache-every N` also checkpoints every N fresh prompt
   tokens (default 16384, `0` = off) and `--prompt-cache-tail` adds one more near the prompt's
   end. Checkpoints land only on prompt-chunk boundaries, so the spacing that matters is
-  `ceil(N / chunk) x chunk`: the default 16384 is three 6144-chunks apart, and a growing
-  session pays that gap on every turn - pinning N to the chunk cut a 23-turn ladder from 555 s
-  to 416 s on the 6144 chunk (565 s to 413 s on the 4096 one) by taking the per-turn re-read
-  from ~2.5x to ~1.4x the tokens added. The grid cannot be finer than
-  one chunk, so the chunk size is the optimum.
+  `ceil(N / chunk) x chunk` - the default 16384 is several chunks apart - and a growing session
+  pays that gap on every turn. Pinning N to the chunk minimises the per-turn re-read, and the
+  grid cannot be finer than one chunk, so the chunk size is the optimum. The measured ladder is
+  in the [Flash-Next archive](../models/rig1-3060/archive/qwen38-flash-next.md).
 - `--conversation-cache-mib N` / `--conversation-cache-slots N` /
   `--conversation-cache-min-free-mib N` - parked conversations between requests: the RAM
   budget (default 0 = off), the number kept (default 4) and a RAM floor (default 2560).

@@ -492,12 +492,14 @@ Speeds on the *full* rows, prefill / decode t/s. Every pass reports `cache_n` 0 
   smaller chunk, chosen because the loan that fits a 6144-token chunk stops fitting the cache.
   The served window at the end of this section is the other half: with the cache pinned so the
   chunk and loan cannot move, a wider window still reads the same prompt ~8% slower.
-- **Where the steps fall.** The engine picks the largest size on its fixed list
+- **Where the steps fall.** The engine picks the largest size on the list the scan walked then
   (`8192, 6144, 4096, 3072, 2048, ...`) whose per-chunk buffers leave >= 128 cache slots free and
   take at most 90% of them (85% when under 90% of the expert bytes are pinned host RAM):
   8192 holds to ~134k ctx, 6144 to ~198k, 4096 to ~261k, and 3072 only above that. The rule
   reproduces all 11 rows, including the 198656 pair (2685 slots against the 2697 that 6144
-  needs).
+  needs). That list is the pre-0.1.39b behaviour, still selected by `STRATA_RING_BYTES=0`; the
+  current `auto` bisects the 256-token grid and holds the prompt ring full, so a pack can land
+  between the list's values (see [engine-notes/strata.md](../../../engine-notes/strata.md)).
 - The 81920 config this ladder was built around sat just under the 8192 -> 6144 step, which is
   why it kept the widest chunk; the config served now (150000, with an explicit `8192`) is at the
   end of this section. A 190k-class config would still read in 6144-token chunks.
@@ -564,7 +566,7 @@ Two entries run since 2026-10-07. The default is 200000 ctx with an explicit `--
 `--prompt-cache-every 6144`; the overflow is 250000 ctx with an explicit `--prefill 4096` and
 `--prompt-cache-every 4096`. Both pin the chunk because `--prefill auto` steps down with the
 window: at 200000 the auto cache lands on 2670 slots, and 0.90 x 2670 = 2403 is under the 2427
-slots a 6144-token chunk needs, so `auto` would take 4096. An explicit chunk only has to fit
+slots a 6144-token chunk needs, so `auto` lands lower. An explicit chunk only has to fit
 (2427 + 128 <= 2670) and is not subject to the percentage at all - with no such variable set
 anywhere the cold loads report `the prompt path borrows 2427 / 1782 CUDA0 cache slots`, 474 / 476
 MiB free, 11362 / 11364 MiB after load and 11498 / 11500 under requests. At 250000 the pin is

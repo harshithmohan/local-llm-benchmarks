@@ -8,7 +8,9 @@ n-gram embedding table + 4B MTP; 48 layers =
 12 x (3 x Gated DeltaNet -> MoE + 1 x Qwen Sparse Attention -> MoE), 10 routed + 1 shared
 expert per token. Model card:
 [ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF](https://huggingface.co/ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF) (`GSQ-RCO` quants);
-MTP head: [ggml-org/Qwen3.8-Flash-Next-GGUF](https://huggingface.co/ggml-org/Qwen3.8-Flash-Next-GGUF).
+MTP head: [ggml-org/Qwen3.8-Flash-Next-GGUF](https://huggingface.co/ggml-org/Qwen3.8-Flash-Next-GGUF). The
+**Swift 1.5** fine-tune of this base is a separate checkpoint with its own pack, layer/shard
+boundary and expert mix: [swift-qwen38-flash-next.md](swift-qwen38-flash-next.md).
 
 ## Recommended configs
 
