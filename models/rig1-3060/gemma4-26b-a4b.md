@@ -34,3 +34,14 @@ chatting, not coding.**
 
 Not applicable to the 32k chat config (the model is not used for coding here); the
 non-chat 256k measurement lives in the [archive](archive/gemma4-26b-a4b.md).
+
+## Notes
+
+- The expert cache fills lazily, so a load-time VRAM reading badly understates steady state:
+  this config reports ~3 GiB at load and ~11.5 GiB during decode. Read VRAM during decode.
+- The cache ceiling is 72 slabs. 80 is VRAM-bound (fails both with and without
+  `--phase-aware-workspace`); 88/96 load but flip the MoE onto the fork's grouped execution
+  path, which this arch cannot run - `op not supported ffn_moe_gate_up-24 (MUL_MAT_ID)` ->
+  `required grouped execution failed` (`ret = -3`).
+- `--phase-aware-workspace` frees nothing at steady state on this model, so the 72-slab
+  ceiling stands.

@@ -32,10 +32,11 @@ Known issues and gotchas: [issues.md](issues.md).
   build 1aaf710 (v1; older rows 3bb386e), Rig 1) - Ilya Kawrakow's performance fork of
   llama.cpp. Flag syntax: [engine-notes/ik-llama.md](engine-notes/ik-llama.md).
 - **llama.cpp (moe-cache fork)** ([GenerelSchwerz/llama.cpp](https://github.com/GenerelSchwerz/llama.cpp),
-  branch `moe-cache`, build b11608-2b8088c2a) - a llama.cpp fork adding a dynamic CUDA expert
-  cache (`--moe-expert-cache-size`), with no profile/trace step; while enabled it overrides
-  `-ncmoe` placement. Flags and the `--experimental-logs` validation recipe:
-  [engine-notes/moe-cache-fork.md](engine-notes/moe-cache-fork.md).
+  branch `moe-cache`, both rigs on build b11814-28d73c87c since 2026-10-08) - a llama.cpp fork
+  adding a dynamic CUDA expert cache (`--moe-expert-cache-size`; no profile/trace step needed)
+  and an opt-in generic hybrid CPU/GPU executor (`--moe-hybrid`) with model-bound expert profiles;
+  while the cache is enabled it overrides `-ncmoe` placement. Flags and the `--experimental-logs`
+  validation recipe: [engine-notes/moe-cache-fork.md](engine-notes/moe-cache-fork.md).
 - **Strata** ([Niko1221/Strata](https://github.com/Niko1221/Strata), engine 0.1.40.2, Rig 1) -
   a llama.cpp-derived engine that runs Qwen3.8-Flash-Next from a *pack* (expert rows indexed
   on the SSD, all experts pinned in host RAM, an adaptive VRAM expert cache) behind its own
@@ -75,11 +76,11 @@ model pages.
 
 | Model | Quant | Full-ctx support | Prefill t/s | Decode t/s |
 | --- | --- | --- | --- | --- |
-| Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | 262144 | 1909 | **76** |
+| Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | 262144 | 1761 | **83** |
 | Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | 524288 (YaRN 2x) | 2063 | **52** |
 | Qwen3.8-Flash-Next | GSQ-RCO Q2_0 + MTP (Strata) | 200000 | 1058 | **44** |
 | Swift-1.5-Qwen3.8-Flash-Next | GSQ-RCO IQ2_XS + MTP (Strata) | 200000 | 1004 | **47** |
-| KAT-Coder-V2.5-Dev | APEX-I-Compact | 262144 | 1673 | **66** |
+| KAT-Coder-V2.5-Dev | APEX-I-Compact | 262144 | 1534 | **71** |
 | Swift-1.5-Qwen3.8-27B | IQ2_XS | 81920 (q4_0 KV) | 467 | **35.6** |
 
 All rows here are measured on the 10k opencode session prompt ([test-prompts.md](test-prompts.md)).
@@ -94,8 +95,8 @@ per-row on the model pages.
 
 | Model | Quant | ctx | Prefill t/s | Decode t/s |
 | --- | --- | --- | --- | --- |
-| Qwen3.6-35B-A3B | UD-IQ4_XS | 262144 | 4686 | **214** |
-| Qwen3.6-35B-A3B | UD-IQ4_XS | 524288 (YaRN 2x) | 3925 | **154** |
+| Qwen3.6-35B-A3B | UD-IQ4_XS | 262144 | 4983 | **223** |
+| Qwen3.6-35B-A3B | UD-IQ4_XS | 524288 (YaRN 2x) | 3984 | **170** |
 | KAT-Coder-V2.5-Dev | APEX-I-Compact | 262144 | 4591 | **163** |
 | Qwen3.8-27B | W4A16-AutoRound-fast | 150000 | 2430 | **113.0** |
 | Qwen3.8-27B | W4A16-AutoRound-fast | 250000 | 2408 | **87.9** |

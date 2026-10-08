@@ -10,7 +10,8 @@ Five engines produce the measured results in this folder. Each has its own flag 
 so engine labels are per-row and results are not interchangeable across engines. Per-engine
 flags, features, and quirks live in [engine-notes/](engine-notes/):
 
-- [moe-cache fork](engine-notes/moe-cache-fork.md) - dynamic CUDA expert cache, no profile/trace.
+- [moe-cache fork](engine-notes/moe-cache-fork.md) - dynamic CUDA expert cache (+ opt-in
+  generic hybrid CPU/GPU executor), no profile/trace needed for the cache itself.
 - [upstream (stock)](engine-notes/upstream-stock.md) - reference build; no fork features.
 - [ik-llama.cpp](engine-notes/ik-llama.md) - different flag syntax; no fork features.
 - [vLLM](engine-notes/vllm.md) - container stack for the Rig 2 Qwen3.8-27B quants.
@@ -99,6 +100,9 @@ buffers grow with context).
   numbers come from llama-server, never `llama-bench` (which has no cache plumbing and no
   `-c` flag).
 - Server single-run decode carries about +-2-4% noise; treat sub-5% deltas with caution.
+- An expert cache fills lazily, so a load-time VRAM reading understates steady state, sometimes
+  by many GiB (Gemma4-26B reads ~3 GiB at load and ~11.5 GiB during decode). Sample VRAM during
+  decode - never at `listening on http` - when checking headroom or a cache ceiling.
 - Cold-load measurements are the trustworthy ones: mid-session warm measurements produced
   several prefill flukes (page-cache-warm sessions) that re-verified 20-30% lower cold.
 - Absolute numbers are not directly comparable across sessions written at different times;

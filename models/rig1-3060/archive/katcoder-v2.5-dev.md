@@ -69,11 +69,63 @@ The ~60K refactor prompt (n=59751) at the recommended config (cache 80, `-b/-ub 
 `--spec-draft-ubatch-size 3072`, MTP on, cold load): prefill 1434 t/s, decode 51.6 t/s, VRAM
 11774 MiB. Survives with ~510 MiB headroom - no OOM on the large prompt.
 
+## `--phase-aware-workspace` on b11814 (2026-10-08)
+
+The fork build moved b11608 -> b11814, and the new `--phase-aware-workspace` flag releases
+prompt-only workspace before decode (see [engine-notes](../../../engine-notes/moe-cache-fork.md)).
+On this model it frees ~800 MiB, which raises the expert-cache ceiling from 80 to 88 slabs.
+
+Cache sweep at the served shape (ctx 262144, MTP on, 10k prompt):
+
+| cache | prefill t/s | decode t/s | steady VRAM | result |
+| --- | --- | --- | --- | --- |
+| 80 (base, 8 passes) | 1508 | 67.65 | 11693 MiB | ok |
+| 88 + phase-aware (8 passes) | 1534 | 71.1 | 10895 MiB | adopted |
+| 96 + phase-aware (6 passes) | - | 72.8 | 11399 MiB | ok, within noise of 88 |
+| 100 / 104 + phase-aware | - | - | 11701 / 11761 MiB | loads, OOMs on first request |
+| 112 + phase-aware | - | - | - | OOM at load (shared CUDA0 workspace) |
+| 128 + phase-aware | - | - | - | OOM at load (KV buffer) |
+
+Decode medians over the stated pass counts; the base row was re-measured over 8 passes because
+a 4-pass sample read ~2 t/s low. The win is ~+5% decode plus ~800 MiB freed - not the ~+10% a
+4-pass comparison suggested. VRAM is sampled during decode: the cache fills lazily, so the
+load-time figure understates steady state.
+
+Long-context at the adopted config (cache 88 + phase-aware, `-b/-ub 3072`):
+
+| prompt | prefill t/s | decode t/s | VRAM |
+| --- | --- | --- | --- |
+| ~60K | 1343 | 54.1 | 10875 MiB |
+| ~120K | 1107 | 45.7 | 10875 MiB |
+
+Both large-prompt checks pass with no OOM.
+
+### `-b/-ub 4096` without the draft cap
+
+Phase-aware frees exactly the headroom that made plain `-ub 4096` OOM at cache 80 (see the
+sweep above), so the draft cap is no longer needed at the adopted config. `-b/-ub 4096` with
+no `--spec-draft-ubatch-size`, cache 88 + phase-aware, cold load:
+
+| prompt | prefill t/s | decode t/s | VRAM |
+| --- | --- | --- | --- |
+| 10k | 1624 | 66.15 | 10927 MiB |
+| ~60K | 1394 | 54.5 | 10911 MiB |
+| ~120K | 1124 | 42.45 | 10911 MiB |
+
+The 10k decode is a 4-pass median whose two low passes had draft acceptance 0.41 / 0.57;
+otherwise decode is within acceptance noise of the 3072 rows. Prefill gains ~+6% at 10k, ~+4%
+at 60K and only ~+1.5% at 120K for ~+36 MiB. Not adopted: the gain fades with depth.
+
 ## Conclusions
 
-- `-b/-ub 4096` with `--spec-draft-ubatch-size 3072` is the prefill-maximizing setting at
+- The adopted config is cache 88 + `--phase-aware-workspace` + `-b/-ub 3072`: ~+5% decode over
+  the cache-80 / 3072 base and ~800 MiB freed. `--phase-aware-workspace` also makes plain
+  `-b/-ub 4096` fit - the config the draft cap was invented for - but its prefill gain fades
+  with depth (~+6% at 10k, ~+1.5% at 120K), so it is left off.
+- `-b/-ub 4096` with `--spec-draft-ubatch-size 3072` was the prefill-maximizing setting at
   cache 80: prefill ~1673 vs 1579 at 3072 (MTP on) and 1761 at 4096 (MTP off). Plain
-  `-ub 4096` OOMs with the draft ubatch at the target `-ub`; the draft cap is what makes it fit.
+  `-ub 4096` OOMs there with the draft ubatch at the target `-ub`; the draft cap is what made
+  it fit at that cache size.
 - Decode is ubatch-independent (~64-73 on the 10k prompt), driven by MTP acceptance.
-- The expert cache holds the full 262144 window with MTP inside 12 GB (~11.5 GiB, ~510 MiB
-  free at `-ub 4096`).
+- The expert cache holds the full 262144 window with MTP inside 12 GB (~11 GiB at the adopted
+  cache 88, ~510 MiB free at the older cache-80 / 4096 config).

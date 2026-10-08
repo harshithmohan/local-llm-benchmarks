@@ -9,7 +9,8 @@ two-pass, second pass recorded, `cache_prompt: false`, `ignore_eos: true`, q8_0 
 load, `--threads 8`, 22 GB VRAM cap). Gotchas in [issues.md](../../../issues.md).
 
 Engines: **stock** = upstream llama-server v0.5.0-dev build 11146 (7fe450e193);
-**moe-cache fork** = GenerelSchwerz `moe-cache` build b11608-2b8088c2a. The 262144 rows
+**moe-cache fork** = GenerelSchwerz `moe-cache`, build b11608-2b8088c2a for the original
+sweeps and b11814-28d73c87c for the 2026-10-08 re-tune below. The 262144 rows
 are cold-loaded with all experts on GPU; the 524288 rows run YaRN 2x and need the fork's
 expert cache (all-on-GPU does not fit).
 
@@ -129,10 +130,48 @@ Same configs, the ~60K-token refactor prompt (prompt_n 59751), q8_0 KV, cold loa
   (97.2 vs 154.0); MTP acceptance eases from ~0.90 on the 10k prompt to 0.797 here.
 - The stock row trails the fork on both columns at the same ubatch (3808/87.8).
 
+## b11814 re-tune (2026-10-08) - `--phase-aware-workspace` and the expert cache
+
+This card fits the model at 256k, so the expert cache can only cost decode; the question was
+whether `--phase-aware-workspace` (releases prompt-only workspace before decode) is free here.
+10k prompt, 4-6 passes, one cold load per config, GPU verified idle before every load:
+
+| 256k config (MTP on) | prefill t/s | decode t/s | peak VRAM |
+| --- | --- | --- | --- |
+| cache 0 (shipped) | 4971 | **220.9** | 22933 MiB |
+| cache 0 + `--phase-aware-workspace` | 4983 | **222.8** | 22946 MiB |
+| cache 128 + `--phase-aware-workspace` | 3058 | 164.2 | 14456 MiB |
+| cache 168 + `--phase-aware-workspace` | 3380 | 188.5 | 16870 MiB |
+
+- The cache is a straight loss on this card: 128/168 slabs cost ~25%/15% decode against
+  cache 0 while freeing up to 8.5 GB. `--phase-aware-workspace` costs nothing (within
+  acceptance noise) and frees ~1.3 GiB (22267 -> 20941 MiB at load).
+- Batch ceiling: `-b/-ub 6144` and 8192 with `--phase-aware-workspace` both load
+  (4900 / 4812 prefill, peak 22588 / 23244 MiB - past the 22 GB budget), while 8192 without
+  the flag aborts (SIGABRT, core dump, 23628 MiB). 4096 stays the ceiling.
+
+At 524288 (YaRN 2x), expert-cache ladder, cold load, peak VRAM measured during decode:
+
+| config | 10K prefill/decode | ~60K prefill/decode | ~120K prefill/decode | peak VRAM |
+| --- | --- | --- | --- | --- |
+| cache 168 | 3808 / 163.7 | 3484.4 / 125.1 | 2850 / 100.2 | 22768 MiB |
+| cache 168 + `--phase-aware-workspace` | 3716 / 164.1 | 3442 / 126.9 | - | 20950 MiB |
+| cache 200 + `--phase-aware-workspace` | 3984 / 169.8 | 3590.5 / 129.7 | 2901 / 102.2 | 22714 MiB |
+| cache 224 + `--phase-aware-workspace` | - | - | - | OOM at load (24050 MiB) |
+
+- At cache 168 the flag is throughput-neutral (inside acceptance noise) and buys headroom
+  (22768 -> 20950 MiB peak); that headroom carries cache 168 -> 200 for ~+3% prefill /
+  ~+4% decode at the same peak.
+- cache 224 OOMs at load (`cuMemCreate`), so 200 is the practical ceiling.
+
+Long-context on the shipped 256k shape (cache 0 + `--phase-aware-workspace`, prompt_n 59751
+and 119293, every pass `cache_n` 0 / `predicted_n` 512): ~60K 3944.5 prefill / 154.6 decode /
+21980 MiB; ~120K 3083.4 / 113.2 / 21980 MiB. Prefill falls ~2.2x from 10K to 120K depth.
+
 ## Conclusions
 
-- **Config of choice at 262144:** moe-cache fork, MTP on, `-b/-ub 4096`
-  (or 2048 for more headroom) - ~215 t/s decode / 4686 prefill within the 22 GB cap.
+- **Config of choice at 262144:** moe-cache fork, MTP on, `--phase-aware-workspace`,
+  `-b/-ub 4096` - ~223 t/s decode / 4983 prefill within the 22 GB cap.
 - The fork beats stock with all experts on GPU, without using the expert cache: ~+11% decode
   and ~1 GB less workspace VRAM, which buys the larger prefill ubatch. Stock's MTP-on config
   cannot exceed `-b/-ub 512` inside the cap.
@@ -141,5 +180,6 @@ Same configs, the ~60K-token refactor prompt (prompt_n 59751), q8_0 KV, cold loa
 - Rejected as over-cap: fork MTP ub 6144; stock MTP ub 2048; stock MTP-off ub 6144
   (stock MTP-off ub 8192 fails to allocate).
 - **Config of choice at 524288 (YaRN 2x):** moe-cache fork, MTP on,
-  `--moe-expert-cache-size 168`, `-b/-ub 8192` - ~154 t/s decode / 3925 prefill at
-  22230 MiB. All-on-GPU does not fit; the cache is what makes the window load.
+  `--moe-expert-cache-size 200` + `--phase-aware-workspace`, `-b/-ub 8192` - ~170 t/s decode /
+  3984 prefill at 22714 MiB. All-on-GPU does not fit; the cache is what makes the window load,
+  and 224 slabs OOM at load.

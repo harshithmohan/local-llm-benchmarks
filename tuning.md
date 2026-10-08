@@ -127,6 +127,28 @@ Adds a dynamic CUDA expert cache on top of stock; the flags below do not exist e
   `--decode-boundary-overlap`, `--phase-aware-workspace`, `--live-context-workspace`
   (`--backend-sampling` is an upstream flag). These are config- and arch-dependent - a free win
   on one model, a loss on another - so isolate each before adopting a bundle.
+- `--phase-aware-workspace` is the exception found so far: it releases prompt-only workspace
+  before decode, so the freed VRAM raises the expert-cache ceiling. On Qwen3.6-35B (Rig 1) it
+  freed ~1.9 GiB and the cache rose 64 → 80 slabs for ~+9-10% decode at 10K (~+4% at 60K) for
+  ~−3% prefill; 88/96 slabs load but OOM on the first request. KAT-Coder-V2.5-Dev behaves the
+  same way but smaller (~800 MiB freed, 80 → 88 slabs, ~+5% decode, no prefill cost), while
+  Gemma4-26B frees nothing at steady state and keeps its 72-slab ceiling. It is a sizing change,
+  not an algorithmic one - the same cache content still serves, just larger. Whether it frees
+  anything is per-model: measure steady-state VRAM, not the load-time figure. Where the model
+  already fits (Rig 2's 24 GB card at 256k) the cache itself is pure loss - 128/168 slabs cost
+  ~25%/15% decode vs cache 0 - and the flag is throughput-neutral, buying headroom instead (and
+  on the 512k shape, cache 168 -> 200).
+- Opt-in generic hybrid CPU/GPU execution is a separate experimental mode: `--moe-hybrid on`
+  keeps resident experts on CUDA and splits cache misses between CUDA transfers and a persistent
+  CPU pool (`--moe-gpu-miss-fraction`, default 0.17), optionally steered by model-bound expert
+  profiles (`--moe-expert-profile` / `--moe-profile-adapt`). Cache-off / `--moe-hybrid off`
+  restores ordinary execution. Flags and validation:
+  [engine-notes/moe-cache-fork.md](engine-notes/moe-cache-fork.md).
+- The expert-profile route is coupled to hybrid: `--moe-profile-adapt` requires generic source
+  execution, so it forces `--moe-hybrid on` (a ~50% decode loss on Rig 1). A profile *without*
+  adaptation still cannot be served under MTP - the collector omits draft/MTP sources, so the
+  load is rejected with `profile omits a returned expert source`; with MTP off it loads but buys
+  nothing. Profiles only pay where MTP is off and hybrid is already the right executor.
 - `GGML_CUDA_DISABLE_FUSION=1` is needed only for a pruned 256-expert layout whose cached-expert
   path builds a `ffn_moe_gate` (`MUL_MAT_ID`) node CUDA graph capture rejects; 512-expert quants
   are unaffected. `GGML_CUDA_DISABLE_GRAPHS=1` does not help.
