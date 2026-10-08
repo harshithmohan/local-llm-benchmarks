@@ -539,17 +539,18 @@ moves the chunk bands without touching the engine. Load-only probes, `--kv int8`
 One cold load per context, three prompts on each (10k = 10507, 60k = 59802, 120k = 119344
 tokens), `--spec 4 --spec-min-p 0.5`, `--kv int8`, MTP on, `--prompt-cache 0`; every recorded
 pass reports `cache_n` 0 and `predicted_n` 512 (prefill / decode t/s, the second of two passes).
-The 200000 and 250000 rows are the two served shapes on **engine 0.1.40.2**; the 150000 row is
-the retired shape, kept for reference from the 0.1.38 runs.
+The 200000 row is the served shape on **engine 0.1.40.2**; the 250000 row was the overflow tier
+until it was retired 2026-10-08, and the 150000 row is the older retired shape, kept for
+reference from the 0.1.38 runs.
 
 | `--max-context` | chunk | engine | ~10k | ~60K | ~120k |
 | --- | --- | --- | --- | --- | --- |
 | 150000 (retired) | 8192 | 0.1.38 | 1072.2 / 39.8 | 1065.0 / 41.0 | 973.9 / 38.8 |
 | 200000 (served default) | 6144 | 0.1.40.2 | 1058.5 / 44.2 | 1045.0 / 42.4 | 1007.7 / 41.8 |
-| 250000 (served overflow) | 4096 | 0.1.40.2 | 974.7 / 39.2 | 969.5 / 39.9 | 935.7 / 38.2 |
+| 250000 (retired overflow) | 4096 | 0.1.40.2 | 974.7 / 39.2 | 969.5 / 39.9 | 935.7 / 38.2 |
 
-- **The window and the chunk cost, then the prompt costs more.** Between the two served tiers -
-  both move, so this is the window plus the chunk - prefill reads -7.9% / -7.2% / -7.1% at
+- **The window and the chunk cost, then the prompt costs more.** Between the 200000 and 250000
+  tiers - both move, so this is the window plus the chunk - prefill reads -7.9% / -7.2% / -7.1% at
   10k / 60K / 120k. Within one tier the prompt alone costs ~4-5% from 10k to 120k (1058.5 ->
   1007.7 on the default, 974.7 -> 935.7 on the overflow): attention over the prompt, not cache
   sizing, and independent of the chunk.
@@ -560,19 +561,20 @@ the retired shape, kept for reference from the 0.1.38 runs.
 - Decode carries MTP acceptance variance (66-71% of drafts accepted across these runs), so read a
   few percent as noise.
 
-### The served windows
+### The served window
 
-Two entries run since 2026-10-07. The default is 200000 ctx with an explicit `--prefill 6144` and
-`--prompt-cache-every 6144`; the overflow is 250000 ctx with an explicit `--prefill 4096` and
-`--prompt-cache-every 4096`. Both pin the chunk because `--prefill auto` steps down with the
-window: at 200000 the auto cache lands on 2670 slots, and 0.90 x 2670 = 2403 is under the 2427
-slots a 6144-token chunk needs, so `auto` lands lower. An explicit chunk only has to fit
+One entry since 2026-10-08: 200000 ctx with an explicit `--prefill 6144` and
+`--prompt-cache-every 6144`, pinned because `--prefill auto` steps down with the window - at
+200000 the auto cache lands on 2670 slots, and 0.90 x 2670 = 2403 is under the 2427 slots a
+6144-token chunk needs, so `auto` lands lower. An explicit chunk only has to fit
 (2427 + 128 <= 2670) and is not subject to the percentage at all - with no such variable set
-anywhere the cold loads report `the prompt path borrows 2427 / 1782 CUDA0 cache slots`, 474 / 476
-MiB free, 11362 / 11364 MiB after load and 11498 / 11500 under requests. At 250000 the pin is
-redundant (`auto` lands on 2104 slots, and 0.90 x 2104 = 1894 >= 1782 already holds 4096); it is
-there for uniformity. Before this the served shape was 150000 with `--prefill 8192`, and before
-that 81920 with `--prefill auto`.
+anywhere the cold load reports `the prompt path borrows 2427 CUDA0 cache slots`, 474 MiB free,
+11362 / 11364 MiB after load and 11498 MiB under requests. The 250000 with `--prefill 4096` and
+`--prompt-cache-every 4096` overflow tier ran 2026-10-07 to 2026-10-08, where the pin was
+redundant (`auto` lands on 2104 slots, and 0.90 x 2104 = 1894 >= 1782 already holds 4096), and
+its cold loads reported `the prompt path borrows 1782 CUDA0 cache slots`, 476 MiB free and
+11500 MiB under requests. Before this the served shape was 150000 with `--prefill 8192`, and
+before that 81920 with `--prefill auto`.
 
 - **What retires the 8192 chunk is the miss, not the rate.** Its edge is prefill only (the chunk
   table above), decode is equal, and a cached turn pays nothing: +6.5 s per full re-prefill at
@@ -587,8 +589,8 @@ that 81920 with `--prefill auto`.
   to size `--max-context` to what you serve.
 - **Where the chunk stops fitting sets the ceiling.** An explicit chunk needs `chunk/2 + 128`
   cache slots and the cache shrinks about 1.13 slots per 100 ctx, so 8192 holds to ~153k, 6144 to
-  ~210k and 4096 to ~267k. 262144 would fit a 4096 chunk with 56 slots to spare, so 250000 is the
-  served overflow with margin rather than the native maximum.
+  ~210k and 4096 to ~267k. 262144 would fit a 4096 chunk with 56 slots to spare, so the retired
+  250000 overflow sat on margin rather than the native maximum.
 - Prefill reproduces pass to pass (each 120k cell above agrees within 0.3% between its two
   passes), so the tier difference is the chunk, not drift.
 

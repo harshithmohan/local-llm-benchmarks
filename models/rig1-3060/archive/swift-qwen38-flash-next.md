@@ -162,6 +162,42 @@ window. That is at odds with the engine project's own note that Swift 1.5's IQ2_
 card. The expert mix differs (this checkpoint is IQ2_S-heavy at 2.35 bpw over the routed
 experts), and the 10k caret applies to the cell above but not to the two long prompts.
 
+## 250000 needs a different chunk and costs ~7.5% prefill
+
+Tested 2026-10-08 on the same engine: one cold load per shape, `--prompt-cache 0`, MTP on, the
+same three prompts, recorded pass second. The served 6144 pin does not fit at 250000 - the
+expert cache lands on 2045 slots (2.76 GiB) and the engine halves the pin rather than failing,
+reporting `prompt chunk 6144 -> 3072 tokens so its buffers fit in every expert cache`. 4096 fits
+with no clamp (borrows 1803 slots, 2.43 GiB), the same chunk the base model's 250000 tier ran,
+so the 250000 shape pins `--prefill 4096` with `--prompt-cache-every 4096`.
+
+| prompt | 200000, chunk 6144 | 250000, chunk 4096 | delta |
+| --- | --- | --- | --- |
+| ~10k | 1003.5 / 46.5 | 914.5 / 41.3 (early stop, 430 tokens) | -8.9% prefill / -11.2% decode |
+| ~60K | 994.4 / 40.6 | 918.3 / 39.7 | -7.7% / -2.2% |
+| ~120K | 956.4 / 42.7 | 884.1 / 37.8 | -7.6% / -11.5% |
+
+Every pass reported `cache_n` 0 and `0 checkpoints`; the decode hit rate was 61-66% against
+65-75% at 200000. The 200000 shape loads at 11360 MiB, the 250000 one at 11437 MiB (11571 MiB
+under requests) - both inside the card. Decode moves further than prefill and not in prompt
+order: 60K is inside noise while 10k and 120K drop ~11%, which is MTP acceptance spread (240-294
+of 367-421 drafts accepted) rather than a window effect.
+
+Both checkpoints pay about the same for the window, each at its own chunk:
+
+| Model, ctx, chunk | ~10k | ~60K | ~120K |
+| --- | --- | --- | --- |
+| Swift IQ2_XS, 200000, 6144 | 1003.5 / 46.5 | 994.4 / 40.6 | 956.4 / 42.7 |
+| Swift IQ2_XS, 250000, 4096 | 914.5 / 41.3 * | 918.3 / 39.7 | 884.1 / 37.8 |
+| Base Q2_0, 200000, 6144 | 1058.5 / 44.2 | 1045.0 / 42.4 | 1007.7 / 41.8 |
+| Base Q2_0, 250000, 4096 | 974.7 / 39.2 | 969.5 / 39.9 | 935.7 / 38.2 |
+
+\* early stop (`tool_calls`, `predicted_n` 430).
+
+The base model's 250000 tier reads -7.9% / -7.2% / -7.1% prefill against its own 200000 shape, so
++25% of window costs ~7-8% prefill and ~5-11% decode on either checkpoint. Swift stays behind the
+base at 250000 as well, by -6.2% / -5.3% / -5.5%.
+
 ## Conclusions
 
 - Swift-1.5-Qwen3.8-Flash-Next is supported by Strata at `IQ2_XS` and runs at 200000 on one
@@ -170,6 +206,9 @@ experts), and the 10k caret applies to the cell above but not to the two long pr
   landing on 5632. Pinning 6144 costs nothing measurable in decode and buys ~1.5% prefill.
 - Prefill is ~5% slower than the base model's Q2_0 on the same engine, window and prompts;
   decode is in the same band.
+- A 250000 shape also fits this card (11437 MiB loaded, 11571 MiB under requests) but needs
+  `--prefill 4096`: the served 6144 pin is clamped to 3072 at that window. It costs ~7-8%
+  prefill and ~5-11% decode, about the same as the base model's Q2_0 pays for the same step.
 - The ~10k opencode prompt ends on a tool call at ~305-350 tokens for this fine-tune. It is a
   property of the prompt, not of the model: the generated ~60K and ~120K prompts reach the full
   512-token window.
