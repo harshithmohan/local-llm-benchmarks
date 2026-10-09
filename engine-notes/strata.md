@@ -18,12 +18,9 @@ the work across the whole PC instead of fitting the model in VRAM:
 The same engine builds for CUDA and HIP.
 
 **Measured on Rig 1** (engine 0.1.40.2): the GSQ-RCO `Q2_0` release of
-[Qwen3.8-Flash-Next](https://huggingface.co/Qwen/Qwen3.8-Flash-Next) and the **Swift 1.5**
-fine-tune of it at
-[`IQ2_XS`](https://huggingface.co/ukisai/Swift-1.5-Qwen3.8-Flash-Next-GSQ-RCO-GGUF), each on
-its own pack. The timing rows, the ctx/chunk ladders and the `STRATA_*` A/Bs are on the model
-cards and their archives ([Qwen3.8-Flash-Next](../models/rig1-3060/qwen38-flash-next.md),
-[Swift-1.5-Qwen3.8-Flash-Next](../models/rig1-3060/swift-qwen38-flash-next.md)).
+[Qwen3.8-Flash-Next](https://huggingface.co/Qwen/Qwen3.8-Flash-Next), on its own pack. The
+timing rows, the ctx/chunk ladders and the `STRATA_*` A/Bs are on the model card and its
+archive ([Qwen3.8-Flash-Next](../models/rig1-3060/qwen38-flash-next.md)).
 
 ## Why it is not a `llama-server` build
 

@@ -4,7 +4,8 @@ The Swift-1.5 fine-tune of Qwen3.8-Flash-Next, first benchmarked 2026-10-08 on t
 engine - the same engine that serves the base model's Q2_0. Everything here was measured on
 one rig under one engine; there are no llama.cpp rows for this checkpoint.
 
-Main card: [swift-qwen38-flash-next.md](../swift-qwen38-flash-next.md). Base model:
+**Retired 2026-10-09** - dropped from the serving configuration on the shoko-logs result
+([Retirement](#retirement)), so this page is now the checkpoint's only card. Base model:
 [qwen38-flash-next.md](../qwen38-flash-next.md) and its
 [archive](qwen38-flash-next.md).
 Methodology: [methodology.md](../../../methodology.md); issues: [issues.md](../../../issues.md).
@@ -197,6 +198,53 @@ Both checkpoints pay about the same for the window, each at its own chunk:
 The base model's 250000 tier reads -7.9% / -7.2% / -7.1% prefill against its own 200000 shape, so
 +25% of window costs ~7-8% prefill and ~5-11% decode on either checkpoint. Swift stays behind the
 base at 250000 as well, by -6.2% / -5.3% / -5.5%.
+
+## Served config (retired registration)
+
+The retired registration passed only `--config` to the server, so every run setting lived in
+this JSON:
+
+    {
+      "exe": "<engine>/strata",
+      "args": ["--pack", "<pack>/swift-iq2_xs",
+               "--native", "<models>/Swift-Qwen3.8-Flash-Next-GSQ-RCO-IQ2_XS-00001-of-00002.gguf",
+               "--ple-gguf", "<models>/Swift-Qwen3.8-Flash-Next-GSQ-RCO-IQ2_XS-00001-of-00002.gguf",
+               "--expert-profile", "<pack>/expert-profile.bin", "--expert-cache", "auto",
+               "--prefill", "6144", "--spec", "4", "--spec-min-p", "0.5", "--mtp", "<mtp>/rt",
+               "--max-context", "200000", "--kv", "int8", "--prompt-cache-every", "6144"],
+      "cwd": "<engine>",
+      "tokenizer": "<pack>/swift-iq2_xs/tokenizer",
+      "model_name": "swift-1.5-iq2_xs"
+    }
+
+A different engine on the same weights, not a `llama-server` flag set: `strata` is a stdio
+backend, and the HTTP API plus every run setting live in the JSON the engine's own Python
+server reads - see [engine-notes/strata.md](../../../engine-notes/strata.md). The engine takes
+its flags from the config's `args` and from nowhere else; an engine flag on the server command
+line is a startup error. The pack is built from shard 1 alone
+(`iq_pack.py --gguf <shard1> --out <pack>`) because the base-model `--base` reuse is refused
+for this split, and `--ple-gguf` points at shard 1 here, not shard 2 as on the base model.
+Prefill measurements add `--prompt-cache 0`, a measurement setting and never part of a served
+config.
+
+## Retirement
+
+Retired 2026-10-09, after the [shoko-logs](../../../benchmarks/shoko-logs/README.md) agentic
+coding benchmark, where the fine-tune scored below the base model's Q2_0 at every reasoning
+level (two-repeat means, /100):
+
+| Reasoning | Swift IQ2_XS | Base Q2_0 |
+| --- | --- | --- |
+| low | 64.0 | 73.0 |
+| medium | 56.5 | 70.25 |
+| xhigh | 69.0 | 72.5 |
+
+The fine-tune was also slower end to end on the comparable cold-load runs, and its medium
+repeat 1 shipped an unintegrated data-layer scaffold that failed `pnpm lint` - the only gate
+miss in either campaign. Per-repeat line tables:
+[scorecards/swift-qwen38-flash-next-iq2xs-strata.md](../../../benchmarks/shoko-logs/scorecards/swift-qwen38-flash-next-iq2xs-strata.md).
+The registration was removed from the serving configuration; the pack, the GGUFs and the two
+config files stay on disk unregistered.
 
 ## Conclusions
 
