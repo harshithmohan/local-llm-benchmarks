@@ -1,6 +1,6 @@
 # Strata
 
-[Niko1221/Strata](https://github.com/Niko1221/Strata), engine 0.1.40.2 on Rig 1.
+[Niko1221/Strata](https://github.com/Niko1221/Strata), engine 0.1.41 on Rig 1.
 
 A llama.cpp-derived engine that runs
 [Qwen3.8-Flash-Next](https://huggingface.co/Qwen/Qwen3.8-Flash-Next) (~125B parameters,
@@ -17,7 +17,7 @@ the work across the whole PC instead of fitting the model in VRAM:
 
 The same engine builds for CUDA and HIP.
 
-**Measured on Rig 1** (engine 0.1.40.2): the GSQ-RCO `Q2_0` release of
+**Measured on Rig 1** (engine 0.1.41): the GSQ-RCO `Q2_0` release of
 [Qwen3.8-Flash-Next](https://huggingface.co/Qwen/Qwen3.8-Flash-Next), on its own pack. The
 timing rows, the ctx/chunk ladders and the `STRATA_*` A/Bs are on the model card and its
 archive ([Qwen3.8-Flash-Next](../models/rig1-3060/qwen38-flash-next.md)).

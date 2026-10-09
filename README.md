@@ -37,7 +37,7 @@ Known issues and gotchas: [issues.md](issues.md).
   and an opt-in generic hybrid CPU/GPU executor (`--moe-hybrid`) with model-bound expert profiles;
   while the cache is enabled it overrides `-ncmoe` placement. Flags and the `--experimental-logs`
   validation recipe: [engine-notes/moe-cache-fork.md](engine-notes/moe-cache-fork.md).
-- **Strata** ([Niko1221/Strata](https://github.com/Niko1221/Strata), engine 0.1.40.2, Rig 1) -
+- **Strata** ([Niko1221/Strata](https://github.com/Niko1221/Strata), engine 0.1.41, Rig 1) -
   a llama.cpp-derived engine that runs Qwen3.8-Flash-Next from a *pack* (expert rows indexed
   on the SSD, all experts pinned in host RAM, an adaptive VRAM expert cache) behind its own
   OpenAI/Anthropic API server. Not a `llama-server` build: its rows are measured through

@@ -61,7 +61,7 @@ which is a measurement setting and not part of a served config.
   and only has to fit, so the served window keeps its chunk: 200000 lands a 2670-slot cache
   and borrows 2427 for the 6144 chunk, with ~475 MiB free. The window itself still costs: at a
   pinned cache and chunk, 122880 -> 149000 was 8.1% on the same prompt, and free VRAM does not
-  buy the chunk back, the cache share does. Measured on the served config on engine 0.1.40.2:
+  buy the chunk back, the cache share does. Measured on the served config on engine 0.1.41:
   1058 / 44.2 (10k), 1045 / 42.4 (60K), 1008 / 41.8 (120k). The ladder and the loan caps are in
   the [full experiment log](archive/qwen38-flash-next.md).
 - Prefill/decode come from the second pass after a cold load; the first pass is a page-in
