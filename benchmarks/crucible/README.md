@@ -60,7 +60,8 @@ under `results/<MODEL>/`:
     crucible-llm --headless --url <URL> --model <MODEL> --engine <ENGINE> ...
 
 - **Run C1/C3 and C2 as two passes.** C1 and C3 must target a server started with
-  `--reasoning off`, and C2 the model's default (see "Protocol deviations"), so name the engines
+  `--reasoning off`, and C1 additionally with `--sse-ping-interval -1`; C2 keeps the model's
+  default (see "Protocol deviations"), so name the engines
   explicitly per pass — `./run.sh run <MODEL> niah structured`, then `./run.sh run <MODEL>
   reasoning`. A single no-engine invocation runs all three against one endpoint.
 - `<URL>` is a rig's OpenAI-compatible `/v1` endpoint (the same direct endpoint the timing
@@ -92,6 +93,14 @@ their own capability measurements, not as prefill/decode rows:
   since it is meant to exercise reasoning. With thinking on, a reasoning model streamed 256/256
   reasoning chunks and 0 content — C1 5/77, C3 0/3 — which is a harness artifact, not a
   capability result.
+- **The target server must have SSE keep-alives disabled** (`--sse-ping-interval -1` on
+  llama.cpp). Crucible decides SSE-vs-JSON once, from the first bytes of the body
+  (`starts_with(b"data:")`), so a `:` keep-alive comment sent before the first `data:` frame
+  routes the whole stream down the JSON path, where it fails to parse — and Crucible records the
+  cell as a retrieval miss rather than an error. Cells whose prefill outlasts the first ping are
+  affected (the largest context sizes on the rigs used here), so a C1 aggregate taken without the
+  flag is understated: measured 66/77 → 77/77 on one config. `--timeout` does not work around it
+  — it is a connect/per-chunk idle timeout, not the first-byte wait.
 - TTFT / ITL are measured by Crucible's **own client cycle clock** (`quanta`), not read
   from the server `timings` object.
 - Cold cache is approximated by prepending a **unique random prefix** (`--nocache`), not by
@@ -105,7 +114,7 @@ their own capability measurements, not as prefill/decode rows:
 ## Results
 
 Canonical results live in [scorecard.md](scorecard.md) — one row per model + checkpoint quant +
-KV-cache type. Per-model detail (one card per model, all quants in a table) is in
-[`scorecards/<model>.md`](scorecards/) — the shape is in
+KV-cache type + served context size. Per-model detail (one card per model, all quants in a table)
+is in [`scorecards/<model>.md`](scorecards/) — the shape is in
 [`scorecards/_template.md`](scorecards/_template.md) — and raw run logs under `results/` are
 transient, deleted once their numbers are recorded.
