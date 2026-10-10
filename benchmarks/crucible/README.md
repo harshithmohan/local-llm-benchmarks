@@ -98,5 +98,6 @@ their own capability measurements, not as prefill/decode rows:
 
 Canonical results live in [scorecard.md](scorecard.md) — one row per model + engine set.
 Per-model detail (engine results, capability verdicts, run time) is in
-[`scorecards/<model>.md`](scorecards/); raw run logs under `results/` are transient, deleted
-once their numbers are recorded.
+[`scorecards/<model>.md`](scorecards/) — the shape is in
+[`scorecards/_template.md`](scorecards/_template.md) — and raw run logs under `results/` are
+transient, deleted once their numbers are recorded.

@@ -68,7 +68,7 @@ No nudges, no auto-compactions.
 | 24 | 0.5 | 1.5/3 | Removed obsolete commented placeholder, no unused imports/exports, but old `logs/` file + `LogLineType` remain. |
 | 25 | 0.5 | 1.5/3 | Response typed, no `any`; `Level` bare string, not the union. |
 
-### Summary
+## Summary
 
 | Repeat | Rubric /95 | Total /100 | Wall |
 |---|---|---|---|

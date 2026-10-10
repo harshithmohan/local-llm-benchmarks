@@ -7,7 +7,9 @@ Parameter set: default (kv-q8). 2-repeat mean.
 > attempt; the patch was produced only after one nudge ("stop reasoning, implement").
 > **Repeat 2** needed no nudge. The nudge is a harness intervention, not part of the task.
 
-## Repeat 1 of 2 (nudged)
+## Run — 2026-09-27
+
+### Repeat 1 of 2 (nudged)
 
 **Total 54.5/100** — gates 5/5 · rubric 49.5/95 · 26.0 min · 2026-09-27.
 
@@ -40,7 +42,7 @@ Parameter set: default (kv-q8). 2-repeat mean.
 (17=6/6), but the debounce ref is never wired to a query/render update (9, 11) and DSL is
 absent (7=0). No reconnect reset; download save flow incomplete.
 
-## Repeat 2 of 2 (clean)
+### Repeat 2 of 2 (clean)
 
 **Total 47.5/100** — gates 5/5 · rubric 42.5/95 · 16.1 min · 2026-09-27.
 

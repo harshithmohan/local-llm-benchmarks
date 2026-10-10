@@ -161,7 +161,9 @@ the mean of the 2 repeat totals. **opencode-go reference models are the exceptio
   re-testing with a different cache) is recorded in the scorecards, not in the run
   name — it can be arbitrarily long. Per-model detail goes in
   `scorecards/<model>.md` (one section per parameter set, labeled with the paramset);
-  the headline row lands in `scorecard.md`.
+  the headline row lands in `scorecard.md`. The scorecard shape (headings, rubric
+  table, key findings, summary) is in `scorecards/_template.md` — copy it for a new
+  model.
 - Every repeat gets its own branch, patch export, and grading (the grader runs the
   gates); the run dir `runs/<model>/` is reused for each repeat.
 - Record each repeat's **wall-clock run time** (session start → finish, as reported by

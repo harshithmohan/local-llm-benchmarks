@@ -1,11 +1,15 @@
 # swift-qwen38-27b — scores
 
+Parameter set: Swift-1.5-INT4 vLLM, fp8 KV. 2-repeat mean per reasoning level.
+
 > **Note:** the low reasoning repeat 1 run was **auto-compacted** (native compaction; a
 > harness intervention, not part of the task) — see `scorecard.md` → "Auto-compactions".
 
+## Low reasoning
+
 Parameter set: Swift-1.5-INT4 vLLM, fp8 KV, low reasoning.
 
-## Repeat 1 of 2 (auto-compacted)
+### Repeat 1 of 2 (auto-compacted)
 
 **Total 63.0/100** — gates 5/5 · rubric 58/95 · 2026-09-27.
 
@@ -39,7 +43,7 @@ Parameter set: Swift-1.5-INT4 vLLM, fp8 KV, low reasoning.
 - Correct read/download endpoints and a stable (sorted) level key, but the malformed `c#${message}` DSL breaks search and filtered downloads.
 - Pagination can stop before server exhaustion; reconnect replacement, full result rendering, and `scrollRect` are missing.
 
-## Repeat 2 of 2
+### Repeat 2 of 2
 
 **Total 66.0/100** — gates 5/5 · rubric 61/95 · 2026-09-27.
 
