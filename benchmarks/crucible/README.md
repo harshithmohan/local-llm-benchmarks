@@ -59,6 +59,10 @@ under `results/<MODEL>/`:
 
     crucible-llm --headless --url <URL> --model <MODEL> --engine <ENGINE> ...
 
+- **Run C1/C3 and C2 as two passes.** C1 and C3 must target a server started with
+  `--reasoning off`, and C2 the model's default (see "Protocol deviations"), so name the engines
+  explicitly per pass — `./run.sh run <MODEL> niah structured`, then `./run.sh run <MODEL>
+  reasoning`. A single no-engine invocation runs all three against one endpoint.
 - `<URL>` is a rig's OpenAI-compatible `/v1` endpoint (the same direct endpoint the timing
   runs use); `<MODEL>` is a bare rig model id (Crucible can also discover ids via
   `/v1/models`).
@@ -85,19 +89,23 @@ their own capability measurements, not as prefill/decode rows:
   answer, while **C3 (structured) reads only content chunks** — so a thinking model emits an
   empty body and fails C3 outright. This suite therefore runs **C1 and C3 with thinking
   disabled** (the server is started with `--reasoning off`); **C2** keeps the model's default,
-  since it is meant to exercise reasoning.
+  since it is meant to exercise reasoning. With thinking on, a reasoning model streamed 256/256
+  reasoning chunks and 0 content — C1 5/77, C3 0/3 — which is a harness artifact, not a
+  capability result.
 - TTFT / ITL are measured by Crucible's **own client cycle clock** (`quanta`), not read
   from the server `timings` object.
 - Cold cache is approximated by prepending a **unique random prefix** (`--nocache`), not by
   `cache_prompt:false`.
 - Token counts come from the server's `usage.completion_tokens` (authoritative), with a
   `chars/4` estimate flag as a fallback.
+- C1 reports only its `passed / 77` aggregate — per-cell detail is not persisted (Crucible's
+  `needle_evaluations` table stays empty), so a card cannot list which depths failed.
 - It requires a model id (bare rig ids); `/v1/models` discovery is available.
 
 ## Results
 
-Canonical results live in [scorecard.md](scorecard.md) — one row per model + engine set.
-Per-model detail (engine results, capability verdicts, run time) is in
+Canonical results live in [scorecard.md](scorecard.md) — one row per model + checkpoint quant +
+KV-cache type. Per-model detail (one card per model, all quants in a table) is in
 [`scorecards/<model>.md`](scorecards/) — the shape is in
 [`scorecards/_template.md`](scorecards/_template.md) — and raw run logs under `results/` are
 transient, deleted once their numbers are recorded.

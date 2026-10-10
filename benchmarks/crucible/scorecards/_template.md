@@ -1,30 +1,11 @@
-# <model-id> — crucible results
+# <Model name as in the main README> — crucible results
 
-Parameter set: <serving config, e.g. kv-q8 / engine + quant>. Endpoint: <rig / direct>.
-Binary: crucible-llm <version>.
+Updated: <YYYY-MM-DD> · [model card](../../models/<rig>/<model>.md) · [suite README](../README.md)
 
-> Engines run: C1, C2, C3 (suite set).
+| Quant | KV cache | C1 NIAH | C2 reasoning | C3 structured | Notes |
+|---|---|---|---|---|---|
+| <quant> | <q8_0 / f16 / …> | / 77 | / 13 | / 3 | |
 
-## Run
+## Notes (optional — model-wide, not per row; delete if there is nothing to say)
 
-**<date>** · wall-clock <min> min · suite set <list> (thinking on/off per engine).
-
-## Engine results
-
-| Engine | Metric | Result |
-|---|---|---|
-| C1 · NIAH | cells passed | / 77 |
-| C2 · Reasoning | challenges passed | / 13 |
-| C3 · Structured | JSON-compliance level | / grammar penalty |
-
-## Capability verdicts
-
-- **Long-context retrieval (C1):** <which context sizes / depths pass or fail>.
-- **Reasoning (C2):** <challenges missed, if any>.
-- **Structured output (C3):** <highest schema level reached; grammar penalty>.
-
-## Notes
-
-<deviations from a default run, thinking on/off, `--nocache` behaviour, anything anomalous>.
-
-Raw run log: `results/<model-id>/` (deleted once this card is recorded).
+<Anything that applies to the whole model rather than one quant row.>
