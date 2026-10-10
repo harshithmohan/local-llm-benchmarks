@@ -59,7 +59,7 @@ vLLM. `llama-bench` is not used.
 - [rig1-3060.md](rig1-3060.md) - Rig 1 hardware and build info
 - [rig2-3090.md](rig2-3090.md) - Rig 2 hardware and build info
 - [issues.md](issues.md) - engine and tool-level issues found during testing
-- [models/model-card-skeleton.md](models/model-card-skeleton.md) - template for the model cards (recommended configs, per-config commands, notes, long-context table)
+- [models/_template.md](models/_template.md) - template for the model cards (recommended configs, per-config commands, notes, long-context table)
 - [models/rig1-3060/](models/rig1-3060/) - Rig 1 model pages (recommended configs per model)
 - [models/rig2-3090/](models/rig2-3090/) - Rig 2 model pages (recommended configs per model)
 - [experiments/](experiments/) - transferability studies of low-level inference knobs (engine/arch-specific tuning evaluated against the recommended stacks)

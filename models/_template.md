@@ -1,5 +1,5 @@
 <!--
-Model-card skeleton. Copy to models/<rig>/<model>.md and fill the placeholders.
+Model-card template. Copy to models/<rig>/<model>.md and fill the placeholders.
 Keep the section order; if a section has no data, keep its heading and mark it
 ("not yet run" / "see the archive") rather than deleting it.
 
