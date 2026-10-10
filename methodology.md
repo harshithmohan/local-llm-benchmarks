@@ -108,9 +108,15 @@ buffers grow with context).
 - Absolute numbers are not directly comparable across sessions written at different times;
   treat comparisons within one page as valid, across pages as approximate.
 
-## Coding benchmark (shoko-logs)
+## Benchmark suites with their own methodology
 
 The agentic coding benchmark under [benchmarks/shoko-logs/](benchmarks/shoko-logs/)
 has its own, independent methodology — task, build-gate + rubric scoring, and grading
 protocol. It is documented in [benchmarks/shoko-logs/README.md](benchmarks/shoko-logs/README.md)
 and is separate from the inference-timing methodology above.
+
+The capability benchmark under [benchmarks/crucible/](benchmarks/crucible/) is also
+independent: [Crucible LLM](https://github.com/MadGoatHaz/crucible-llm) drives a chat route
+with its own sampling and client-side timing, so its results are not comparable to the
+model-card timing rows. It is documented in
+[benchmarks/crucible/README.md](benchmarks/crucible/README.md).

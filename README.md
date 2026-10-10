@@ -64,6 +64,7 @@ vLLM. `llama-bench` is not used.
 - [models/rig2-3090/](models/rig2-3090/) - Rig 2 model pages (recommended configs per model)
 - [experiments/](experiments/) - transferability studies of low-level inference knobs (engine/arch-specific tuning evaluated against the recommended stacks)
 - [benchmarks/shoko-logs/](benchmarks/shoko-logs/) - agentic coding benchmark (reproduce the Shoko-WebUI logs-page rewrite + log download)
+- [benchmarks/crucible/](benchmarks/crucible/) - capability benchmark (Crucible LLM: long-context retrieval, reasoning, structured output)
 
 Each model page carries its full experiment log in the matching `archive/<model>.md` alongside it.
 
@@ -113,6 +114,18 @@ plus a 95-point behavior rubric vs a reference diff.
 
 - Protocol, rubric, and prompts: [benchmarks/shoko-logs/README.md](benchmarks/shoko-logs/README.md)
 - Results: [benchmarks/shoko-logs/scorecard.md](benchmarks/shoko-logs/scorecard.md)
+
+## Crucible (capability)
+
+A separate, suite-level benchmark under [benchmarks/crucible/](benchmarks/crucible/):
+[Crucible LLM](https://github.com/MadGoatHaz/crucible-llm) points at any OpenAI-compatible
+`/v1` endpoint and runs a set of capability engines — needle-in-a-haystack retrieval,
+deterministic reasoning, and structured output. Its numbers are **not comparable** to the
+timing rows above: it always applies a chat template and sends its own sampling params, so it
+has its own, independent methodology (see the suite README for the full deviation list).
+
+- Protocol and engines: [benchmarks/crucible/README.md](benchmarks/crucible/README.md)
+- Results: [benchmarks/crucible/scorecard.md](benchmarks/crucible/scorecard.md)
 
 ## References
 

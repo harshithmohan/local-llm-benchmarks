@@ -5,3 +5,4 @@ __pycache__/
 
 # Transient benchmark run artifacts (persistent record lives in scorecards/)
 benchmarks/shoko-logs/runs/
+benchmarks/crucible/results/
