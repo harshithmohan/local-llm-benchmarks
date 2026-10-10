@@ -11,7 +11,7 @@ they are long-context stability + throughput tests, timed under the same protoco
 ### opencode session context (realistic, ~10k tokens)
 
 The timing prompt is stored verbatim at `scripts/opencode-10k-prompt.txt` - a single
-non-repetitive ~10,069-token text (Qwen tokenizer). It mirrors what a real opencode
+non-repetitive ~10,117-token text (Qwen tokenizer). It mirrors what a real opencode
 request actually prefills: the agent system prompt, the tool documentation, the skills
 catalog, an environment/status block, the project instructions, a slice of workspace
 context, and finally the user request. It was assembled once from real sources
@@ -105,7 +105,7 @@ output-quality eval: only speed is measured.
   local temp file is convenient): name-per-prompt, `prompt-<name>.json`
   (`prompt-opencode.json`, `prompt-long-context-35b.json`).
 - Timing-prompt token count (authoritative here): the opencode session context is
-  ~10,069 tokens (Qwen tokenizer; ~44.5 KB of text). It is deliberately large because it
+  ~10,117 tokens (Qwen tokenizer; ~44.8 KB of text). It is deliberately large because it
   matches the owner's real opencode prefill regime - the retired ~192-token C# /
   ~155-token React probes did not (the old ~308-token figure was an aggregate estimate,
   not a sum).

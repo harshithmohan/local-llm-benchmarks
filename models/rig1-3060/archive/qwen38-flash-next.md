@@ -14,12 +14,13 @@ Quants:
 - `UD-IQ3_XXS` (76.32 GiB, 3 shards)
 - `GSQ-RCO Q2_0` (66.4 GB, 2 shards: 37.6 GB weights + 28.8 GB n-gram table)
 - `GSQ-RCO Coder IQ1_M` (58.4 GB, 2 shards: 29.6 GB pruned weights + 28.8 GB n-gram table)
+- `GSQ-RCO IQ3_XXS` (75.8 GB, 2 shards: 47.0 GB weights + 28.8 GB n-gram table)
 
 ## Setup
 
 - Engine: moe-cache fork ([GenerelSchwerz/llama.cpp](../../../engine-notes/moe-cache-fork.md),
   branch `moe-cache`, build b11608-2b8088c2a). Expert cache is opt-in and CUDA-only.
-- Quants: the three listed above; the MTP head is a separate sidecar (`UD-IQ3_XXS` uses the
+- Quants: the four listed above; the MTP head is a separate sidecar (`UD-IQ3_XXS` uses the
   shared Q4_K_M 1.91 GB / Q8_0 2.79 GB head, `GSQ-RCO Q2_0` the ggml-org Q4_0 head).
 - Context 81920 (tuned down from the 262144 native window); q8_0 KV; `-t 12`.
 - Protocol: raw `/v1/completions`, `n_predict 512`, `cache_prompt false`, `ignore_eos true`,
@@ -419,6 +420,87 @@ the interval costs nothing measurable in these single-shot rows; it is a growing
 where checkpoints snap to chunk boundaries. On the served shape (default conversation cache) the
 same 10k prompt logs `4 checkpoints`, so the pin is what the engine snapshots at.
 
+## GSQ-RCO IQ3_XXS (75.8 GB, 2 shards)
+
+A fourth quant on the same base weights and the same Strata pack engine that serves the other
+GSQ-RCO quants: 47.0 GB of weights (shard 1) + the same 28.8 GB n-gram table (shard 2).
+Measured 2026-10-09 on engine 0.1.41, `--kv int8`, MTP `--spec 4 --spec-min-p 0.5` (the shared
+MTP runtime loads unchanged), every pass `--prompt-cache 0` with `cache_n` 0. The pack is built
+from shard 1 (`<pack>/iq3_xxs`: 1.54 GB `dense.bin`, 1079 tensors, 302 natively served,
+1.43 GiB expert arena) and uses the shared 512-expert expert profile.
+
+The larger expert blobs leave fewer cache slots than Q2_0 at the same free VRAM, so the 6144
+chunk pin only fits below a window - two shapes were measured.
+
+### ctx 200000 - the 6144 pin clamps to 3072
+
+Load: 39.97 GiB of experts into host RAM; the auto cache resolves `3.81 GiB free, 700 MiB
+reserved (+184 MiB for the draft head) -> 1357 slots` and ends at `expert cache 1791 slots,
+2.94 GiB`; the pin is clamped at startup - `strata serve: prompt chunk 6144 -> 3072 tokens so
+its buffers fit in every expert cache`; the 3072 chunk borrows 1290 slots (2.12 GiB). 11362 MiB
+after load, 460 MiB free.
+
+| prompt | prefill t/s | decode t/s | drafts | accepted | decode window |
+| --- | --- | --- | --- | --- | --- |
+| 10k opencode (10507) | 822.7 / 851.2 / 852.3 | 34.2 / 35.3 / 34.7 | 426 / 447 / 349 | 269 / 294 / 228 (63-66%) | **456 / 487 / 379** |
+| ~60K refactor (59802) | 855.6 / 854.9 | 37.2 / 36.3 | 380 | 308 (81%) | 512 |
+| ~120K refactor (119344) | 836.7 / 835.1 | 34.3 / 36.0 | 412 | 309 (75%) | 512 |
+
+The 10k prompt never reaches the full 512-token window on this quant - five passes across both
+shapes stop at 176-487 tokens, while Q2_0 always reached 512 on it. The 60K and 120K prompts do
+reach 512, so the recorded decode rows come from them. Decode hit rate 61.1% (140930/230534) at
+10k.
+
+### ctx 200000, `--prefill auto` at the 95% lend cap - the engine picks 5632
+
+The 6144 pin clamps to 3072 at 200000, so the open question was what `--prefill auto` picks
+there. With `STRATA_PREFILL_LEND_PCT=95` (the default 90% cap allows at most 0.90 x 1791 =
+1612 slots): the startup line reads `strata serve: prompt chunk auto: 5632 tokens, a 227-slot
+ring`, the prompt path borrows 1654 slots (2.71 GiB), 460 MiB free after load. The 5632 chunk
+fits - 1654 + 128 = 1782 <= 1791 - and clears the 95% cap (1654 <= 1701); 6144 clears neither
+(1981 slots).
+
+The pin and the auto scan disagree for two reasons: a pin that does not fit is clamped by a
+halving walk from the requested value (measured: `--prefill 6144` -> 3072; `--prefill 5632`
+-> 2816, borrowing 1234 slots), and the pin's walk keeps the default 384-slot prefill ring, so
+5632 fits under `auto`'s byte-budget 227-slot ring but not under a pin (the byte-budget sizing
+is auto-only). `auto` also bisects the fine 256-token grid under the same fit test plus the
+percentage cap, which is how it finds 5632. A pin can therefore never beat `auto`.
+
+| prompt | prefill t/s | decode t/s | drafts | accepted | decode window |
+| --- | --- | --- | --- | --- | --- |
+| 10k opencode (10507) | 967.8 / 1013.7 | 36.7 / 33.9 | 322 / 273 | 220 / 168 (68-62%) | 349 / 283 |
+| ~60K refactor (59802) | 990.4 / 988.7 | 34.6 / 41.1 | 358 / 393 | 258 / 333 (72-85%) | 512 |
+| ~120K refactor (119344) | 953.8 / 954.9 | 31.0 / 36.0 | 427 / 391 | 289 / 304 (68-78%) | 512 (both passes) |
+
+The 60K pass-2 decode of 41.1 did not reproduce: a 4-pass re-check on the identical shape
+returned 34.1 / 34.9 / 36.5 / 36.1 (draft acceptance 68-72%, against 85% on the 41.1 pass;
+prefill 987.2-990.1 in every run). The 41.1 was a lucky pass - the shape's true 60K decode is
+the mean of passes 2-4 of the re-check, **35.6**, and that is the value used below.
+
+Against the other 200000 shape (3072 clamp: 855 / 36.3 at 60K), the 5632 chunk is +15.6%
+prefill and -1.9% decode. It is the recommended shape - the full 200k window with near-parity
+prefill, and the only shape that runs the ~120K prompt.
+
+### Against Q2_0 (same engine and window family)
+
+Against Q2_0 at 200000 / 6144 / 2670 slots (1058.5 / 44.2 at 10k, 1045.0 / 42.4 at 60K,
+1007.7 / 41.8 at 120k):
+
+- The 200000 shape costs ~20% prefill (the clamped 3072 chunk, not the quant) and ~17-19%
+  decode (1791-slot cache against 2670).
+- The 5632 shape (`--prefill auto` at the 95% lend cap) is near-parity on prefill at every size
+  - 1013.7 vs 1058.5 = -4.2% at 10k, 988.7 vs 1045.0 = -5.4% at 60K, 954.9 vs 1007.7 = -5.2%
+  at 120k - and -16% on decode at 60K (35.6 vs 42.4), recovering to -13.9% at 120k
+  (36.0 vs 41.8) as the longer KV pushes the smaller cache's hit rate down.
+- The decode gap is the expert cache: the bigger blobs shrink the slot count, and the lower hit
+  rate (61-73% vs ~77-78%) is the mechanism.
+
+`GSQ-RCO IQ3_XXS` is the quality-over-speed quant of the set: a higher-bit quant of the same
+weights (47.0 GB of weights against Q2_0's 37.6 GB) that gives up ~16% decode at the 5632
+shape (35.6 vs 42.4 at 60K); at 200000 the usable window comes from `--prefill auto` at the
+95% lend cap (5632 chunk, 988.7 / 35.6 at 60K) - a 6144 pin clamps to 3072 there (855 / 36.3).
+
 ## Spec window and min-p sweep (Strata, `GSQ-RCO Q2_0`)
 
 The `GSQ-RCO Q2_0` card runs this quant on the Strata pack engine, so the speculative pair was
@@ -662,3 +744,11 @@ arm, ctx 200000 with the 6144 chunk against ctx 250000 with the 4096 chunk).
   speed for size and a code/agentic quality target. On the pack engine it reaches 932.8/30.3 at
   10k and 950.2/28.4 at 60K on a 200000 window, against 1058.5/39.6 and 1020.5/39.9 for
   `GSQ-RCO Q2_0` on the same engine (0.1.38) and window.
+- `GSQ-RCO IQ3_XXS` (the 75.8 GB 2-shard quant) measured on the pack engine (0.1.41): 852/36.3
+  at 200000 (a 6144 chunk pin clamps to 3072, 1791-slot cache). `--prefill auto` at the 95%
+  lend cap picks the 5632 chunk at 200000 (988.7/35.6 at 60K - a 4-pass check replaced an
+  unreproducible 41.1) - a pin clamps by a halving walk (measured `--prefill 5632` -> 2816)
+  and keeps the default 384-slot ring, so a pin can never beat `auto`. Prefill is near-parity
+  with `GSQ-RCO Q2_0` at the 5632 shape (-4.2% at 10k, -5.4% at 60K, -5.2% at 120k); decode is
+  -16% (35.6 vs 42.4 at 60K) because the bigger expert blobs shrink the cache and its hit rate
+  (61-73% vs ~77-78%).

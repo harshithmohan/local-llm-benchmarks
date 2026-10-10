@@ -79,6 +79,7 @@ model pages.
 | Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | 262144 | 1761 | **83** |
 | Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | 524288 (YaRN 2x) | 2063 | **52** |
 | Qwen3.8-Flash-Next | GSQ-RCO Q2_0 + MTP (Strata) | 200000 | 1058 | **44** |
+| Qwen3.8-Flash-Next | GSQ-RCO IQ3_XXS + MTP (Strata) | 200000 | 1018 | **35.1** |
 | KAT-Coder-V2.5-Dev | APEX-I-Compact | 262144 | 1534 | **71** |
 | Swift-1.5-Qwen3.8-27B | IQ2_XS | 81920 (q4_0 KV) | 467 | **35.6** |
 

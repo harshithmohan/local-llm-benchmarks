@@ -722,4 +722,6 @@ export default store;
 Build a React component that renders a searchable, virtualized data table for 50,000 rows. It should filter as the user types (debounced to 150 ms), load more rows when the list scrolls near the end, and keep selection state stable across refetches. Use TypeScript with explicit types for the row model and the hook signatures.
 
 Then explain your choices: why virtualization is required at this scale, where you would move filtering to the server and what contract the API needs (cursor-based pagination, stable sort, total count), how you would avoid re-rendering unchanged rows (memoized row components, stable callbacks, keyed lists), and how the implementation changes if rows have variable height.
+
+Note: this is a timing test. The system prompt and tool documentation above are context only - no tools are available in this session. Do not plan or attempt tool calls; write the complete component and explanation directly in your reply.
 </user-request>
