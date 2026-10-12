@@ -22,7 +22,7 @@ Known issues and gotchas: [issues.md](issues.md).
 
 ## Inference engines
 
-- **vLLM** ([syv-ai/HyperQwen](https://github.com/syv-ai/HyperQwen), vLLM 0.29.0) - a vLLM
+- **vLLM** ([syv-ai/HyperQwen](https://github.com/syv-ai/HyperQwen), vLLM 0.31.0) - a vLLM
   container stack running MTP with two KV modes, fp8 and KVarN 4/2-bit, both with pinned
   pools.
 - **llama.cpp** ([ggml-org/llama.cpp](https://github.com/ggml-org/llama.cpp)) -
@@ -99,10 +99,10 @@ per-row on the model pages.
 | Qwen3.6-35B-A3B | UD-IQ4_XS | 262144 | 4983 | **223** |
 | Qwen3.6-35B-A3B | UD-IQ4_XS | 524288 (YaRN 2x) | 3984 | **170** |
 | KAT-Coder-V2.5-Dev | APEX-I-Compact | 262144 | 4591 | **163** |
-| Qwen3.8-27B | W4A16-AutoRound-fast | 150000 | 2430 | **113.0** |
-| Qwen3.8-27B | W4A16-AutoRound-fast | 250000 | 2408 | **87.9** |
-| Swift-1.5-Qwen3.8-27B | Swift-1.5-INT4 | 150000 | 2417 | **116.9** |
-| Swift-1.5-Qwen3.8-27B | Swift-1.5-INT4 | 250000 | 2394 | **94.3** |
+| Qwen3.8-27B | W4A16-AutoRound-fast | 150000 | 2472 | **108.9** |
+| Qwen3.8-27B | W4A16-AutoRound-fast | 250000 | 2383 | **92.9** |
+| Swift-1.5-Qwen3.8-27B | Swift-1.5-INT4-fast | 150000 | 2460 | **121.0** |
+| Swift-1.5-Qwen3.8-27B | Swift-1.5-INT4-fast | 250000 | 2377 | **102.7** |
 
 ## Coding benchmark (shoko-logs)
 
@@ -135,5 +135,5 @@ External repositories referenced on these pages.
 - [GenerelSchwerz/llama.cpp](https://github.com/GenerelSchwerz/llama.cpp) - moe-cache fork (dynamic CUDA expert cache), branch `moe-cache`
 - [ikawrakow/ik_llama.cpp](https://github.com/ikawrakow/ik_llama.cpp) - ik-llama.cpp performance fork
 - [Niko1221/Strata](https://github.com/Niko1221/Strata) - pack-based Qwen3.8-Flash-Next engine with its own API server (Rig 1)
-- [syv-ai/HyperQwen](https://github.com/syv-ai/HyperQwen) - vLLM 0.29.0 container stack (Rig 2 Qwen3.8-27B W4A16 and Swift-1.5-INT4; all rows re-measured 2026-09-30 on the ~10k opencode prompt)
+- [syv-ai/HyperQwen](https://github.com/syv-ai/HyperQwen) - vLLM 0.31.0 container stack (Rig 2 Qwen3.8-27B W4A16 and Swift-1.5-INT4; all rows re-measured 2026-10-12 on the ~10k opencode prompt)
 - [da3dsoul/Qwen3.8-vLLM-KVarN-MTP-Arc-Experiments](https://github.com/da3dsoul/Qwen3.8-vLLM-KVarN-MTP-Arc-Experiments) - source of the long-context refactor prompt and of the tuning experiments tested in [experiments/](experiments/)

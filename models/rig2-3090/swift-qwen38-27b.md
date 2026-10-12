@@ -1,12 +1,15 @@
 # Swift-1.5-Qwen3.8-27B (Rig 2) - recommended configs
 
-Updated: 2026-09-30 · [full experiment log](archive/swift-qwen38-27b.md) · [methodology](../../methodology.md)
+Updated: 2026-10-12 · [full experiment log](archive/swift-qwen38-27b.md) · [methodology](../../methodology.md)
 
 `Swift-1.5-INT4`, the Swift-1.5 fine-tune of Qwen3.8-27B (`qwen35` dense hybrid SSM +
 attention - only every 4th layer carries full attention, `full_attention_interval=4` -
 native ctx 262144, embedded MTP head). Dense, not a MoE, so no expert split applies. Served
 on the same [syv-ai/HyperQwen](https://github.com/syv-ai/HyperQwen) vLLM container (vLLM
-0.29.0) as the base model. Model card:
+0.31.0) as the base model. The served build is `Swift-1.5-INT4-fast`: the port's int8 heads
+requantized to the same int4-GPTQ `lm_head` and draft head the base build runs, which brings
+the profile inside the rig's VRAM budget (the step the port skipped - experiment 6 of the port
+study). Model card:
 [ukisai/Swift-1.5-Qwen3.8-27b-INT4](https://huggingface.co/ukisai/Swift-1.5-Qwen3.8-27b-INT4).
 The base `W4A16-AutoRound-fast` quant is a separate model: [qwen38-27b.md](qwen38-27b.md).
 
@@ -21,35 +24,35 @@ KVarN 4/2-bit KV at 250000 (3 chained drafts) for long requests.
 
 | Config | ctx | engine | MTP | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Swift-1.5-INT4 | 150000 | vLLM | on | 2417 | **116.9** | 22510 MiB | fp8 KV; 4 drafts, `MAX_SEQS=4`; pool pinned 5.8 GB |
-| Swift-1.5-INT4 | 250000 | vLLM | on | 2394 | **94.3** | 22052 MiB | KVarN k4v2 KV, 3 drafts; pool pinned 4.2 GB |
+| Swift-1.5-INT4-fast | 150000 | vLLM | on | 2460 | **121.0** | 22188 MiB | fp8 KV; 4 drafts, `MAX_SEQS=4`; pool pinned 5.8 GB |
+| Swift-1.5-INT4-fast | 250000 | vLLM | on | 2377 | **102.7** | 21918 MiB | KVarN k4v2 KV, 3 drafts; pool pinned 4.2 GB; `KVARN_FP16_DEQUANT=1` |
 
 All rows are served with `INT8_ACT=int8`.
 
 ## Configs
 
-### Swift-1.5-INT4 at 150000 - vLLM, fp8 KV, 4 MTP drafts
+### Swift-1.5-INT4-fast at 150000 - vLLM, fp8 KV, 4 MTP drafts
 
     docker run --gpus all --ipc host \
       --env-file <env> \
       -v <models>:/app/models \
       ghcr.io/syv-ai/hyperqwen:latest single
 
-    # env: MODEL=Swift-1.5-INT4  CTX=long  MAX_LEN=150000  GPU_UTIL=0.88
+    # env: MODEL=Swift-1.5-INT4-fast  CTX=long  MAX_LEN=150000  GPU_UTIL=0.88
     #      DRAFT_TOKENS=4  MAX_SEQS=4
     #      EXTRA_ARGS=--kv-cache-memory=5800000000
     #      INT8_ACT=int8
 
-### Swift-1.5-INT4 at 250000 - vLLM, KVarN 4/2-bit KV, 3 MTP drafts
+### Swift-1.5-INT4-fast at 250000 - vLLM, KVarN 4/2-bit KV, 3 MTP drafts
 
     docker run --gpus all --ipc host \
       --env-file <env> \
       -v <models>:/app/models \
       ghcr.io/syv-ai/hyperqwen:latest single
 
-    # env: MODEL=Swift-1.5-INT4  CTX=huge  MAX_LEN=250000  GPU_UTIL=0.88
+    # env: MODEL=Swift-1.5-INT4-fast  CTX=huge  MAX_LEN=250000  GPU_UTIL=0.88
     #      EXTRA_ARGS=--kv-cache-memory=4200000000
-    #      INT8_ACT=int8
+    #      INT8_ACT=int8  KVARN_FP16_DEQUANT=1
 
 ## Notes
 
@@ -65,8 +68,18 @@ All rows are served with `INT8_ACT=int8`.
   the timing rows do so their recorded pass is cold.
 - `PREFIX_CACHE=1` with `MTP + CTX=huge` corrupts `prompt_logprobs` only (ordinary generation
   is unaffected).
-- Swift-1.5-INT4 runs ~520 MiB heavier than the base quant at 150000 (22510 vs 21992 MiB) -
-  ~18 MiB under the 22528 cap.
+- The 250000 profile runs `KVARN_FP16_DEQUANT=1`: KVarN's fused decode kernels dequantize in
+  fp16 while the dots still accumulate in fp32, which halves their register pressure and is
+  what lifts the long-context split-K decode - ~34% more decode at ~60K and ~53% at ~120K
+  here, with prefill, VRAM and acceptance unchanged. It is part of vLLM's compile cache key,
+  so the first boot after enabling it recompiles once (~3.5 min).
+- Both profiles serve the int4-GPTQ head pair the base build runs (`lm_head` and the draft
+  head, from a calibration pass over the fine-tune's own hidden states; the MTP module stays
+  int8), so the 150000 profile now reads 22188 MiB peak at the standard 10k row - the base
+  quant's footprint, ~340 MiB under the 22 GB budget. The port's first build kept every head
+  at int8; on it the fp8 profile peaked at 22988 MiB (~460 MiB over the budget) and the KVarN
+  profile at 22656 MiB (~128 MiB over). The requant also reads ~5% more decode at both ends
+  and prefill flat, since less head weight is read per step.
 - The checkpoint needs one config edit before it serves: its `quantization_config.ignore`
   blanket-blacklists the MTP head, which the prepare pipeline requantizes - see the port
   study above.
@@ -78,7 +91,7 @@ repeats for the ~60K prompt, 157 for the ~120K one - same protocol as the recomm
 
 | Config | ctx | engine | MTP | prompt | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Swift-1.5-INT4 | 150000 | vLLM | on | ~60K | 1610 | **99.1** | 22510 MiB | fp8 KV |
-| Swift-1.5-INT4 | 150000 | vLLM | on | ~120K | 1110 | **91.1** | 22828 MiB | fp8 KV |
-| Swift-1.5-INT4 | 250000 | vLLM | on | ~60K | 1694 | **51.2** | 22052 MiB | KVarN k4v2 KV |
-| Swift-1.5-INT4 | 250000 | vLLM | on | ~120K | 1192 | **38.7** | 22554 MiB | KVarN k4v2 KV |
+| Swift-1.5-INT4-fast | 150000 | vLLM | on | ~60K | 1604 | **108.5** | 22190 MiB | fp8 KV |
+| Swift-1.5-INT4-fast | 150000 | vLLM | on | ~120K | 1126 | **95.5** | 22190 MiB | fp8 KV |
+| Swift-1.5-INT4-fast | 250000 | vLLM | on | ~60K | 1674 | **71.4** | 21918 MiB | KVarN k4v2 KV |
+| Swift-1.5-INT4-fast | 250000 | vLLM | on | ~120K | 1229 | **52.9** | 21918 MiB | KVarN k4v2 KV |

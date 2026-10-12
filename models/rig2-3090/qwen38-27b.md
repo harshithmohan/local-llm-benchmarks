@@ -1,11 +1,11 @@
 # Qwen3.8-27B (Rig 2) - recommended configs
 
-Updated: 2026-09-30 · [full experiment log](archive/qwen38-27b.md) · [methodology](../../methodology.md)
+Updated: 2026-10-12 · [full experiment log](archive/qwen38-27b.md) · [methodology](../../methodology.md)
 
 `W4A16-AutoRound-fast` (`qwen35` dense hybrid SSM + attention - only every 4th layer
 carries full attention, `full_attention_interval=4` - native ctx 262144, embedded MTP head).
 Dense, not a MoE, so no expert split applies. Runs on the
-[syv-ai/HyperQwen](https://github.com/syv-ai/HyperQwen) vLLM container (vLLM 0.29.0).
+[syv-ai/HyperQwen](https://github.com/syv-ai/HyperQwen) vLLM container (vLLM 0.31.0).
 Model card: [dbirks/Qwen3.8-27B-W4A16-AutoRound](https://huggingface.co/dbirks/Qwen3.8-27B-W4A16-AutoRound);
 the dense llama.cpp [unsloth/Qwen3.8-27B-GGUF](https://huggingface.co/unsloth/Qwen3.8-27B-GGUF)
 quant and the DFlash2 profile are archived. The Swift-1.5 fine-tune of this model is a
@@ -22,8 +22,8 @@ KVarN 4/2-bit KV at 250000 (3 chained drafts) for long requests.
 
 | Config | ctx | engine | MTP | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| W4A16-AutoRound-fast | 150000 | vLLM | on | 2430 | **113.0** | 21992 MiB | fp8 KV; 4 drafts, `MAX_SEQS=4`; pool pinned 5.8 GB |
-| W4A16-AutoRound-fast | 250000 | vLLM | on | 2408 | **87.9** | 21234 MiB | KVarN k4v2 KV, 3 drafts; pool pinned 4.2 GB |
+| W4A16-AutoRound-fast | 150000 | vLLM | on | 2472 | **108.9** | 22188 MiB | fp8 KV; 4 drafts, `MAX_SEQS=4`; pool pinned 5.8 GB |
+| W4A16-AutoRound-fast | 250000 | vLLM | on | 2383 | **92.9** | 22056 MiB | KVarN k4v2 KV, 3 drafts; pool pinned 4.2 GB; `KVARN_FP16_DEQUANT=1` |
 
 All rows are served with `INT8_ACT=int8`.
 
@@ -50,7 +50,7 @@ All rows are served with `INT8_ACT=int8`.
 
     # env: CTX=huge  MAX_LEN=250000  GPU_UTIL=0.88
     #      EXTRA_ARGS=--kv-cache-memory=4200000000
-    #      INT8_ACT=int8
+    #      INT8_ACT=int8  KVARN_FP16_DEQUANT=1
 
 ## Notes
 
@@ -66,6 +66,11 @@ All rows are served with `INT8_ACT=int8`.
   the timing rows do so their recorded pass is cold.
 - `PREFIX_CACHE=1` with `MTP + CTX=huge` corrupts `prompt_logprobs` only (ordinary generation
   is unaffected).
+- The 250000 profile runs `KVARN_FP16_DEQUANT=1`: KVarN's fused decode kernels dequantize in
+  fp16 while the dots still accumulate in fp32, which halves their register pressure and is
+  what lifts the long-context split-K decode - ~26% more decode at ~60K and ~38% at ~120K
+  here, with prefill, VRAM and acceptance unchanged. It is part of vLLM's compile cache key,
+  so the first boot after enabling it recompiles once (~3.5 min).
 
 ## Long-context refactor benchmark
 
@@ -74,7 +79,7 @@ repeats for the ~60K prompt, 157 for the ~120K one - same protocol as the recomm
 
 | Config | ctx | engine | MTP | prompt | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| W4A16-AutoRound-fast | 150000 | vLLM | on | ~60K | 1627 | **101.3** | 21992 MiB | fp8 KV |
-| W4A16-AutoRound-fast | 150000 | vLLM | on | ~120K | 1017 | **78.8** | 22052 MiB | fp8 KV |
-| W4A16-AutoRound-fast | 250000 | vLLM | on | ~60K | 1706 | **52.5** | 21234 MiB | KVarN k4v2 KV |
-| W4A16-AutoRound-fast | 250000 | vLLM | on | ~120K | 1160 | **34.0** | 21774 MiB | KVarN k4v2 KV |
+| W4A16-AutoRound-fast | 150000 | vLLM | on | ~60K | 1609 | **105.6** | 22188 MiB | fp8 KV |
+| W4A16-AutoRound-fast | 150000 | vLLM | on | ~120K | 1129 | **91.6** | 22190 MiB | fp8 KV |
+| W4A16-AutoRound-fast | 250000 | vLLM | on | ~60K | 1680 | **69.0** | 22056 MiB | KVarN k4v2 KV |
+| W4A16-AutoRound-fast | 250000 | vLLM | on | ~120K | 1171 | **51.3** | 22056 MiB | KVarN k4v2 KV |

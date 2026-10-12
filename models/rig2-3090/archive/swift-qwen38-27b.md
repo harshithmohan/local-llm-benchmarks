@@ -23,7 +23,9 @@ metrics ([engine-notes/vllm.md](../../../engine-notes/vllm.md)), pool pinned by 
 
 Quants:
 
-- `Swift-1.5-INT4` - vLLM, current recommended (see the model page)
+- `Swift-1.5-INT4` - vLLM, the port's first build (int8 heads)
+- `Swift-1.5-INT4-fast` - vLLM, current recommended (see the model page, and experiment 6 of
+  the [port study](../../../experiments/qwen38-27b-swift-1.5-int4.md))
 
 ## Port and checkpoint preparation
 
@@ -107,6 +109,8 @@ Fine-tune-specific:
   model's ~54k), so the draft head is not shared with the base build.
 - At 150000 the fine-tune runs ~520 MiB heavier than the base quant (22510 vs 21992 MiB),
   ~18 MiB under the 22528 cap - that margin is what pins it to the same cap-safe profiles.
+  (These are the port-time int8-head numbers; the requantized build's are in
+  [experiment 6](../../../experiments/qwen38-27b-swift-1.5-int4.md).)
 
 ## Conclusions
 
@@ -117,3 +121,6 @@ Fine-tune-specific:
   so treat the gap as prompt-dependent.
 - The port is a checkpoint-preparation exercise, not an engine-tuning one; no launch flag
   changed ([port study](../../../experiments/qwen38-27b-swift-1.5-int4.md)).
+- The heads the port left at int8 were later requantized to the int4-GPTQ pair the base build
+  runs - the step that brings the fp8 profile inside the cap; the served build is
+  `Swift-1.5-INT4-fast` (experiment 6 of the port study).
