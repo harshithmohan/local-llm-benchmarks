@@ -2,9 +2,7 @@
 
 Updated: 2026-10-08 · [full experiment log](archive/katcoder-v2.5-dev.md) · [methodology](../../methodology.md)
 
-`APEX-I-Compact` (`qwen35moe`, 41 blocks, 256 experts / 8 active, native ctx 262144,
-embedded MTP head). Model card:
-[gbuzhf/KAT-Coder-V2.5-Dev-MTP-GGUF](https://huggingface.co/gbuzhf/KAT-Coder-V2.5-Dev-MTP-GGUF).
+`APEX-I-Compact` (`qwen35moe`, 41 blocks, 256 experts / 8 active, native ctx 262144, embedded MTP head). Model card: [gbuzhf/KAT-Coder-V2.5-Dev-MTP-GGUF](https://huggingface.co/gbuzhf/KAT-Coder-V2.5-Dev-MTP-GGUF).
 
 ## Recommended configs
 
@@ -29,23 +27,14 @@ embedded MTP head). Model card:
 
 ## Notes
 
-- `--phase-aware-workspace` frees ~800 MiB on this model, which carries the expert cache from
-  80 to 88 slabs (~+5% decode at both ~10K and ~60K, no prefill cost); 100/104 slabs load but
-  OOM on the first request.
-- This config runs `-b/-ub 3072`. `-b/-ub 4096` measured ~+6% prefill (~1624 t/s) at the same
-  VRAM, but it is not adopted here: it changes the draft-context budget and has not been through
-  the large-prompt stability check (see the `--spec-draft-ubatch-size` note in the fork pages).
+- `--phase-aware-workspace` frees ~800 MiB on this model, which carries the expert cache from 80 to 88 slabs (~+5% decode at both ~10K and ~60K, no prefill cost); 100/104 slabs load but OOM on the first request.
+- This config runs `-b/-ub 3072`. `-b/-ub 4096` measured ~+6% prefill (~1624 t/s) at the same VRAM, but it is not adopted here: it changes the draft-context budget and has not been through the large-prompt stability check (see the `--spec-draft-ubatch-size` note in the fork pages).
 
-Shared fork behaviour (expert cache overriding `--n-cpu-moe`, flag vocabulary) is in
-[engine-notes/moe-cache-fork.md](../../engine-notes/moe-cache-fork.md).
+Shared fork behaviour (expert cache overriding `--n-cpu-moe`, flag vocabulary) is in [engine-notes/moe-cache-fork.md](../../engine-notes/moe-cache-fork.md).
 
 ## Long-context refactor benchmark
 
-Real-task timing test of a long-context code-refactor task ([test-prompts.md](../../test-prompts.md)):
-a fixed refactor instruction wraps a deterministically generated (seed 42) Python file of
-near-identical legacy templates - 79 repeats for the ~60K prompt, 157 for the ~120K one. Same
-protocol as the recommended configs ([methodology.md](../../methodology.md) §Measurement
-methods): q8_0 KV, cold load.
+Real-task timing test of a long-context code-refactor task ([test-prompts.md](../../test-prompts.md)): a fixed refactor instruction wraps a deterministically generated (seed 42) Python file of near-identical legacy templates - 79 repeats for the ~60K prompt, 157 for the ~120K one. Same protocol as the recommended configs ([methodology.md](../../methodology.md) §Measurement methods): q8_0 KV, cold load.
 
 | Config | ctx | engine | MTP | prompt | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |

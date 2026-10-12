@@ -2,9 +2,7 @@
 
 Updated: 2026-09-30 · [full experiment log](archive/katcoder-v2.5-dev.md) · [methodology](../../methodology.md)
 
-`APEX-I-Compact` (`qwen35moe`, 41 blocks, 256 experts / 8 active, native ctx 262144,
-embedded MTP head). Model card:
-[gbuzhf/KAT-Coder-V2.5-Dev-MTP-GGUF](https://huggingface.co/gbuzhf/KAT-Coder-V2.5-Dev-MTP-GGUF).
+`APEX-I-Compact` (`qwen35moe`, 41 blocks, 256 experts / 8 active, native ctx 262144, embedded MTP head). Model card: [gbuzhf/KAT-Coder-V2.5-Dev-MTP-GGUF](https://huggingface.co/gbuzhf/KAT-Coder-V2.5-Dev-MTP-GGUF).
 
 ## Recommended configs
 
@@ -30,19 +28,13 @@ embedded MTP head). Model card:
 
 ## Notes
 
-- The expert cache is enabled (`--moe-expert-cache-size 200`); it overrides `--n-cpu-moe`
-  placement.
+- The expert cache is enabled (`--moe-expert-cache-size 200`); it overrides `--n-cpu-moe` placement.
 - `-b/-ub 12288` is the prefill-maximizing ubatch; 16384 fails to load.
-- Shared fork behaviour (flag vocabulary, `--experimental-logs` validation) is in
-  [engine-notes/moe-cache-fork.md](../../engine-notes/moe-cache-fork.md).
+- Shared fork behaviour (flag vocabulary, `--experimental-logs` validation) is in [engine-notes/moe-cache-fork.md](../../engine-notes/moe-cache-fork.md).
 
 ## Long-context refactor benchmark
 
-Real-task timing test of a long-context code-refactor task ([test-prompts.md](../../test-prompts.md)):
-a fixed refactor instruction wraps a deterministically generated (seed 42) Python file of
-near-identical legacy templates - 79 repeats for the ~60K prompt, 157 for the ~120K one. Same
-protocol as the recommended configs ([methodology.md](../../methodology.md) §Measurement
-methods): q8_0 KV, cold load.
+Real-task timing test of a long-context code-refactor task ([test-prompts.md](../../test-prompts.md)): a fixed refactor instruction wraps a deterministically generated (seed 42) Python file of near-identical legacy templates - 79 repeats for the ~60K prompt, 157 for the ~120K one. Same protocol as the recommended configs ([methodology.md](../../methodology.md) §Measurement methods): q8_0 KV, cold load.
 
 | Config | ctx | engine | MTP | prompt | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |

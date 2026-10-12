@@ -2,12 +2,7 @@
 
 Updated: 2026-09-30 · [full experiment log](archive/swift-qwen38-27b.md) · [methodology](../../methodology.md)
 
-`IQ2_XS` of the **Swift-1.5 fine-tune** of Qwen3.8-27B (`qwen35`, native ctx 262144,
-embedded MTP head). Dense hybrid SSM + attention - only every 4th layer carries full
-attention (`full_attention_interval=4`) - and not a MoE, so no expert split applies. This is
-the only Qwen3.8-27B variant benchmarked on Rig 1; the base model's results are on Rig 2
-([qwen38-27b.md](../rig2-3090/qwen38-27b.md)). Model card:
-[ukisai/Swift-1.5-Qwen3.8-27B-GSQ-RCO-GGUF](https://huggingface.co/ukisai/Swift-1.5-Qwen3.8-27B-GSQ-RCO-GGUF) (`IQ2_XS`).
+`IQ2_XS` of the **Swift-1.5 fine-tune** of Qwen3.8-27B (`qwen35`, native ctx 262144, embedded MTP head). Dense hybrid SSM + attention - only every 4th layer carries full attention (`full_attention_interval=4`) - and not a MoE, so no expert split applies. This is the only Qwen3.8-27B variant benchmarked on Rig 1; the base model's results are on Rig 2 ([qwen38-27b.md](../rig2-3090/qwen38-27b.md)). Model card: [ukisai/Swift-1.5-Qwen3.8-27B-GSQ-RCO-GGUF](https://huggingface.co/ukisai/Swift-1.5-Qwen3.8-27B-GSQ-RCO-GGUF) (`IQ2_XS`).
 
 ## Recommended configs
 
@@ -32,13 +27,11 @@ the only Qwen3.8-27B variant benchmarked on Rig 1; the base model's results are 
 ## Notes
 
 - **q4_0 KV.** The native 262144 window does not fit the 12 GB cap; q4_0 KV is what reaches 80k.
-- **`-ub` is capped by the 12 GB cap.** Raising it does not raise prefill, and `-ub ≥ 2048`
-  fails to allocate compute buffers (OOM) at 80k with q4_0 KV.
+- **`-ub` is capped by the 12 GB cap.** Raising it does not raise prefill, and `-ub ≥ 2048` fails to allocate compute buffers (OOM) at 80k with q4_0 KV.
 
 ## Long-context refactor benchmark
 
-The real-task ~60K refactor prompt ([test-prompts.md](../../test-prompts.md)), same protocol
-as the recommended configs.
+The real-task ~60K refactor prompt ([test-prompts.md](../../test-prompts.md)), same protocol as the recommended configs.
 
 | Config | ctx | engine | MTP | prompt | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
