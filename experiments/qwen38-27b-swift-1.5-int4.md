@@ -18,8 +18,8 @@ The one step the port left out was **head precision**: the heads were requantize
 
 Same rig and stack as the model page: RTX 3090 under a 22528 MiB cap, the [syv-ai/HyperQwen](https://github.com/syv-ai/HyperQwen) container (vLLM 0.29.0 for the port itself; the experiment-6 requantization and the current served rows are on vLLM 0.31.0), two profiles:
 
-- `CTX=long` — fp8 KV, 4 chained MTP drafts, `MAX_LEN=150000`, pool pinned by bytes.
-- `CTX=huge` — KVarN `kvarn_k4v2_g128` KV, 3 drafts, `MAX_LEN=250000`, pool pinned by bytes.
+- `CTX=long` — fp8 KV, 4 chained MTP drafts, `MAX_LEN=176128`, pool pinned by bytes, `EMBED_UVA=1`.
+- `CTX=huge` — KVarN `kvarn_k4v2_g128` KV, 3 drafts, `MAX_LEN=262144`, pool pinned by bytes, `EMBED_UVA=1`.
 
 The base checkpoint, weights and requantization notes are on the [model page](../models/rig2-3090/qwen38-27b.md); this experiment only covers the fine-tune's own port.
 

@@ -94,3 +94,8 @@ quant. The recorded Rig 2 rows are on this pin.
   appended to `EXTRA_ARGS` (it expands last on the launch line, so it wins) and assert
   `prompt_tokens_cached_total` 0. The ~120K rows on the two Rig 2 model pages were taken that
   way; the retired single-pass rows were cold by construction (fresh boot, first send).
+- Decode includes the accepted MTP drafts, so it tracks draft acceptance, and that is a
+  stochastic draw at the protocol's sampling settings: the same prompt re-sent in the same
+  boot has read ±10 points of acceptance and, with it, ±15% of decode, while prefill stayed
+  within ~1%. Compare decode only across runs that send the same prompts in the same order,
+  and reach for the acceptance figure when a decode difference needs explaining.

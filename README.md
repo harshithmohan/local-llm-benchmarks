@@ -91,18 +91,20 @@ All rows here are measured on the 10k opencode session prompt ([test-prompts.md]
 Headline tables list only usable configs (full context, no rejected/OOM setups); all tested
 quants, including archived ones, are on the model pages ([Contents](#contents) above).
 YaRN-extended rows raise context past the native window. llama.cpp rows use q8_0 KV under the
-22 GB cap; vLLM rows pin their KV pool by bytes to stay under the cap; engine labels are
-per-row on the model pages.
+22 GB cap; vLLM rows pin their KV pool by bytes to stay under the cap. vLLM rows also run MTP
+spec decode, so decode moves with the run's draft acceptance
+([engine-notes/vllm.md](engine-notes/vllm.md)) - sub-15% decode differences between two vLLM
+rows are not significant. Engine labels are per-row on the model pages.
 
 | Model | Quant | ctx | Prefill t/s | Decode t/s |
 | --- | --- | --- | --- | --- |
 | Qwen3.6-35B-A3B | UD-IQ4_XS | 262144 | 4983 | **223** |
 | Qwen3.6-35B-A3B | UD-IQ4_XS | 524288 (YaRN 2x) | 3984 | **170** |
 | KAT-Coder-V2.5-Dev | APEX-I-Compact | 262144 | 4591 | **163** |
-| Qwen3.8-27B | W4A16-AutoRound-fast | 150000 | 2472 | **108.9** |
-| Qwen3.8-27B | W4A16-AutoRound-fast | 250000 | 2383 | **92.9** |
-| Swift-1.5-Qwen3.8-27B | Swift-1.5-INT4-fast | 150000 | 2460 | **121.0** |
-| Swift-1.5-Qwen3.8-27B | Swift-1.5-INT4-fast | 250000 | 2377 | **102.7** |
+| Qwen3.8-27B | W4A16-AutoRound-fast | 176128 | 2465 | **120.6** |
+| Qwen3.8-27B | W4A16-AutoRound-fast | 262144 | 2403 | **101.8** |
+| Swift-1.5-Qwen3.8-27B | Swift-1.5-INT4-fast | 176128 | 2433 | **107.7** |
+| Swift-1.5-Qwen3.8-27B | Swift-1.5-INT4-fast | 262144 | 2374 | **97.6** |
 
 ## Coding benchmark (shoko-logs)
 

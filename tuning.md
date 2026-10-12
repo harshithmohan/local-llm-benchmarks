@@ -178,11 +178,17 @@ syntax and feature set:
 [syv-ai/HyperQwen](https://github.com/syv-ai/HyperQwen) container stack, Rig 2. Different config
 surface and different timing source (Prometheus metrics, not the llama-server `timings`).
 
-- KV modes: fp8 (e.g. 150k) vs KVarN 4/2-bit (e.g. 250k, slower decode). k4v4 stores 2x the V
+- KV modes: fp8 (e.g. 176k) vs KVarN 4/2-bit (e.g. 262k, slower decode). k4v4 stores 2x the V
   bytes; a g64 group doubles scale overhead - neither buys speed or acceptance. DFlash2 is
   retired for MTP.
-- `INT8_ACT=int8` is the one adopted knob: large prefill gain (+83% short, +39% at 140k) for a
+- `INT8_ACT=int8` is an adopted knob: large prefill gain (+83% short, +39% at 140k) for a
   ~9-10% decode cost. `INT8_LAYERS=mlp` is smaller; `PREFILL_ATTN=int8` is a no-op.
+- `EMBED_UVA=1` keeps the quantized embedding in pinned host RAM behind a CUDA view: ~1.1 GiB
+  of card memory back for ~2.1 GiB of host RAM and ~20 s of boot. A pool-size knob, not a
+  speed one; it is what pays for the profiles' larger pins.
+- `KVARN_FP16_DEQUANT=1` runs KVarN's fused decode kernels in fp16 (the dots stay fp32): a
+  long-context decode win with prefill, VRAM and acceptance flat - 26-53% measured at ~60-120K
+  across the two models. It is in the compile cache key, so the first boot recompiles once.
 - `--max-num-batched-tokens` is the ubatch analogue: 4096 neutral, **8192 boots but OOMs the
   first 140k prefill** - keep 2048.
 - `MAX_SEQS` / `GPU_UTIL` vs byte-pinned pool (`--kv-cache-memory`); `KV_MEM` is ignored on the
