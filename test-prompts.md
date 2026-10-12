@@ -1,124 +1,54 @@
 # Test prompts
 
-Prompts used for benchmarking. The server test prompts below drive the prefill/decode
-timing runs. The 10k opencode session-context prompt is deliberately non-repetitive -
-repeated text can crash llama-server on the qwen4exp arch (see issues.md, PLE n-gram
-path). The long-context refactor prompts (60K and 120K) are near-repetitive on purpose:
-they are long-context stability + throughput tests, timed under the same protocol.
+Prompts used for benchmarking. The server test prompts below drive the prefill/decode timing runs. The 10k opencode session-context prompt is deliberately non-repetitive - repeated text can crash llama-server on the qwen4exp arch (see issues.md, PLE n-gram path). The long-context refactor prompts (60K and 120K) are near-repetitive on purpose: they are long-context stability + throughput tests, timed under the same protocol.
 
 ## Server test prompts (prefill/decode timing)
 
 ### opencode session context (realistic, ~10k tokens)
 
-The timing prompt is stored verbatim at `scripts/opencode-10k-prompt.txt` - a single
-non-repetitive ~10,117-token text (Qwen tokenizer). It mirrors what a real opencode
-request actually prefills: the agent system prompt, the tool documentation, the skills
-catalog, an environment/status block, the project instructions, a slice of workspace
-context, and finally the user request. It was assembled once from real sources
-(recorded here, not regenerated - the prompt is frozen so recorded numbers stay
-comparable):
+The timing prompt is stored verbatim at `scripts/opencode-10k-prompt.txt` - a single non-repetitive ~10,117-token text (Qwen tokenizer). It mirrors what a real opencode request actually prefills: the agent system prompt, the tool documentation, the skills catalog, an environment/status block, the project instructions, a slice of workspace context, and finally the user request. It was assembled once from real sources (recorded here, not regenerated - the prompt is frozen so recorded numbers stay comparable):
 
-- opencode's session system prompt and tool docs - `github.com/sst/opencode` @ 7945de20
-  (`session/prompt/default.txt` + `src/tool/*.txt`).
-- Shoko-WebUI `AGENTS.md`, plus `src/core/axios.ts`, `src/core/store.ts`, and the `src/`
-  tree as workspace context (the project the shoko-logs benchmark targets).
-- The skills catalog and environment block mirror what opencode injects (skills from
-  oh-my-opencode-slim `SKILL.md` frontmatter).
+- opencode's session system prompt and tool docs - `github.com/sst/opencode` @ 7945de20 (`session/prompt/default.txt` + `src/tool/*.txt`).
+- Shoko-WebUI `AGENTS.md`, plus `src/core/axios.ts`, `src/core/store.ts`, and the `src/` tree as workspace context (the project the shoko-logs benchmark targets).
+- The skills catalog and environment block mirror what opencode injects (skills from oh-my-opencode-slim `SKILL.md` frontmatter).
 
 The trailing user request inside the prompt:
 
-> Build a React component that renders a searchable, virtualized data table for
-> 50,000 rows. It should filter as the user types (debounced to 150 ms), load more
-> rows when the list scrolls near the end, and keep selection state stable across
-> refetches. Use TypeScript with explicit types for the row model and the hook
-> signatures.
+> Build a React component that renders a searchable, virtualized data table for 50,000 rows. It should filter as the user types (debounced to 150 ms), load more rows when the list scrolls near the end, and keep selection state stable across refetches. Use TypeScript with explicit types for the row model and the hook signatures.
 >
-> Then explain your choices: why virtualization is required at this scale, where you
-> would move filtering to the server and what contract the API needs (cursor-based
-> pagination, stable sort, total count), how you would avoid re-rendering unchanged
-> rows (memoized row components, stable callbacks, keyed lists), and how the
-> implementation changes if rows have variable height.
+> Then explain your choices: why virtualization is required at this scale, where you would move filtering to the server and what contract the API needs (cursor-based pagination, stable sort, total count), how you would avoid re-rendering unchanged rows (memoized row components, stable callbacks, keyed lists), and how the implementation changes if rows have variable height.
 
-Why ~10k: the owner's normal workload is opencode, whose system prompt + tools +
-project context is ~10k tokens. The previous ~192-token C# / ~155-token React probes
-did not exercise that prefill regime.
+Why ~10k: the owner's normal workload is opencode, whose system prompt + tools + project context is ~10k tokens. The previous ~192-token C# / ~155-token React probes did not exercise that prefill regime.
 
-**Retired prompts (2026-09-29).** The two short C#/React timing prompts were retired
-and replaced by the ~10k opencode session-context prompt. Every timing number recorded
-before 2026-09-29 on the model pages and archives was measured on the retired prompts
-and is annotated as such there; those numbers are not directly comparable with the
-current ~10k prompt.
+**Retired prompts (2026-09-29).** The two short C#/React timing prompts were retired and replaced by the ~10k opencode session-context prompt. Every timing number recorded before 2026-09-29 on the model pages and archives was measured on the retired prompts and is annotated as such there; those numbers are not directly comparable with the current ~10k prompt.
 
 ### Long-context refactor (~60K tokens)
 
-Adapted from the Qwen3.8-vLLM-KVarN-MTP-Arc-Experiments project. A fixed refactor
-instruction wraps a deterministically generated (seed 42) "legacy" Python file of 79
-near-identical entity templates full of beginner mistakes (global mutable state, bare
-`except`, mutable default args, `== None`/`== True`, manual index loops, string concat,
-mixed naming, duplication). Generated by `scripts/generate-long-context-prompt.py`
-(`--repeats 79` default): writes `full_prompt.txt` (~213 KB, ~60K tokens on the Qwen
-tokenizer family) plus `prompt-long-context-35b.json` / `prompt-long-context-flash.json`
-payloads.
-Regeneration is deterministic (seed 42); recorded token counts vary slightly across
-models/tokenizers.
+Adapted from the Qwen3.8-vLLM-KVarN-MTP-Arc-Experiments project. A fixed refactor instruction wraps a deterministically generated (seed 42) "legacy" Python file of 79 near-identical entity templates full of beginner mistakes (global mutable state, bare `except`, mutable default args, `== None`/`== True`, manual index loops, string concat, mixed naming, duplication). Generated by `scripts/generate-long-context-prompt.py` (`--repeats 79` default): writes `full_prompt.txt` (~213 KB, ~60K tokens on the Qwen tokenizer family) plus `prompt-long-context-35b.json` / `prompt-long-context-flash.json` payloads. Regeneration is deterministic (seed 42); recorded token counts vary slightly across models/tokenizers.
 
-Purpose: a realistic large-prompt stability check at large ctx - NOT a replacement
-for the ~10k opencode session-context timing prompt above.
+Purpose: a realistic large-prompt stability check at large ctx - NOT a replacement for the ~10k opencode session-context timing prompt above.
 
-Unlike the prompts above, this one is deliberately near-repetitive - that is what makes
-it realistic (real codebases are copy-paste-heavy). If a model crashes on it, that is a
-real server limitation to record in issues.md (e.g. the qwen4exp PLE n-gram path), not
-a reason to dilute the prompt.
+Unlike the prompts above, this one is deliberately near-repetitive - that is what makes it realistic (real codebases are copy-paste-heavy). If a model crashes on it, that is a real server limitation to record in issues.md (e.g. the qwen4exp PLE n-gram path), not a reason to dilute the prompt.
 
-Notes for this prompt (request protocol is shared with the 10k prompt and defined in
-[methodology.md](methodology.md) §Measurement methods):
+Notes for this prompt (request protocol is shared with the 10k prompt and defined in [methodology.md](methodology.md) §Measurement methods):
 
-- Send the generated `full_prompt.txt` text; only speed is measured - no output-quality
-  passes.
-- `ignore_eos: true` matters here: some engines emit EOS as the very first token on this
-  prompt over the raw endpoint (stop_type eos, 1 predicted token, empty output) - Flash-Next
-  (qwen4exp) does so even after the trailing closed fence is neutralized with a nonce, and
-  the 35B moe-cache fork does so rarely (issues.md §5). The unified protocol sets it, so
-  every pass decodes the full `n_predict` with real output and normal acceptance.
-- All pre-2026-09-29 long-context numbers used a single-pass, `/v1/chat/completions` protocol and
-  are archived per model page; the conventions are not directly comparable.
+- Send the generated `full_prompt.txt` text; only speed is measured - no output-quality passes.
+- `ignore_eos: true` matters here: some engines emit EOS as the very first token on this prompt over the raw endpoint (stop_type eos, 1 predicted token, empty output) - Flash-Next (qwen4exp) does so even after the trailing closed fence is neutralized with a nonce, and the 35B moe-cache fork does so rarely (issues.md §5). The unified protocol sets it, so every pass decodes the full `n_predict` with real output and normal acceptance.
+- All pre-2026-09-29 long-context numbers used a single-pass, `/v1/chat/completions` protocol and are archived per model page; the conventions are not directly comparable.
 
 ### Long-context refactor, large (~120K tokens)
 
-The same generator and text at `--repeats 157`: `full_prompt.txt` is ~412 KB, ~119.3K
-tokens on the Qwen tokenizer family (119,344 recorded). Deterministic by the same seed 42.
+The same generator and text at `--repeats 157`: `full_prompt.txt` is ~412 KB, ~119.3K tokens on the Qwen tokenizer family (119,344 recorded). Deterministic by the same seed 42.
 
-Purpose: the same realistic large-prompt stability check as the ~60K prompt, at the size a
-large window actually serves - a config serving a window above 140k is checked on this one,
-because the ~60K prompt does not reach that window's prompt-side regime. It is also the
-prompt for long-context speed rows at those windows. The recorded `prompt_n` identifies
-which prompt produced a row (~60K rows sit near 59.8K, ~120K rows near 119.3K).
+Purpose: the same realistic large-prompt stability check as the ~60K prompt, at the size a large window actually serves - a config serving a window above 140k is checked on this one, because the ~60K prompt does not reach that window's prompt-side regime. It is also the prompt for long-context speed rows at those windows. The recorded `prompt_n` identifies which prompt produced a row (~60K rows sit near 59.8K, ~120K rows near 119.3K).
 
-Not a replacement for the ~10k opencode session-context timing prompt above, and not an
-output-quality eval: only speed is measured.
+Not a replacement for the ~10k opencode session-context timing prompt above, and not an output-quality eval: only speed is measured.
 
 ## Notes
 
-- Payload JSONs are built here and POSTed inline - no payload or prompt files on the rigs.
-  The request protocol (endpoint, flags, two-pass, sampling) is defined in
-  [methodology.md](methodology.md) §Measurement methods. Canonical file naming (when a
-  local temp file is convenient): name-per-prompt, `prompt-<name>.json`
-  (`prompt-opencode.json`, `prompt-long-context-35b.json`).
-- Timing-prompt token count (authoritative here): the opencode session context is
-  ~10,117 tokens (Qwen tokenizer; ~44.8 KB of text). It is deliberately large because it
-  matches the owner's real opencode prefill regime - the retired ~192-token C# /
-  ~155-token React probes did not (the old ~308-token figure was an aggregate estimate,
-  not a sum).
-- Long-context prompt sizes (Qwen tokenizer, recorded through the servers): the ~60K
-  prompt is ~59.8K tokens (~213 KB, `--repeats 79`) and the ~120K prompt ~119.3K tokens
-  (~412 KB, `--repeats 157`). Both are generated, not committed - the generator is
-  `scripts/generate-long-context-prompt.py`.
-- The session-context prompt is non-repetitive by construction (real prompt/tool docs,
-  AGENTS.md, and source files - no repeated sentences) - safe on qwen4exp (Flash-Next)
-  and usable as a stability-check prompt.
-- The 35B-era timing runs used a repetitive prompt ("Explain TCP congestion control
-  in detail." repeated ~110x, ~772 tokens) - valid on qwen35moe, replaced by the
-  non-repetitive timing prompts above after the Flash-Next crash discovery.
-- Flash-Next prefill columns were measured with a single ~240-token varied paragraph
-  (database/index topic). At the target contexts (200k+), prompt size does not move
-  prefill measurably; what matters is non-repetitive text and the ubatch size.
+- Payload JSONs are built here and POSTed inline - no payload or prompt files on the rigs. The request protocol (endpoint, flags, two-pass, sampling) is defined in [methodology.md](methodology.md) §Measurement methods. Canonical file naming (when a local temp file is convenient): name-per-prompt, `prompt-<name>.json` (`prompt-opencode.json`, `prompt-long-context-35b.json`).
+- Timing-prompt token count (authoritative here): the opencode session context is ~10,117 tokens (Qwen tokenizer; ~44.8 KB of text). It is deliberately large because it matches the owner's real opencode prefill regime - the retired ~192-token C# / ~155-token React probes did not (the old ~308-token figure was an aggregate estimate, not a sum).
+- Long-context prompt sizes (Qwen tokenizer, recorded through the servers): the ~60K prompt is ~59.8K tokens (~213 KB, `--repeats 79`) and the ~120K prompt ~119.3K tokens (~412 KB, `--repeats 157`). Both are generated, not committed - the generator is `scripts/generate-long-context-prompt.py`.
+- The session-context prompt is non-repetitive by construction (real prompt/tool docs, AGENTS.md, and source files - no repeated sentences) - safe on qwen4exp (Flash-Next) and usable as a stability-check prompt.
+- The 35B-era timing runs used a repetitive prompt ("Explain TCP congestion control in detail." repeated ~110x, ~772 tokens) - valid on qwen35moe, replaced by the non-repetitive timing prompts above after the Flash-Next crash discovery.
+- Flash-Next prefill columns were measured with a single ~240-token varied paragraph (database/index topic). At the target contexts (200k+), prompt size does not move prefill measurably; what matters is non-repetitive text and the ubatch size.

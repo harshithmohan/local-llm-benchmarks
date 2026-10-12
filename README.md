@@ -1,54 +1,23 @@
 # local-llm-benchmarks
 
-Benchmark reports for running local LLMs on two consumer GPUs, using three builds
-of [llama.cpp](https://github.com/ggml-org/llama.cpp): upstream llama.cpp,
-[ik-llama.cpp](https://github.com/ikawrakow/ik_llama.cpp), and the
-[moe-cache fork](https://github.com/GenerelSchwerz/llama.cpp) (branch `moe-cache`).
-One Rig 2 model also has a
-[vLLM](https://github.com/syv-ai/HyperQwen) container stack, and Rig 1 runs the same
-Qwen3.8-Flash-Next Q2_0 weights on a fifth engine, the
-[Strata](https://github.com/Niko1221/Strata) pack engine.
+Benchmark reports for running local LLMs on two consumer GPUs, using three builds of [llama.cpp](https://github.com/ggml-org/llama.cpp): upstream llama.cpp, [ik-llama.cpp](https://github.com/ikawrakow/ik_llama.cpp), and the [moe-cache fork](https://github.com/GenerelSchwerz/llama.cpp) (branch `moe-cache`). One Rig 2 model also has a [vLLM](https://github.com/syv-ai/HyperQwen) container stack, and Rig 1 runs the same Qwen3.8-Flash-Next Q2_0 weights on a fifth engine, the [Strata](https://github.com/Niko1221/Strata) pack engine.
 
 ## Rigs
 
-- **Rig 1:** RTX 3060 12GB + i7-12700, 128 GB RAM - hardware and build info in
-  [rig1-3060.md](rig1-3060.md)
-- **Rig 2:** RTX 3090 24GB + Ryzen 7 5700X, 32 GB RAM - hardware and build info in
-  [rig2-3090.md](rig2-3090.md)
+- **Rig 1:** RTX 3060 12GB + i7-12700, 128 GB RAM - hardware and build info in [rig1-3060.md](rig1-3060.md)
+- **Rig 2:** RTX 3090 24GB + Ryzen 7 5700X, 32 GB RAM - hardware and build info in [rig2-3090.md](rig2-3090.md)
 
-Rig 1 was first benchmarked 2026-09-10; the engines used on each rig are listed below.
-Measurement methodology: [methodology.md](methodology.md); per-engine flags: [engine-notes/](engine-notes/).
-Known issues and gotchas: [issues.md](issues.md).
+Rig 1 was first benchmarked 2026-09-10; the engines used on each rig are listed below. Measurement methodology: [methodology.md](methodology.md); per-engine flags: [engine-notes/](engine-notes/). Known issues and gotchas: [issues.md](issues.md).
 
 ## Inference engines
 
-- **vLLM** ([syv-ai/HyperQwen](https://github.com/syv-ai/HyperQwen), vLLM 0.31.0) - a vLLM
-  container stack running MTP with two KV modes, fp8 and KVarN 4/2-bit, both with pinned
-  pools.
-- **llama.cpp** ([ggml-org/llama.cpp](https://github.com/ggml-org/llama.cpp)) -
-  Rig 1: v0.5.0-dev d834d44 since the 2026-09-26 container rebuild (older stock rows on
-  v0.4.0-dev 30b6a75); Rig 2: v0.5.0-dev build 11146 (7fe450e193).
-- **ik-llama.cpp** ([ikawrakow/ik_llama.cpp](https://github.com/ikawrakow/ik_llama.cpp),
-  build 1aaf710 (v1; older rows 3bb386e), Rig 1) - Ilya Kawrakow's performance fork of
-  llama.cpp. Flag syntax: [engine-notes/ik-llama.md](engine-notes/ik-llama.md).
-- **llama.cpp (moe-cache fork)** ([GenerelSchwerz/llama.cpp](https://github.com/GenerelSchwerz/llama.cpp),
-  branch `moe-cache`, both rigs on build b11814-28d73c87c since 2026-10-08) - a llama.cpp fork
-  adding a dynamic CUDA expert cache (`--moe-expert-cache-size`; no profile/trace step needed)
-  and an opt-in generic hybrid CPU/GPU executor (`--moe-hybrid`) with model-bound expert profiles;
-  while the cache is enabled it overrides `-ncmoe` placement. Flags and the `--experimental-logs`
-  validation recipe: [engine-notes/moe-cache-fork.md](engine-notes/moe-cache-fork.md).
-- **Strata** ([Niko1221/Strata](https://github.com/Niko1221/Strata), engine 0.1.41, Rig 1) -
-  a llama.cpp-derived engine that runs Qwen3.8-Flash-Next from a *pack* (expert rows indexed
-  on the SSD, all experts pinned in host RAM, an adaptive VRAM expert cache) behind its own
-  OpenAI/Anthropic API server. Not a `llama-server` build: its rows are measured through
-  Strata's own `/v1/chat/completions` route with a chat template always applied, so they are
-  not directly comparable with the llama.cpp rows above. Flags, the KV modes and the
-  llama.cpp flag mapping: [engine-notes/strata.md](engine-notes/strata.md).
+- **vLLM** ([syv-ai/HyperQwen](https://github.com/syv-ai/HyperQwen), vLLM 0.31.0) - a vLLM container stack running MTP with two KV modes, fp8 and KVarN 4/2-bit, both with pinned pools.
+- **llama.cpp** ([ggml-org/llama.cpp](https://github.com/ggml-org/llama.cpp)) - Rig 1: v0.5.0-dev d834d44 since the 2026-09-26 container rebuild (older stock rows on v0.4.0-dev 30b6a75); Rig 2: v0.5.0-dev build 11146 (7fe450e193).
+- **ik-llama.cpp** ([ikawrakow/ik_llama.cpp](https://github.com/ikawrakow/ik_llama.cpp), build 1aaf710 (v1; older rows 3bb386e), Rig 1) - Ilya Kawrakow's performance fork of llama.cpp. Flag syntax: [engine-notes/ik-llama.md](engine-notes/ik-llama.md).
+- **llama.cpp (moe-cache fork)** ([GenerelSchwerz/llama.cpp](https://github.com/GenerelSchwerz/llama.cpp), branch `moe-cache`, both rigs on build b11814-28d73c87c since 2026-10-08) - a llama.cpp fork adding a dynamic CUDA expert cache (`--moe-expert-cache-size`; no profile/trace step needed) and an opt-in generic hybrid CPU/GPU executor (`--moe-hybrid`) with model-bound expert profiles; while the cache is enabled it overrides `-ncmoe` placement. Flags and the `--experimental-logs` validation recipe: [engine-notes/moe-cache-fork.md](engine-notes/moe-cache-fork.md).
+- **Strata** ([Niko1221/Strata](https://github.com/Niko1221/Strata), engine 0.1.41, Rig 1) - a llama.cpp-derived engine that runs Qwen3.8-Flash-Next from a *pack* (expert rows indexed on the SSD, all experts pinned in host RAM, an adaptive VRAM expert cache) behind its own OpenAI/Anthropic API server. Not a `llama-server` build: its rows are measured through Strata's own `/v1/chat/completions` route with a chat template always applied, so they are not directly comparable with the llama.cpp rows above. Flags, the KV modes and the llama.cpp flag mapping: [engine-notes/strata.md](engine-notes/strata.md).
 
-The llama.cpp builds support MTP speculative decode; Strata has its own MTP.
-Timings are read from the `llama-server` response `timings` (or its request log) for
-llama.cpp, from the same `timings` fields for Strata, and vLLM's Prometheus metrics for
-vLLM. `llama-bench` is not used.
+The llama.cpp builds support MTP speculative decode; Strata has its own MTP. Timings are read from the `llama-server` response `timings` (or its request log) for llama.cpp, from the same `timings` fields for Strata, and vLLM's Prometheus metrics for vLLM. `llama-bench` is not used.
 
 ## Contents
 
@@ -70,10 +39,7 @@ Each model page carries its full experiment log in the matching `archive/<model>
 
 ## Rig 1 results
 
-Headline tables list only usable configs (full context, no rejected/OOM setups); all tested
-quants, including archived ones, are on the model pages ([Contents](#contents) above).
-YaRN-extended rows raise context past the native window; engine labels are per-row on the
-model pages.
+Headline tables list only usable configs (full context, no rejected/OOM setups); all tested quants, including archived ones, are on the model pages ([Contents](#contents) above). YaRN-extended rows raise context past the native window; engine labels are per-row on the model pages.
 
 | Model | Quant | Full-ctx support | Prefill t/s | Decode t/s |
 | --- | --- | --- | --- | --- |
@@ -88,13 +54,7 @@ All rows here are measured on the 10k opencode session prompt ([test-prompts.md]
 
 ## Rig 2 results
 
-Headline tables list only usable configs (full context, no rejected/OOM setups); all tested
-quants, including archived ones, are on the model pages ([Contents](#contents) above).
-YaRN-extended rows raise context past the native window. llama.cpp rows use q8_0 KV under the
-22 GB cap; vLLM rows pin their KV pool by bytes to stay under the cap. vLLM rows also run MTP
-spec decode, so decode moves with the run's draft acceptance
-([engine-notes/vllm.md](engine-notes/vllm.md)) - sub-15% decode differences between two vLLM
-rows are not significant. Engine labels are per-row on the model pages.
+Headline tables list only usable configs (full context, no rejected/OOM setups); all tested quants, including archived ones, are on the model pages ([Contents](#contents) above). YaRN-extended rows raise context past the native window. llama.cpp rows use q8_0 KV under the 22 GB cap; vLLM rows pin their KV pool by bytes to stay under the cap. vLLM rows also run MTP spec decode, so decode moves with the run's draft acceptance ([engine-notes/vllm.md](engine-notes/vllm.md)) - sub-15% decode differences between two vLLM rows are not significant. Engine labels are per-row on the model pages.
 
 | Model | Quant | ctx | Prefill t/s | Decode t/s |
 | --- | --- | --- | --- | --- |
@@ -108,23 +68,14 @@ rows are not significant. Engine labels are per-row on the model pages.
 
 ## Coding benchmark (shoko-logs)
 
-A separate, agentic benchmark under [benchmarks/shoko-logs/](benchmarks/shoko-logs/):
-from a clean Shoko-WebUI base commit, a model must reproduce the upstream logs-page
-rewrite (server-side search + infinite-scroll pagination) and log download against a
-backend API it discovers itself. Scored by build gates (tscheck/lint/build, 5 pts)
-plus a 95-point behavior rubric vs a reference diff.
+A separate, agentic benchmark under [benchmarks/shoko-logs/](benchmarks/shoko-logs/): from a clean Shoko-WebUI base commit, a model must reproduce the upstream logs-page rewrite (server-side search + infinite-scroll pagination) and log download against a backend API it discovers itself. Scored by build gates (tscheck/lint/build, 5 pts) plus a 95-point behavior rubric vs a reference diff.
 
 - Protocol, rubric, and prompts: [benchmarks/shoko-logs/README.md](benchmarks/shoko-logs/README.md)
 - Results: [benchmarks/shoko-logs/scorecard.md](benchmarks/shoko-logs/scorecard.md)
 
 ## Crucible (capability)
 
-A separate, suite-level benchmark under [benchmarks/crucible/](benchmarks/crucible/):
-[Crucible LLM](https://github.com/MadGoatHaz/crucible-llm) points at any OpenAI-compatible
-`/v1` endpoint and runs a set of capability engines — needle-in-a-haystack retrieval,
-deterministic reasoning, and structured output. Its numbers are **not comparable** to the
-timing rows above: it always applies a chat template and sends its own sampling params, so it
-has its own, independent methodology (see the suite README for the full deviation list).
+A separate, suite-level benchmark under [benchmarks/crucible/](benchmarks/crucible/): [Crucible LLM](https://github.com/MadGoatHaz/crucible-llm) points at any OpenAI-compatible `/v1` endpoint and runs a set of capability engines — needle-in-a-haystack retrieval, deterministic reasoning, and structured output. Its numbers are **not comparable** to the timing rows above: it always applies a chat template and sends its own sampling params, so it has its own, independent methodology (see the suite README for the full deviation list).
 
 - Protocol and engines: [benchmarks/crucible/README.md](benchmarks/crucible/README.md)
 - Results: [benchmarks/crucible/scorecard.md](benchmarks/crucible/scorecard.md)

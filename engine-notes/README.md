@@ -1,13 +1,8 @@
 # Engine notes
 
-Per-engine reference for the inference engines used in this benchmark. Engine labels are
-kept explicit on every page - never "both" - because flag vocabularies differ and results
-are not interchangeable across engines.
+Per-engine reference for the inference engines used in this benchmark. Engine labels are kept explicit on every page - never "both" - because flag vocabularies differ and results are not interchangeable across engines.
 
-The request protocol common to the llama.cpp engines (endpoint, request flags, two-pass,
-sampling) is defined in [methodology.md](../methodology.md) §Measurement methods; the
-prompt texts are in [test-prompts.md](../test-prompts.md). Per-rig build ids are in
-[rig1-3060.md](../rig1-3060.md) / [rig2-3090.md](../rig2-3090.md).
+The request protocol common to the llama.cpp engines (endpoint, request flags, two-pass, sampling) is defined in [methodology.md](../methodology.md) §Measurement methods; the prompt texts are in [test-prompts.md](../test-prompts.md). Per-rig build ids are in [rig1-3060.md](../rig1-3060.md) / [rig2-3090.md](../rig2-3090.md).
 
 | Engine | Upstream | Rig(s) | In one line |
 | --- | --- | --- | --- |
@@ -17,5 +12,4 @@ prompt texts are in [test-prompts.md](../test-prompts.md). Per-rig build ids are
 | [vLLM](vllm.md) | [syv-ai/HyperQwen](https://github.com/syv-ai/HyperQwen) | 2 | container stack for the Qwen3.8-27B quants |
 | [Strata](strata.md) | [Niko1221/Strata](https://github.com/Niko1221/Strata) | 1 | pack-based Flash-Next engine behind its own Python API server |
 
-Flags, features, and quirks for each engine live in its own file above. `llama-bench` is
-not used anywhere - see [methodology.md](../methodology.md) for why.
+Flags, features, and quirks for each engine live in its own file above. `llama-bench` is not used anywhere - see [methodology.md](../methodology.md) for why.
