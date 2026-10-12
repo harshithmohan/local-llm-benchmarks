@@ -1,14 +1,6 @@
 # Consolidated score card — shoko-logs
 
-One row per model + parameter set, with per-capability percentages (see `rubric.md` →
-Capability dimensions and rollup). Each total is the mean of the 2 repeat totals
-(gates /5 + rubric /95 = total /100); the **Time** column gives the run's wall-clock
-time (the repeat mean for local runs; a single value for cloud runs). Rubric
-scores are produced by the grader model
-(see README Protocol). **opencode-go models are single runs (no repeat-mean)**; local
-models are 2-repeat means. Per-repeat rubric breakdown in `scorecards/<model>.md`; run
-artifacts under `runs/<model>/` are deleted once recorded — the scorecards are the
-persistent record.
+One row per model + parameter set, with per-capability percentages (see `rubric.md` → Capability dimensions and rollup). Each total is the mean of the 2 repeat totals (gates /5 + rubric /95 = total /100); the **Time** column gives the run's wall-clock time (the repeat mean for local runs; a single value for cloud runs). Rubric scores are produced by the grader model (see README Protocol). **opencode-go models are single runs (no repeat-mean)**; local models are 2-repeat means. Per-repeat rubric breakdown in `scorecards/<model>.md`; run artifacts under `runs/<model>/` are deleted once recorded — the scorecards are the persistent record.
 
 ### Local (self-hosted) models
 
@@ -43,11 +35,7 @@ Cloud reference models — **single run** per model/level, no repeat-mean (see R
 
 ## Output-limit nudges
 
-Models are served with `limit.output` **16384** (see README → Protocol → "Output limit
-and nudges"). A reasoning model can spend the whole budget on a planning chain-of-thought
-and stop at the cap with nothing implemented; such a run is resumed with a nudge to start
-implementing. A nudge is a **harness intervention, not part of the task** — record every
-nudged run here so nudged runs are only compared against other nudged runs.
+Models are served with `limit.output` **16384** (see README → Protocol → "Output limit and nudges"). A reasoning model can spend the whole budget on a planning chain-of-thought and stop at the cap with nothing implemented; such a run is resumed with a nudge to start implementing. A nudge is a **harness intervention, not part of the task** — record every nudged run here so nudged runs are only compared against other nudged runs.
 
 | Model + params | Nudged repeats |
 |---|---|
@@ -55,15 +43,11 @@ nudged run here so nudged runs are only compared against other nudged runs.
 | qwen38-27b-w4a16 (vLLM, fp8 KV, low reasoning) | 1 of 2 (repeat 1) |
 | qwen38-27b-w4a16 (vLLM, fp8 KV, medium reasoning) | 1 of 2 (repeat 2) |
 
-The table lists only repeats that needed a nudge; unlisted rows ran under the same 16384 cap
-without one.
+The table lists only repeats that needed a nudge; unlisted rows ran under the same 16384 cap without one.
 
 ## Auto-compactions
 
-A run can hit the provider's size limit, at which point opencode compacts the session and
-continues from a summarized context (see README → Protocol → "Auto-compaction"). This is
-a **harness intervention, not part of the task** — record every compacted run here so
-compacted runs are only compared against other compacted runs.
+A run can hit the provider's size limit, at which point opencode compacts the session and continues from a summarized context (see README → Protocol → "Auto-compaction"). This is a **harness intervention, not part of the task** — record every compacted run here so compacted runs are only compared against other compacted runs.
 
 | Model + params | Compacted repeats |
 |---|---|

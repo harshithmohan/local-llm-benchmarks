@@ -1,13 +1,8 @@
 # Rubric — shoko-logs
 
-Score each line 0 / half / full against `reference.diff` and the run's patch.
-Gates are binary. Total 100. The grader model (headless opencode, `<grader-model>`; see
-README Protocol) runs the build gates and scores every line, then the maintainer
-spot-checks.
+Score each line 0 / half / full against `reference.diff` and the run's patch. Gates are binary. Total 100. The grader model (headless opencode, `<grader-model>`; see README Protocol) runs the build gates and scores every line, then the maintainer spot-checks.
 
-Gates measure **build hygiene only** — no runtime behavior is verified by them.
-Do not let green gates anchor the line scores: a patch can pass all three gates
-with half the feature non-functional.
+Gates measure **build hygiene only** — no runtime behavior is verified by them. Do not let green gates anchor the line scores: a patch can pass all three gates with half the feature non-functional.
 
 | # | Aspect | Pts |
 |---|---|---|
@@ -48,10 +43,7 @@ with half the feature non-functional.
 
 ## Capability dimensions and rollup
 
-The 25 lines above roll up into five capability dimensions, so models can be compared
-by *task type* (discovery vs. implementation vs. wiring) instead of only by feature
-area. Dimensions are **rollups of the same points** — not extra points. Score each line
-once; a capability score is the sum of its mapped lines.
+The 25 lines above roll up into five capability dimensions, so models can be compared by *task type* (discovery vs. implementation vs. wiring) instead of only by feature area. Dimensions are **rollups of the same points** — not extra points. Score each line once; a capability score is the sum of its mapped lines.
 
 | Dimension | Definition | Lines | Pts |
 |---|---|---|---|
@@ -62,31 +54,18 @@ once; a capability score is the sum of its mapped lines.
 | **Code quality** | Keep the patch appropriately typed and free of obsolete or unused code | 24, 25 | 6 |
 | | | | **100** |
 
-Tie-breaks for lines that straddle two dimensions: line 7 (DSL handling) counts as
-Discovery & server-contract because it measures applying the server grammar; lines 12,
-17, 18, and 20 count as Integration & wiring because they grade cross-state coordination
-and end-to-end data/request flow. Local mechanics (blob handling 21, scroll lock 14,
-virtualizer sizing 15, loading UI 22) stay under Implementation.
+Tie-breaks for lines that straddle two dimensions: line 7 (DSL handling) counts as Discovery & server-contract because it measures applying the server grammar; lines 12, 17, 18, and 20 count as Integration & wiring because they grade cross-state coordination and end-to-end data/request flow. Local mechanics (blob handling 21, scroll lock 14, virtualizer sizing 15, loading UI 22) stay under Implementation.
 
-> No separation signals: in the recorded cohort line 5 is saturated (every model full),
-> so Discovery discriminates mainly through line 7, and Build hygiene separates no model
-> (all pass the gates). See `scorecard.md`.
+> No separation signals: in the recorded cohort line 5 is saturated (every model full), so Discovery discriminates mainly through line 7, and Build hygiene separates no model (all pass the gates). See `scorecard.md`.
 
 ## Server contract (ground truth for grading API lines)
 
 Do not re-open `LoggingController.cs` / `LogService.cs` — grade against this:
 
-- Read endpoint `Range/Read`: `level` (singular — `levels` is ignored by the server),
-  `message`, `logger`, `caller`, `exception`, `offset`, `limit` (≤1000), `descending`
-  (defaults `true`; ascending requires `descending=false`). `message`, `logger`,
-  `caller`, and `exception` accept the DSL.
-- Download endpoints take the same filter params (no paging): `Range/Download` when
-  filtered, `File/Current/Download` with no params when unfiltered.
+- Read endpoint `Range/Read`: `level` (singular — `levels` is ignored by the server), `message`, `logger`, `caller`, `exception`, `offset`, `limit` (≤1000), `descending` (defaults `true`; ascending requires `descending=false`). `message`, `logger`, `caller`, and `exception` accept the DSL.
+- Download endpoints take the same filter params (no paging): `Range/Download` when filtered, `File/Current/Download` with no params when unfiltered.
 - Pagination: response field `NextOffset`; non-null = next page offset, `null` = exhausted.
-- DSL grammar: mode char first (`c` contains, `=` equals, `^` starts-with, `$`
-  ends-with, `~` fuzzy, `*` regex), then ≤1 `!` (negate) and ≤1 `#` (case-insensitive)
-  in either order, then `:`. Bare value = case-sensitive contains; `c#:` =
-  case-insensitive contains. `#` is ignored for `~` fuzzy and `*` regex modes.
+- DSL grammar: mode char first (`c` contains, `=` equals, `^` starts-with, `$` ends-with, `~` fuzzy, `*` regex), then ≤1 `!` (negate) and ≤1 `#` (case-insensitive) in either order, then `:`. Bare value = case-sensitive contains; `c#:` = case-insensitive contains. `#` is ignored for `~` fuzzy and `*` regex modes.
 
 ## Score sheet
 

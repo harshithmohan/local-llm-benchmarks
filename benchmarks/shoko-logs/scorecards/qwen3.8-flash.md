@@ -1,28 +1,14 @@
 # qwen3.8-flash — scores
 
-Parameter set: opencode-go, **xhigh reasoning level** (`--variant xhigh`; its default).
-Cloud reference model — **1 run only** (no repeat-mean; see README → "Run naming and
-repeats").
+Parameter set: opencode-go, **xhigh reasoning level** (`--variant xhigh`; its default). Cloud reference model — **1 run only** (no repeat-mean; see README → "Run naming and repeats").
 
 ## Single run (xhigh reasoning)
 
-**Total 72/100** — gates 5/5 · rubric 67/95 · 2026-09-28. Run time **10m 22s**
-(14:15:40Z–14:26:02Z). **No output-limit nudge, no auto-compaction.** Patch 406 lines:
-modified `src/core/react-query/logs/queries.ts`, `src/pages/logs/LogsPage.tsx`; new
-`src/core/react-query/logs/types.ts`, `src/core/react-query/logs/mutations.ts`.
+**Total 72/100** — gates 5/5 · rubric 67/95 · 2026-09-28. Run time **10m 22s** (14:15:40Z–14:26:02Z). **No output-limit nudge, no auto-compaction.** Patch 406 lines: modified `src/core/react-query/logs/queries.ts`, `src/pages/logs/LogsPage.tsx`; new `src/core/react-query/logs/types.ts`, `src/core/react-query/logs/mutations.ts`.
 
-Capability subtotals: Discovery & server-contract **75%** · Implementation **61%** ·
-Integration & wiring **82%** · Build hygiene **100%** · Code quality **25%**.
+Capability subtotals: Discovery & server-contract **75%** · Implementation **61%** · Integration & wiring **82%** · Build hygiene **100%** · Code quality **25%**.
 
-> **Maintainer correction (spot-check).** The grader printed **75/100 (70/95)**; its line
-> scores are internally consistent. One line was corrected against the patch:
-> **#4 → 0** (was 0.5). The SignalR subscription appends backlog + per-entry `Log`, but
-> there is **no reconnect handling at all** (base builder has no `withAutomaticReconnect`,
-> no `onreconnected` reset) — the same situation scored **0** for deepseek-v4.1-flash,
-> glm-5.3-flash, and mimo-v2.6-flash. Line #24's stated reason was also wrong (the
-> commented search placeholder **is** removed), but its 0 stands: the old `logs/`
-> query file and `LogLineType` are retained.
-> Corrected: rubric 67/95, total **72/100**; Integration & wiring 89% → **82%**.
+> **Maintainer correction (spot-check).** The grader printed **75/100 (70/95)**; its line scores are internally consistent. One line was corrected against the patch: **#4 → 0** (was 0.5). The SignalR subscription appends backlog + per-entry `Log`, but there is **no reconnect handling at all** (base builder has no `withAutomaticReconnect`, no `onreconnected` reset) — the same situation scored **0** for deepseek-v4.1-flash, glm-5.3-flash, and mimo-v2.6-flash. Line #24's stated reason was also wrong (the commented search placeholder **is** removed), but its 0 stands: the old `logs/` query file and `LogLineType` are retained. Corrected: rubric 67/95, total **72/100**; Integration & wiring 89% → **82%**.
 
 | # | Score | Pts | Notes |
 |---|---|---|---|
@@ -51,11 +37,7 @@ Integration & wiring **82%** · Build hygiene **100%** · Code quality **25%**.
 
 **Key findings:**
 
-- Strongest integration of the cloud set: correct `NextOffset` cursor (5=1, the only cloud
-  run to get the read contract fully right), trailing-viewport effect pagination with no
-  render-phase side effect or debounce (17=1), correct endpoint switch (20=1), flattened
-  rendering (18=1), debounce + trim (11=1).
-- Trips the discovery discriminator: **no DSL passthrough** — always-`c#:` wrap (7=0.5) —
-  and no reconnect handling (4=0).
+- Strongest integration of the cloud set: correct `NextOffset` cursor (5=1, the only cloud run to get the read contract fully right), trailing-viewport effect pagination with no render-phase side effect or debounce (17=1), correct endpoint switch (20=1), flattened rendering (18=1), debounce + trim (11=1).
+- Trips the discovery discriminator: **no DSL passthrough** — always-`c#:` wrap (7=0.5) — and no reconnect handling (4=0).
 - Download is broken in practice: detached anchor + synchronous revoke (21=0).
 - Legacy `logs/` query file and `LogLineType` kept (24=0); no `IconButton` loading (23=0).

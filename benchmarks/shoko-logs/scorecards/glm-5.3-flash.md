@@ -1,22 +1,12 @@
 # glm-5.3-flash — scores
 
-Parameter set: opencode-go. Cloud reference model — **1 run per reasoning level** (no
-repeat-mean; see README → "Run naming and repeats"). One level tested: **high**.
+Parameter set: opencode-go. Cloud reference model — **1 run per reasoning level** (no repeat-mean; see README → "Run naming and repeats"). One level tested: **high**.
 
 ## Single run (high reasoning)
 
-**Total 64.5/100** — gates 5/5 · rubric 59.5/95 · 2026-09-28. Single run (cloud; no
-repeat-mean). Run time **10.2 min** (12:57:31Z–13:07:44Z). **No output-limit nudge, no
-auto-compaction.** Patch 438 lines across 5 files: `src/pages/logs/LogsPage.tsx`,
-`src/core/react-query/logs/queries.ts`, new `src/core/react-query/logs/types.ts`, new
-`src/core/react-query/logs/mutations.ts`, `src/components/Input/IconButton.tsx`.
-Orchestrator spot-checked (hardcoded case-sensitive `` `c:${search}` `` DSL;
-`getNextPageParam` = `lastPageParam + lastPage.Entries.length` ignoring `NextOffset`; no
-reconnect handler; detached anchor + synchronous `revokeObjectURL`; filtered/unfiltered
-endpoint switch; `IconButton` `loading` pass-through) — all confirmed.
+**Total 64.5/100** — gates 5/5 · rubric 59.5/95 · 2026-09-28. Single run (cloud; no repeat-mean). Run time **10.2 min** (12:57:31Z–13:07:44Z). **No output-limit nudge, no auto-compaction.** Patch 438 lines across 5 files: `src/pages/logs/LogsPage.tsx`, `src/core/react-query/logs/queries.ts`, new `src/core/react-query/logs/types.ts`, new `src/core/react-query/logs/mutations.ts`, `src/components/Input/IconButton.tsx`. Orchestrator spot-checked (hardcoded case-sensitive `` `c:${search}` `` DSL; `getNextPageParam` = `lastPageParam + lastPage.Entries.length` ignoring `NextOffset`; no reconnect handler; detached anchor + synchronous `revokeObjectURL`; filtered/unfiltered endpoint switch; `IconButton` `loading` pass-through) — all confirmed.
 
-Capability subtotals: Discovery & server-contract **25%** · Implementation **64%** ·
-Integration & wiring **82%** · Build hygiene **100%** · Code quality **50%**.
+Capability subtotals: Discovery & server-contract **25%** · Implementation **64%** · Integration & wiring **82%** · Build hygiene **100%** · Code quality **50%**.
 
 | # | Score | Notes |
 |---|---|---|
@@ -48,10 +38,6 @@ Integration & wiring **82%** · Build hygiene **100%** · Code quality **50%**.
 
 **Key findings:**
 
-- Broad, build-clean delivery: search/live switching, 250 ms debounce, six server-side
-  level chips, filtered/unfiltered endpoint selection, download spinner + error toast,
-  and `IconButton` loading are all wired (Integration & wiring 82%).
-- Misses the server contract where it matters most: no DSL passthrough and a
-  case-sensitive `` `c:` `` search (7=0); pagination ignores the server `NextOffset`
-  cursor (5=0.5); no reconnect reset (4=0).
+- Broad, build-clean delivery: search/live switching, 250 ms debounce, six server-side level chips, filtered/unfiltered endpoint selection, download spinner + error toast, and `IconButton` loading are all wired (Integration & wiring 82%).
+- Misses the server contract where it matters most: no DSL passthrough and a case-sensitive `` `c:` `` search (7=0); pagination ignores the server `NextOffset` cursor (5=0.5); no reconnect reset (4=0).
 - Download is wired but browser-fragile: detached anchor + synchronous revoke (21=0).

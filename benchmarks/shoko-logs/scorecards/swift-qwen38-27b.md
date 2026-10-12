@@ -2,8 +2,7 @@
 
 Parameter set: Swift-1.5-INT4 vLLM, fp8 KV. 2-repeat mean per reasoning level.
 
-> **Note:** the low reasoning repeat 1 run was **auto-compacted** (native compaction; a
-> harness intervention, not part of the task) — see `scorecard.md` → "Auto-compactions".
+> **Note:** the low reasoning repeat 1 run was **auto-compacted** (native compaction; a harness intervention, not part of the task) — see `scorecard.md` → "Auto-compactions".
 
 ## Low reasoning
 

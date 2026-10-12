@@ -4,8 +4,7 @@ Run on the **moe-cache fork** (cache 80, 262k ctx, MTP on) on 2026-09-28.
 
 ## Run — 2026-09-28
 
-Served as `katcoder-apex-i-compact` on the GenerelSchwerz moe-cache fork engine.
-No nudges, no auto-compactions.
+Served as `katcoder-apex-i-compact` on the GenerelSchwerz moe-cache fork engine. No nudges, no auto-compactions.
 
 ### Repeat 1 of 2
 
@@ -76,11 +75,5 @@ No nudges, no auto-compactions.
 | r2 | 61 | 66 | 11m52s |
 | **Mean** | **61.25** | **66.25** | — |
 
-**Key findings:** solid server-contract discovery both repeats (line 5 full), gates clean
-both; misses DSL (r1 0 / r2 0.5), reconnect reset (4=0 both), header hint (13=0 both),
-chip tooltips, and `IconButton` loading. Each repeat carries one load-bearing wiring break:
-r1's unreliable snapshot-based scroll lock (14=0) and sync-revoke download (21=0.5); r2's
-`useRef`-captured `checkLoadMore` making later pages unreachable (17=0) plus filtered
-download hitting the wrong endpoint (20=0.5). Consistent KAT pattern: correct primitives +
-contract discovery, fragile composition.
+**Key findings:** solid server-contract discovery both repeats (line 5 full), gates clean both; misses DSL (r1 0 / r2 0.5), reconnect reset (4=0 both), header hint (13=0 both), chip tooltips, and `IconButton` loading. Each repeat carries one load-bearing wiring break: r1's unreliable snapshot-based scroll lock (14=0) and sync-revoke download (21=0.5); r2's `useRef`-captured `checkLoadMore` making later pages unreachable (17=0) plus filtered download hitting the wrong endpoint (20=0.5). Consistent KAT pattern: correct primitives + contract discovery, fragile composition.
 

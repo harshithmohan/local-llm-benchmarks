@@ -10,11 +10,8 @@ Updated: 2026-10-10 · model cards: [Rig 1](../../models/rig1-3060/qwen36-35b-a3
 
 ## Notes
 
-C1 is at ceiling (77/77) on all three rows: with the fixed protocol no cell fails, so this comparison
-can only show degradation, not improvement.
+C1 is at ceiling (77/77) on all three rows: with the fixed protocol no cell fails, so this comparison can only show degradation, not improvement.
 
-C3 reached the same 2/3 compliant + 1 partial level on all three rows while the penalty figure
-differed (−19.6%, +0.0%, +11.0%), so the compliance level is stable and the penalty varies run to
-run on a 256-token task.
+C3 reached the same 2/3 compliant + 1 partial level on all three rows while the penalty figure differed (−19.6%, +0.0%, +11.0%), so the compliance level is stable and the penalty varies run to run on a 256-token task.
 
 C2 is 11/13 on both q8_0 rows and 10/13 on the UD-IQ4_XS q4_0 row.

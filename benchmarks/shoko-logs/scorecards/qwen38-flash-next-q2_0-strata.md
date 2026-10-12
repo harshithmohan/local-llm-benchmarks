@@ -142,8 +142,7 @@ Parameter set: Strata, int8 KV, medium reasoning.
 
 ## Xhigh reasoning
 
-Parameter set: Strata, int8 KV, xhigh reasoning (the engine's template default when the client
-sends no reasoning effort).
+Parameter set: Strata, int8 KV, xhigh reasoning (the engine's template default when the client sends no reasoning effort).
 
 ### Repeat 1 of 2
 
@@ -224,5 +223,4 @@ sends no reasoning effort).
 | xhigh | r2 | 69.5 | 74.5 | 21.4 |
 | **xhigh** | **Mean** | **67.5** | **72.5** | **19.8–21.4** |
 
-Run time is wall-clock per run (fresh opencode session, start → last message), so it includes
-model load; min–max is over the two repeats. No nudges or auto-compactions in any repeat.
+Run time is wall-clock per run (fresh opencode session, start → last message), so it includes model load; min–max is over the two repeats. No nudges or auto-compactions in any repeat.

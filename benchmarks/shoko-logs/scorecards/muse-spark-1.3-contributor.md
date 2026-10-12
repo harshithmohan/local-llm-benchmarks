@@ -1,30 +1,16 @@
 # muse-spark-1.3-contributor — scores
 
-Parameter set: opencode-go. Cloud reference model — **1 run per reasoning level** (no
-repeat-mean; see README → "Run naming and repeats"). One level tested: **xhigh**.
+Parameter set: opencode-go. Cloud reference model — **1 run per reasoning level** (no repeat-mean; see README → "Run naming and repeats"). One level tested: **xhigh**.
 
 ## Single run (xhigh reasoning)
 
-**Total 66.0/100** — gates 5/5 · rubric 61.0/95 · 2026-09-28. Run time **11m 57s**
-(14:46:16Z–14:58:13Z). **No output-limit nudge, no auto-compaction.** Patch 466 lines
-across 4 files: modified `src/core/react-query/logs/queries.ts`,
-`src/core/types/api/common.ts` (removed `LogLineType`), `src/pages/logs/LogsPage.tsx`;
-new `src/core/react-query/logs/types.ts`.
+**Total 66.0/100** — gates 5/5 · rubric 61.0/95 · 2026-09-28. Run time **11m 57s** (14:46:16Z–14:58:13Z). **No output-limit nudge, no auto-compaction.** Patch 466 lines across 4 files: modified `src/core/react-query/logs/queries.ts`, `src/core/types/api/common.ts` (removed `LogLineType`), `src/pages/logs/LogsPage.tsx`; new `src/core/react-query/logs/types.ts`.
 
-Capability subtotals: Discovery & server-contract **50%** · Implementation **66%** ·
-Integration & wiring **72%** · Build hygiene **100%** · Code quality **50%**.
+Capability subtotals: Discovery & server-contract **50%** · Implementation **66%** · Integration & wiring **72%** · Build hygiene **100%** · Code quality **50%**.
 
 > **Maintainer corrections (spot-check).** Two lines were corrected against the patch:
-> - **#7 → 0.5** (was 0). The query sends `` message: search === '' ? undefined :
->   `c#:${search}` `` — a non-empty-guarded `c#:` wrap, i.e. a valid case-insensitive
->   contains, the same partial-credit behavior deepseek/qwen3.8-flash/mimo received.
->   Only the DSL passthrough prefix-check half is missing → half credit.
-> - **#16 → 1** (was 0.5). The live view renders an `mdiLoading` spinner whenever
->   `logLines.length === 0`, which satisfies the empty-tail requirement; the grader
->   docked it for the (separately-scored) missing reconnect reset, which the cohort does
->   not double-count (deepseek/glm/mimo all scored 16=1 with 4=0).
-> All other line scores verified; the sheet's arithmetic was self-consistent
-> (54.5/95 + 5 gates = 59.5 before these two fixes).
+> - **#7 → 0.5** (was 0). The query sends `` message: search === '' ? undefined : `c#:${search}` `` — a non-empty-guarded `c#:` wrap, i.e. a valid case-insensitive contains, the same partial-credit behavior deepseek/qwen3.8-flash/mimo received. Only the DSL passthrough prefix-check half is missing → half credit.
+> - **#16 → 1** (was 0.5). The live view renders an `mdiLoading` spinner whenever `logLines.length === 0`, which satisfies the empty-tail requirement; the grader docked it for the (separately-scored) missing reconnect reset, which the cohort does not double-count (deepseek/glm/mimo all scored 16=1 with 4=0). All other line scores verified; the sheet's arithmetic was self-consistent (54.5/95 + 5 gates = 59.5 before these two fixes).
 
 | # | Score | Pts | Notes |
 |---|---|---|---|
@@ -56,11 +42,6 @@ Integration & wiring **72%** · Build hygiene **100%** · Code quality **50%**.
 
 **Key findings:**
 
-- Build-clean, broad delivery: correct read + download contract (endpoint switch,
-  singular `level`/`message`, ascending reads), stable sorted query key, 250 ms debounce,
-  six level chips, live/search switching, flattened result pages, spinner + toast.
-- Trips the discovery discriminator: no DSL passthrough (7=0.5) and pagination stops on
-  short pages (5=0.5); no reconnect reset (4=0).
-- Rendering is thinner than the reference (no logger/caller/exception in the row, 18=0.5)
-  and pagination is debounced without a phantom loader row (17=0.5, 19=0.5); download
-  revokes synchronously (21=0.5); `IconButton` loading absent (23=0).
+- Build-clean, broad delivery: correct read + download contract (endpoint switch, singular `level`/`message`, ascending reads), stable sorted query key, 250 ms debounce, six level chips, live/search switching, flattened result pages, spinner + toast.
+- Trips the discovery discriminator: no DSL passthrough (7=0.5) and pagination stops on short pages (5=0.5); no reconnect reset (4=0).
+- Rendering is thinner than the reference (no logger/caller/exception in the row, 18=0.5) and pagination is debounced without a phantom loader row (17=0.5, 19=0.5); download revokes synchronously (21=0.5); `IconButton` loading absent (23=0).

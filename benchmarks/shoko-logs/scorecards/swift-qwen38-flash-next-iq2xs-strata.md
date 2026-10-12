@@ -2,9 +2,7 @@
 
 Line weights mirror `rubric.md` (gates 1–3 = 5 pts; lines 4–25 = 95 pts). Model = `swift-qwen38-flash-next-iq2xs-strata` (Strata pack engine, Swift-1.5 IQ2_XS fine-tune). Grader `opencode-go/gpt-6-luna`, static against the exported patch; the line scores below carry maintainer spot-checks applied against the recorded cohort precedent in `scorecards/qwen38-flash-next-q2_0-strata.md`.
 
-> **Retired 2026-10-09.** The checkpoint was dropped from the serving configuration on these
-> results, so its rows were removed from `scorecard.md`; this file is the surviving record. See
-> [models/rig1-3060/archive/swift-qwen38-flash-next.md](../../../models/rig1-3060/archive/swift-qwen38-flash-next.md).
+> **Retired 2026-10-09.** The checkpoint was dropped from the serving configuration on these results, so its rows were removed from `scorecard.md`; this file is the surviving record. See [models/rig1-3060/archive/swift-qwen38-flash-next.md](../../../models/rig1-3060/archive/swift-qwen38-flash-next.md).
 
 ## Low reasoning
 

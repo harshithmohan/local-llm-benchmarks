@@ -4,8 +4,7 @@ Line weights mirror `rubric.md` (gates 1–3 = 5 pts; lines 4–25 = 95 pts).
 
 ## Xhigh reasoning
 
-Parameter set: Strata, int8 KV, xhigh reasoning (GSQ-RCO IQ3_XXS quant, 200k ctx,
-`--prefill auto` @ 95% lend cap → 5632 chunk, MTP on).
+Parameter set: Strata, int8 KV, xhigh reasoning (GSQ-RCO IQ3_XXS quant, 200k ctx, `--prefill auto` @ 95% lend cap → 5632 chunk, MTP on).
 
 ### Repeat 1 of 2
 
@@ -36,26 +35,15 @@ Parameter set: Strata, int8 KV, xhigh reasoning (GSQ-RCO IQ3_XXS quant, 200k ctx
 | 24 | 0.5 | Removes the commented placeholder, but retains the legacy `logs/queries.ts` and `LogLineType`; no new unused exports/imports identified. |
 | 25 | 0.5 | Defines `LogLevelValues` union for the chips, but `LogEntryType.Level` remains bare `string` instead of the union (`src/core/react-query/logs/types.ts:113-127`). |
 
-Spot-check: all 22 line scores verified by the maintainer against `patch.diff` and cohort
-precedent; no corrections. The run's implementation passed all three gates unassisted and
-needed no nudge or auto-compaction.
+Spot-check: all 22 line scores verified by the maintainer against `patch.diff` and cohort precedent; no corrections. The run's implementation passed all three gates unassisted and needed no nudge or auto-compaction.
 
 **Key findings (r1):**
 
-- Full read contract (5=1): `NextOffset` cursor, ascending pages, `limit` 100, singular
-  `level`/`message` — plus a shared `buildLogFilterParams` helper used by both the read and
-  download paths.
+- Full read contract (5=1): `NextOffset` cursor, ascending pages, `limit` 100, singular `level`/`message` — plus a shared `buildLogFilterParams` helper used by both the read and download paths.
 - Well-formed `c#:` wrap with no DSL passthrough (7=0.5), the cohort-standard position.
-- Composition: `useDebounceValue` 250 ms + trim (11=1, 12=1); trailing-row pagination
-  triggered from render through a 100 ms debounce (17=0.5, the `CollectionView.tsx`
-  pattern); post-list spinner instead of a phantom loader row (19=0.5); scroll-lock button
-  hidden under filters.
-- Download: correct endpoint switch (20=1) with loading + error toast (22=1), but a
-  detached anchor with synchronous `revokeObjectURL` (21=0).
-- Shared cohort misses: no reconnect reset (4=0), bare header (13=0), unsorted level key
-  (6=0.5), base scroll-lock heuristic (14=0.5), no `scrollRect` (15=0), no chip tooltips
-  (10=0.5), Logger/Caller dropped from rows (18=0.5), legacy `logs/queries.ts` kept
-  (24=0.5), `Level` bare `string` (25=0.5), `IconButton` loading absent (23=0).
+- Composition: `useDebounceValue` 250 ms + trim (11=1, 12=1); trailing-row pagination triggered from render through a 100 ms debounce (17=0.5, the `CollectionView.tsx` pattern); post-list spinner instead of a phantom loader row (19=0.5); scroll-lock button hidden under filters.
+- Download: correct endpoint switch (20=1) with loading + error toast (22=1), but a detached anchor with synchronous `revokeObjectURL` (21=0).
+- Shared cohort misses: no reconnect reset (4=0), bare header (13=0), unsorted level key (6=0.5), base scroll-lock heuristic (14=0.5), no `scrollRect` (15=0), no chip tooltips (10=0.5), Logger/Caller dropped from rows (18=0.5), legacy `logs/queries.ts` kept (24=0.5), `Level` bare `string` (25=0.5), `IconButton` loading absent (23=0).
 
 ### Repeat 2 of 2
 
@@ -86,27 +74,16 @@ needed no nudge or auto-compaction.
 | 24 | 0.5 | Removes the commented placeholder, but retains the legacy `logs/queries.ts` and `LogLineType` (in use by the SignalR tail); no new unused exports/imports (grader's 0 corrected to 0.5 — it claimed a placeholder remained that the patch deletes). |
 | 25 | 0.5 | `LogEntryType.Level` is the `LogLevelType` union, but the rendered `LogRowType.Level` stays bare `string`. |
 
-Spot-check: grader scored 65/100; maintainer corrected two lines — 12 (0.5→1) and
-24 (0→0.5) — bringing the rubric to 63/95 and the total to 68/100. The run passed all
-three gates unassisted and needed no nudge or auto-compaction.
+Spot-check: grader scored 65/100; maintainer corrected two lines — 12 (0.5→1) and 24 (0→0.5) — bringing the rubric to 63/95 and the total to 68/100. The run passed all three gates unassisted and needed no nudge or auto-compaction.
 
 **Key findings (r2):**
 
-- Same 4-file composition as r1. Keeps the original `rowVirtualizer.scrollRect` (15=1,
-  where r1 scored 0).
-- Pagination via a scroll handler: `handleScroll` fires a 100 ms-debounced `fetchNextPage`
-  within 200 px of the bottom, plus an auto-fill effect while the list is shorter than the
-  viewport (17=0.5, same as r1's render-phase trailing-row trigger).
-- `LogEntryType.Level` is the `LogLevelType` union in the DTO, but the rendered
-  `LogRowType.Level` is a bare `string` (25=0.5, same as r1 for a different reason).
-- Download: correct endpoint switch (20=1) with `loading` + error toast (22=1), but a
-  detached anchor with synchronous `revokeObjectURL` (21=0).
-- `clearFilters` resets both filters and the scroll-lock button is `disabled` under filters
-  (12=1).
-- Shared cohort misses: no reconnect reset (4=0), bare header (13=0), unsorted level key
-  (6=0.5), base scroll-lock heuristic (14=0.5), no chip tooltips (10=0.5), Logger/Caller
-  dropped from rows (18=0.5), legacy `logs/queries.ts` + `LogLineType` kept (24=0.5),
-  `IconButton` loading absent (23=0).
+- Same 4-file composition as r1. Keeps the original `rowVirtualizer.scrollRect` (15=1, where r1 scored 0).
+- Pagination via a scroll handler: `handleScroll` fires a 100 ms-debounced `fetchNextPage` within 200 px of the bottom, plus an auto-fill effect while the list is shorter than the viewport (17=0.5, same as r1's render-phase trailing-row trigger).
+- `LogEntryType.Level` is the `LogLevelType` union in the DTO, but the rendered `LogRowType.Level` is a bare `string` (25=0.5, same as r1 for a different reason).
+- Download: correct endpoint switch (20=1) with `loading` + error toast (22=1), but a detached anchor with synchronous `revokeObjectURL` (21=0).
+- `clearFilters` resets both filters and the scroll-lock button is `disabled` under filters (12=1).
+- Shared cohort misses: no reconnect reset (4=0), bare header (13=0), unsorted level key (6=0.5), base scroll-lock heuristic (14=0.5), no chip tooltips (10=0.5), Logger/Caller dropped from rows (18=0.5), legacy `logs/queries.ts` + `LogLineType` kept (24=0.5), `IconButton` loading absent (23=0).
 
 ## Summary
 
@@ -116,6 +93,4 @@ three gates unassisted and needed no nudge or auto-compaction.
 | xhigh | r2 | 63 | 68 | 20.1 |
 | xhigh | **mean** | **62.5** | **67.5** | **22.2** |
 
-Run time is wall-clock per run (fresh opencode session, start → last message), so it
-includes model load. No nudges or auto-compactions in either repeat. Both repeats
-recorded; this is the model's complete xhigh score.
+Run time is wall-clock per run (fresh opencode session, start → last message), so it includes model load. No nudges or auto-compactions in either repeat. Both repeats recorded; this is the model's complete xhigh score.

@@ -2,10 +2,7 @@
 
 Parameter set: default (kv-q8). 2-repeat mean.
 
-> Implementation runs used `limit.output` 16384. On **repeat 1** the model spent its
-> entire output budget on a planning chain-of-thought and made **no edits** on the cold
-> attempt; the patch was produced only after one nudge ("stop reasoning, implement").
-> **Repeat 2** needed no nudge. The nudge is a harness intervention, not part of the task.
+> Implementation runs used `limit.output` 16384. On **repeat 1** the model spent its entire output budget on a planning chain-of-thought and made **no edits** on the cold attempt; the patch was produced only after one nudge ("stop reasoning, implement"). **Repeat 2** needed no nudge. The nudge is a harness intervention, not part of the task.
 
 ## Run — 2026-09-27
 
@@ -38,9 +35,7 @@ Parameter set: default (kv-q8). 2-repeat mean.
 | 24 | 0.5 | 1.5/3 | Commented placeholder removed, but old `logs/queries.ts` and `LogLineType` remain. |
 | 25 | 0.5 | 1.5/3 | Result shape modeled; both log level fields bare `string`; no `any` leakage. |
 
-**Key findings:** read contract fully correct (5=10/10) and pagination path invoked
-(17=6/6), but the debounce ref is never wired to a query/render update (9, 11) and DSL is
-absent (7=0). No reconnect reset; download save flow incomplete.
+**Key findings:** read contract fully correct (5=10/10) and pagination path invoked (17=6/6), but the debounce ref is never wired to a query/render update (9, 11) and DSL is absent (7=0). No reconnect reset; download save flow incomplete.
 
 ### Repeat 2 of 2 (clean)
 
@@ -71,10 +66,7 @@ absent (7=0). No reconnect reset; download save flow incomplete.
 | 24 | 0 | 0/3 | Old `logs/queries.ts` path and `LogLineType` remain; only the commented placeholder was removed. |
 | 25 | 0.5 | 1.5/3 | Result shape + optional fields modeled; `LogLineType.Level` stays `string` rather than the `LogLevelType` union. |
 
-**Key findings:** read + download request parameters are correct (8=5/5, 20=6/6) and view
-switching works (9=7/7), but the active query mishandles the unwrapped axios response
-(5, 18) and never calls `fetchNextPage` (17=0). DSL absent (7=0). No download save flow
-(21=0).
+**Key findings:** read + download request parameters are correct (8=5/5, 20=6/6) and view switching works (9=7/7), but the active query mishandles the unwrapped axios response (5, 18) and never calls `fetchNextPage` (17=0). DSL absent (7=0). No download save flow (21=0).
 
 ## Capability rollup
 
@@ -95,11 +87,6 @@ switching works (9=7/7), but the active query mishandles the unwrapped axios res
 | 2 (clean) | 42.5 | 47.5 | 16.1 |
 | **Mean** | **46.0** | **51.0** | **16.1–26.0** |
 
-Run time is wall-clock per run (fresh opencode session, start → last message); repeat 1
-includes the nudge. Min–max is over the two repeats.
+Run time is wall-clock per run (fresh opencode session, start → last message); repeat 1 includes the nudge. Min–max is over the two repeats.
 
-Both runs nailed the request-contract naming but missed the DSL entirely (7=0 both) and
-left one fatal end-to-end break each: r1's debounce ref never triggers a query/render, so
-the search wiring is dead; r2's active query mishandles the unwrapped axios response and
-never pages. Neither produces a working download save flow. Build gates pass in both —
-build hygiene does not catch these runtime data-flow breaks. Spread 7 pts.
+Both runs nailed the request-contract naming but missed the DSL entirely (7=0 both) and left one fatal end-to-end break each: r1's debounce ref never triggers a query/render, so the search wiring is dead; r2's active query mishandles the unwrapped axios response and never pages. Neither produces a working download save flow. Build gates pass in both — build hygiene does not catch these runtime data-flow breaks. Spread 7 pts.

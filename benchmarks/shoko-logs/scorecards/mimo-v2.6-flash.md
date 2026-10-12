@@ -1,31 +1,16 @@
 # mimo-v2.6-flash — scores
 
-Parameter set: opencode-go (no reasoning levels). Cloud reference model — **1 run
-only** (no repeat-mean; see README → "Run naming and repeats").
+Parameter set: opencode-go (no reasoning levels). Cloud reference model — **1 run only** (no repeat-mean; see README → "Run naming and repeats").
 
 ## Single run
 
-**Total 67.5/100** — gates 5/5 · rubric 62.5/95 · 2026-09-28. Run time **33.0 min**
-(13:16:08Z–13:49:08Z). **No output-limit nudge, no auto-compaction.** Patch 467 lines
-across 5 files: `src/pages/logs/LogsPage.tsx`, `src/core/react-query/logs/queries.ts`,
-new `src/core/react-query/logs/helpers.ts`, new `src/core/react-query/logs/mutations.ts`,
-new `src/core/react-query/logs/types.ts`.
+**Total 67.5/100** — gates 5/5 · rubric 62.5/95 · 2026-09-28. Run time **33.0 min** (13:16:08Z–13:49:08Z). **No output-limit nudge, no auto-compaction.** Patch 467 lines across 5 files: `src/pages/logs/LogsPage.tsx`, `src/core/react-query/logs/queries.ts`, new `src/core/react-query/logs/helpers.ts`, new `src/core/react-query/logs/mutations.ts`, new `src/core/react-query/logs/types.ts`.
 
-Capability subtotals: Discovery & server-contract **50%** · Implementation **73%** ·
-Integration & wiring **74%** · Build hygiene **100%** · Code quality **25%**.
+Capability subtotals: Discovery & server-contract **50%** · Implementation **73%** · Integration & wiring **74%** · Build hygiene **100%** · Code quality **25%**.
 
-> **Maintainer corrections (spot-check).** The grader printed **59.5/100 (54.5/95)**, but
-> its own line scores sum to **62.5/100** — the stated subtotal was a summation error.
-> Two lines were corrected against the patch:
-> - **#7 → 0.5** (was 0). The helper sends `` message = `c#:${search}` `` — the `c#:` wrap
->   **with** the colon is a valid case-insensitive contains, the same behavior deepseek
->   (7=0.5) and qwen3.8-flash (7=0.5) received. Only the DSL passthrough
->   prefix-check half is missing → half credit. (0 is reserved for the malformed
->   missing-colon `c#${x}` wrap, e.g. qwen38-27b r2 / swift r1.)
-> - **#24 left at 0**, but the grader's reason was wrong: the commented-out search
->   placeholder **was** removed (patch removes the `{/* <Input … placeholder="Search
->   Logs..." */}` block). The zero is sustained on the rubric's primary requirement —
->   the reference's old `logs/` query file and `LogLineType` are **not** removed.
+> **Maintainer corrections (spot-check).** The grader printed **59.5/100 (54.5/95)**, but its own line scores sum to **62.5/100** — the stated subtotal was a summation error. Two lines were corrected against the patch:
+> - **#7 → 0.5** (was 0). The helper sends `` message = `c#:${search}` `` — the `c#:` wrap **with** the colon is a valid case-insensitive contains, the same behavior deepseek (7=0.5) and qwen3.8-flash (7=0.5) received. Only the DSL passthrough prefix-check half is missing → half credit. (0 is reserved for the malformed missing-colon `c#${x}` wrap, e.g. qwen38-27b r2 / swift r1.)
+> - **#24 left at 0**, but the grader's reason was wrong: the commented-out search placeholder **was** removed (patch removes the `{/* <Input … placeholder="Search Logs..." */}` block). The zero is sustained on the rubric's primary requirement — the reference's old `logs/` query file and `LogLineType` are **not** removed.
 
 | # | Score | Pts | Notes |
 |---|---|---|---|
@@ -54,11 +39,6 @@ Integration & wiring **74%** · Build hygiene **100%** · Code quality **25%**.
 
 **Key findings:**
 
-- Solid, end-to-end wiring for a no-reasoning model: correct read + download endpoints
-  and param names, live tail kept running, working infinite scroll, six level chips,
-  debounced search, loading/empty states, and `IconButton`-free download button.
-- Trips the benchmark discriminator: **no DSL passthrough** (7=0.5), and pagination both
-  stops on short pages (5=0.5) and runs as a render-phase debounced side effect (17=0.5).
-- Versus the earlier sample: most wiring was kept, but pagination now runs as a
-  render-phase debounced side effect (17=0.5), legacy types are retained (24=0), and no
-  `IconButton` loading was added (23=0).
+- Solid, end-to-end wiring for a no-reasoning model: correct read + download endpoints and param names, live tail kept running, working infinite scroll, six level chips, debounced search, loading/empty states, and `IconButton`-free download button.
+- Trips the benchmark discriminator: **no DSL passthrough** (7=0.5), and pagination both stops on short pages (5=0.5) and runs as a render-phase debounced side effect (17=0.5).
+- Versus the earlier sample: most wiring was kept, but pagination now runs as a render-phase debounced side effect (17=0.5), legacy types are retained (24=0), and no `IconButton` loading was added (23=0).
