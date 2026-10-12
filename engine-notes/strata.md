@@ -127,6 +127,8 @@ Flags used on this benchmark:
 | context extension | `--rope-scaling yarn --rope-scale F --yarn-orig-ctx N` | same names |
 | sampling | `--temp` / `--top-k` / `--min-p` / `--seed` | `--temperature` / `--top-k` / `--top-p` / `--seed` |
 
+Known issue: [issues.md](../issues.md) §7 - a reasoning-only assistant turn is dropped from the prompt.
+
 ## Validation
 
 The engine prints one line per request - `request prompt P cached C output O prompt_read R ms
