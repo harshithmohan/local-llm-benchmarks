@@ -16,7 +16,7 @@ The **model is the unit**: each card covers all of a model's quants, and near-id
 
 | Model | Quant | Level | Outcome | Gates | Final A / B | Total model time (min) | Notes |
 |---|---|---|---|---|---|---|---|
-_No runs recorded yet._
+| qwen36-35b-a3b | UD-IQ4_XS | default | not converged | ✅✅✅ | 67.5 / 30.5 | 26.3 | Stage 2's first turn ended with zero edits (a zero-work stop, not an output-cap nudge — this trajectory hit no cap) and was resumed once |
 
 ### opencode-go (cloud) models
 
