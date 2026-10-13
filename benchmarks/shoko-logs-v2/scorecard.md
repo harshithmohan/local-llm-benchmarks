@@ -1,6 +1,6 @@
 # Consolidated score card (v2) — shoko-logs
 
-Two **independent 0–100 scores per stage, never summed** (see `README.md` → "Why v2" and `rubric.md`): **Score A** = ticket conformance (only what `prompt.md` asks for), **Score B** = robustness & reference fidelity (behaviors the ticket leaves unstated). Build gates (`pnpm tscheck` / `pnpm lint` / `pnpm build`) are a **precondition**, shown `✅/❌`, not points.
+Two **independent 0–100 scores per stage, never summed** (see `README.md` → "Why v2" and `rubric.md`): **Score A** = ticket conformance (only what `prompt.md` asks for), **Score B** = robustness & reference fidelity (behaviors the ticket leaves unstated). Build gates (`pnpm tscheck` / `pnpm lint` / `pnpm build`) are a **precondition**, not points — a stage carries a score only if all three pass, and the per-stage gate results are in the card.
 
 Which runs count:
 
@@ -8,21 +8,21 @@ Which runs count:
 - **Outcome** is `converged: stage 0|1|2`, or **`not converged`** = still red after two rounds. *Converged* means the gates pass **and** the runtime harness passes in full (37/37 today). "Not converged" is a published result, never re-run or averaged (see README → "Method").
 - A stage that needed a nudge is flagged in the card so its number is read with that help in mind.
 
-Per-model breakdown in `scorecards/<model>.md` (one card per model, a row per quant, one block per stage); run artifacts under `runs/<model>/` are deleted once recorded — the scorecards are the persistent record. The tables below keep the **final score** and the **total model time** only; per-stage scores, harness results and per-stage model times live in the card.
+Per-model breakdown in `scorecards/<model>.md` (one card per model, a row per quant, one block per stage); run artifacts under `runs/<model>/` are deleted once recorded — the scorecards are the persistent record. The tables below carry each stage's Score A/B and the **total model time**; harness results and per-stage model times live in the card.
 
 The **model is the unit**: each card covers all of a model's quants, and near-identical quants across rigs are collapsed — bench one and mark the other `— (not run: duplicate of <quant>)` rather than benching both.
 
 ### Local (self-hosted) models
 
-| Model | Quant | Level | Outcome | Gates | Final A / B | Total model time (min) | Notes |
-|---|---|---|---|---|---|---|---|
-| qwen36-35b-a3b | UD-IQ4_XS | default | not converged | ✅✅✅ | 67.5 / 30.5 | 26.3 | Stage 2's first turn ended with zero edits (a zero-work stop, not an output-cap nudge — this trajectory hit no cap) and was resumed once |
-| katcoder-v2.5-dev | APEX-I-Compact | default | not converged | ✅✅✅ | 38 / 37.5 | 21.8 | No output-cap nudge and no zero-work stop in any stage; the model compacted its own session via the host plugin in Stages 1–2 |
+| Model | Quant | Level | Outcome | Stage 0 A / B | Stage 1 A / B | Stage 2 A / B | Total model time (min) | Notes |
+|---|---|---|---|---|---|---|---|---|
+| qwen36-35b-a3b | UD-IQ4_XS | default | not converged | 15.5 / 25 | 55.5 / 19.5 | 67.5 / 30.5 | 26.3 | Stage 2's first turn ended with zero edits (a zero-work stop, not an output-cap nudge — this trajectory hit no cap) and was resumed once |
+| katcoder-v2.5-dev | APEX-I-Compact | default | not converged | 31 / 37.5 | 37.5 / 37.5 | 38 / 37.5 | 21.8 | No output-cap nudge and no zero-work stop in any stage; the model compacted its own session via the host plugin in Stages 1–2 |
 
 ### opencode-go (cloud) models
 
-| Model | Quant | Level | Outcome | Gates | Final A / B | Total model time (min) | Notes |
-|---|---|---|---|---|---|---|---|
+| Model | Quant | Level | Outcome | Stage 0 A / B | Stage 1 A / B | Stage 2 A / B | Total model time (min) | Notes |
+|---|---|---|---|---|---|---|---|---|
 _No runs recorded yet._
 
 ## Nudges
