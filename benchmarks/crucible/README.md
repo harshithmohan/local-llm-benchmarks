@@ -14,7 +14,7 @@ A suite-level benchmark run with [Crucible LLM](https://github.com/MadGoatHaz/cr
 |---|---|
 | **A · Speed** | single-stream decode t/s, prefill t/s, TTFT, ITL p50/p99, MTP ratio — **not used** (see below) |
 | **B · Concurrency** | parallel-stream sweep 1 → 32, and the practical sweet spot — **not used** (see below) |
-| **C1 · NIAH** | needle-in-a-haystack: 7 context sizes (2k → 128k) × 11 depths = 77 cells |
+| **C1 · NIAH** | needle-in-a-haystack: 8 context sizes (16k → 512k) × 5 depths (0/25/50/75/100 %) = 40 cells, trimmed per run to the model's served context |
 | **C2 · Reasoning** | 13 deterministic math / logic / code challenges, strict checkers (no LLM-judge) |
 | **C3 · Structured** | JSON compliance over 3 schema-complexity levels, plus the grammar speed penalty |
 | **D · Energy** | GPU power/energy (NVIDIA NVML / AMD sysfs / Intel Level Zero), Joules/token, $/1M tokens — **not used** (see below) |
@@ -53,7 +53,7 @@ Crucible does **not** follow this repo's inference-timing protocol ([methodology
 - TTFT / ITL are measured by Crucible's **own client cycle clock** (`quanta`), not read from the server `timings` object.
 - Cold cache is approximated by prepending a **unique random prefix** (`--nocache`), not by `cache_prompt:false`.
 - Token counts come from the server's `usage.completion_tokens` (authoritative), with a `chars/4` estimate flag as a fallback.
-- The run log reports C1 as a `passed / 77` aggregate; the C1 context ladder is runtime-configurable since **v0.1.5** (`--niah-contexts` / `--niah-depths` override the default 2k→128k × 11-depth 77-cell matrix, and `--niah-custom <size>` collapses it to one size), and the `--json` output carries a per-cell `niah` section. This suite runs without `--json`, so its `run.log` keeps the aggregate.
+- The run log reports C1 as a `passed / N` aggregate. This suite pins the C1 ladder to **8 context sizes — 16k, 32k, 64k, 128k, 160k, 192k, 256k, 512k — × 5 depths (0/25/50/75/100 %) = 40 cells**, trimmed per run: any cell whose size plus the 2048-token C1 budget would exceed the model's served context is dropped, so `N` is the fitted cell count and is recorded with the row. The sizes cover every served tier in this repo (128k; 160k for the 176128 tier; 192k for the 200000 tier; 256k for 262144; 512k for the 524288 YaRN-2× entries). The ladder is runtime-configurable in Crucible since **v0.1.5** (`--niah-contexts` / `--niah-depths`, and `--niah-custom <size>` which collapses it to one size), and the `--json` output carries a per-cell `niah` section; this suite runs without `--json`, so its `run.log` keeps the aggregate. Haystack sizing needs the served model's `tokenizer.json` (`--tokenizer`); without it Crucible falls back to a `chars/4` estimate and the nominal sizes do not correspond to real tokens.
 - It requires a model id (bare rig ids); `/v1/models` discovery is available.
 
 ## Results

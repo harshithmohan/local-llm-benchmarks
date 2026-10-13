@@ -4,6 +4,9 @@
 # The Crucible binary and the target endpoint are NOT vendor-committed:
 #   CRUCIBLE_BIN       path to the crucible-llm binary (default: crucible-llm on PATH)
 #   CRUCIBLE_URL       OpenAI-compatible /v1 endpoint under test (default: localhost)
+#   CRUCIBLE_CTX       served context size of the model under test; REQUIRED for a `run` unless
+#                      CRUCIBLE_NIAH_CONTEXTS is set. Used to trim the C1 ladder.
+#   CRUCIBLE_NIAH_MAX_TOKENS  C1 per-cell generation budget (default: 2048); the trim uses this value.
 #   CRUCIBLE_TIMEOUT   connection/idle-read timeout in seconds (default: Crucible's own, 120)
 #   CRUCIBLE_TOKENIZER path to the served model's HF tokenizer.json, so C1's haystack is sized in
 #                      real tokens (default: absent -> Crucible's chars/4 estimate, flagged
@@ -32,8 +35,29 @@ TIMEOUT="${CRUCIBLE_TIMEOUT:-}"
 TOKENIZER="${CRUCIBLE_TOKENIZER:-}"
 DIR="$(cd "$(dirname "$0")" && pwd)"
 
+# C1 (NIAH) ladder pinned by this suite (see README -> Protocol deviations): 8 context sizes
+# x 5 depths = 40 cells max, trimmed per run to the model's served context.
+NIAH_LADDER_TOKENS="16000 32000 64000 128000 160000 192000 256000 512000"
+NIAH_DEPTHS="0,25,50,75,100"
+NIAH_BUDGET="${CRUCIBLE_NIAH_MAX_TOKENS:-2048}"
+
 # Model ids are bare; sanitize path separators so a 'provider/model' id stays one dir.
 sanitize() { printf '%s' "$1" | tr '/:' '__'; }
+
+# 16000 -> "16k"; a token count that is not a multiple of 1000 is emitted as the raw number.
+niah_label() { if [ $(( $1 % 1000 )) -eq 0 ]; then printf '%dk' "$(( $1 / 1000 ))"; else printf '%d' "$1"; fi; }
+
+# Emit a comma-separated CSV of ladder labels whose token size fits `ctx`
+# (value + budget <= ctx), ascending, with no trailing comma. Empty when none fit.
+niah_csv() {
+  local ctx="$1" csv="" t label
+  for t in $NIAH_LADDER_TOKENS; do
+    [ $(( t + NIAH_BUDGET )) -le "$ctx" ] || continue
+    label="$(niah_label "$t")"
+    if [ -z "$csv" ]; then csv="$label"; else csv="$csv,$label"; fi
+  done
+  printf '%s' "$csv"
+}
 
 cmd="${1:-help}"
 case "$cmd" in
@@ -50,8 +74,27 @@ case "$cmd" in
     # (Crucible's own default also pulls in the timing and concurrency engines). All three run
     # against one endpoint; name engines to run a subset.
     if [ "$#" -eq 0 ]; then set -- niah reasoning structured; fi
+    # C1 ladder: trim the pinned sizes to the served context unless Crucible's own env
+    # override is set (then pass no ladder flags and let Crucible read its env itself).
+    c1_ctx="${CRUCIBLE_CTX:-}"
+    c1_ladder="env"
+    for e in "$@"; do
+      [ "$e" = niah ] || continue
+      [ -z "${CRUCIBLE_NIAH_CONTEXTS:-}" ] || break
+      if [ -z "$c1_ctx" ]; then
+        echo "CRUCIBLE_CTX (served context size) is required to trim the C1 ladder" >&2
+        exit 1
+      fi
+      c1_ladder="$(niah_csv "$c1_ctx")"
+      if [ -z "$c1_ladder" ]; then
+        echo "no C1 ladder size fits ctx $c1_ctx" >&2
+        exit 1
+      fi
+      args+=(--niah-contexts "$c1_ladder" --niah-depths "$NIAH_DEPTHS")
+      break
+    done
     for e in "$@"; do args+=(--engine "$e"); done
-    echo "Run: $model  URL: $URL  Date: $(date +%F)"
+    echo "Run: $model  URL: $URL  Date: $(date +%F)  C1 ctx: ${c1_ctx:-env}  ladder: $c1_ladder"
     # Capability verdicts (C1/C2/C3) print to stderr — tee to run.log.
     "$BIN" "${args[@]}" 2> >(tee "$out/run.log" >&2) &
     binpid=$!
@@ -98,6 +141,8 @@ case "$cmd" in
     echo "usage: $0 run <model-id> [engine ...]  (default engines: niah reasoning structured)"
     echo "       $0 cleanup <model-id> [card-stem]   (card-stem defaults to the model id)"
     echo "  CRUCIBLE_BIN (default: crucible-llm)  CRUCIBLE_URL (default: http://localhost:8080/v1)"
+    echo "  CRUCIBLE_CTX (served context size; required to trim the C1 ladder unless CRUCIBLE_NIAH_CONTEXTS is set)"
+    echo "  CRUCIBLE_NIAH_MAX_TOKENS (C1 per-cell generation budget; default 2048)"
     echo "  CRUCIBLE_TIMEOUT (optional, seconds)"
     echo "  CRUCIBLE_TOKENIZER (optional, path to the served model's tokenizer.json)"
     echo "  CRUCIBLE_POLL (optional, seconds between live-stage lines; default 30)"

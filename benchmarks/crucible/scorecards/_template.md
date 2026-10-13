@@ -4,7 +4,7 @@ Updated: <YYYY-MM-DD> · [model card](../../models/<rig>/<model>.md) · [suite R
 
 | Quant | KV cache | ctx | C1 NIAH | C2 reasoning | C3 structured | Notes |
 |---|---|---|---|---|---|---|
-| <quant> | <q8_0 / f16 / …> | <ctx> | / 77 | / 13 | / 3 | |
+| <quant> | <q8_0 / f16 / …> | <ctx> | / <cells> | / 13 | / 3 | |
 
 ## Notes (optional — model-wide, not per row; delete if there is nothing to say)
 
