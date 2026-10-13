@@ -37,7 +37,7 @@ const LOCATOR_METHOD = /\blocator\.[A-Za-z]+:\s*/g;
  * It names the assertion API rather than a selector, so the whole call is reduced to a neutral
  * phrase - the clauses after it (`Expected: visible; Timeout: 10000ms`) carry the symptom.
  */
-const EXPECT_ASSERTION = /\bexpect\([^)]*\)\.[A-Za-z]+\([^)]*\)(\s*failed)?/g;
+const EXPECT_ASSERTION = /\bexpect\([^)]*\)(?:\.[A-Za-z]+)+\([^)]*\)(\s*failed)?/g;
 
 /** Prefixes that mark a line as a semantic, selector-free symptom. */
 const KEEP_PREFIXES = ['Expected', 'Received', 'Error:', 'Test timeout', 'Timeout', 'expect('];

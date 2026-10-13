@@ -1,6 +1,6 @@
 import { test, expect } from '../helpers/fixtures';
 import { openLogsPage } from '../helpers/app';
-import { errorToast, rows, searchInput } from '../helpers/selectors';
+import { errorAffordance, rows, searchInput } from '../helpers/selectors';
 import { SEARCH_PAGE_1, SEARCH_PAGE_2 } from '../fixtures/mock-data';
 
 /**
@@ -60,8 +60,9 @@ test.describe('A20 — stale in-flight reads / A21 — failure surfacing', () =>
     await searchInput(page).fill('boom');
 
     // A visible error affordance must appear. The empty-results state alone is not a
-    // failure signal, so require the distinct error affordance (the reference's toast).
-    await expect(errorToast(page)).toBeVisible();
-    await expect(errorToast(page)).toContainText(/error/i);
+    // failure signal, so require the distinct error affordance: the reference's toast,
+    // or an inline failure banner (the download's toast belongs to A13, not this line).
+    await expect(errorAffordance(page)).toBeVisible();
+    await expect(errorAffordance(page)).toContainText(/failed|failure|could not|unable to|went wrong|error/i);
   });
 });

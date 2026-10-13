@@ -4,7 +4,7 @@
 # usage:
 #   ./run.sh setup                        create the bench branch from base
 #   ./run.sh eval <run-name> [stage]      export the stage's patch to runs/<run-name>/
-#                                         (stage defaults to 0; gates are run by the grader)
+#                                         (stage defaults to 0; gates are run by the judge)
 #   ./run.sh cleanup <run-name>           delete the branch (patch must be exported)
 set -euo pipefail
 
@@ -27,7 +27,7 @@ case "$cmd" in
     echo "Branch $BRANCH created at $BASE."
     echo "Next: run the implementation headlessly from the common parent of the"
     echo "  Shoko-WebUI and ShokoServer checkouts:"
-    echo "  cd <parent> && opencode run --standalone --auto --agent build -m <model> \"\$(cat $DIR/prompt.md)\""
+    echo "  cd <parent> && opencode run --standalone --auto --agent build --thinking -m <model> \"\$(cat $DIR/prompt.md)\""
     echo "Then: $0 eval <run-name>"
     ;;
 
@@ -48,7 +48,7 @@ case "$cmd" in
     git reset -q
     echo
     echo "Patch exported: $out/patch-s$stage.diff ($(wc -l <"$out/patch-s$stage.diff") lines)"
-    echo "Next: grade into $out/score-s$stage.md (the grader runs the gates), then: $0 cleanup $name"
+    echo "Next: judge into $out/score-s$stage.md (the judge runs the gates), then: $0 cleanup $name"
     ;;
 
   cleanup)

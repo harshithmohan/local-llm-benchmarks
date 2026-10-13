@@ -27,7 +27,7 @@ the live tail once the filters are cleared. -->
 
 # Rubric (v2) — shoko-logs
 
-Score every line 0 / half / full. Score A and Score B are **independent 0–100 scores and are never summed** — that sum is exactly the conflation v2 removes. A line's points are listed in the tables below.
+Score every line 0 / half / full. **A half is not a judgement call**: it is available only where the line's own text below states a half criterion — otherwise the line is binary (full or zero). Score A and Score B are **independent 0–100 scores and are never summed** — that sum is exactly the conflation v2 removes. A line's points are listed in the tables below.
 
 - **Score A — Ticket conformance.** Only behaviors `prompt.md` explicitly requests. Graded at runtime by the harness (`harness/`) wherever a line is marked **[R]**; otherwise by static inspection of the patch. This is the headline "did the model build the ticket" number.
 - **Score B — Robustness & reference fidelity.** Behaviors the ticket deliberately does **not** state: reference-level polish that a production implementation has anyway. They are in scope, not extra credit — the run's target is the reference, and these are what a competent engineer applies without being told. A low Score B must never depress Score A. This is the "how close to production-grade" number. Most B lines are graded by static inspection of the patch; **B2 and B11 are behavioural** and are asserted at runtime by the harness (see the note under the table).
@@ -48,25 +48,25 @@ Every line is something `prompt.md` states. `[R]` = asserted by the runtime harn
 
 | # | Behavior (ticket) | Pts | Verify |
 |---|---|---:|---|
-| A1 | Live tail is the default view: SignalR subscription appends the connect backlog (`GetBacklog`) and each new entry (`Log`). | 5 | [R] |
-| A2 | Any active filter (non-empty search **or** ≥1 level chip) switches to the server-search view; clearing filters switches back to the live tail. | 5 | [R] |
+| A1 | Live tail is the default view: SignalR subscription appends the connect backlog (`GetBacklog`) and each new entry (`Log`). Half: either the backlog renders or later entries append, but not both. | 5 | [R] |
+| A2 | Any active filter (non-empty search **or** ≥1 level chip) switches to the server-search view; clearing filters switches back to the live tail. Half: exactly one of the two filter paths switches to the server view and clearing returns to the live tail, while the other path never switches. | 5 | [R] |
 | A3 | Empty or blank input is not a search filter (the view stays on the live tail). | 2 | [R] |
-| A4 | Six level chips (Trace…Critical), multi-select, filtering applied **server-side** (no client-side level filtering of the fetched history). | 4 | [R] |
-| A5 | Read request contract: `Range/Read` with the exact param names `level` (singular), `message`, `offset`, `limit`, `descending=false` (ascending); empty `level`/`message` omitted, never sent as empty strings. | 6 | [R] |
-| A6 | Pagination: next page is fetched automatically as the user scrolls toward the end, driven by the `NextOffset` cursor (next request uses the returned offset; `null` = exhausted, stop); pages arrive ascending, oldest→newest. Zero if no next-page fetch is ever invoked. | 7 | [R] |
-| A7 | Result rendering: fetched pages concatenate in order with no dropped or duplicated entries; each row renders at least timestamp, level, and message from the returned fields. | 5 | [R] |
-| A8 | First-fetch in-flight state, and an empty result with nothing loading shows an empty state distinct from "still loading" plus a Clear-filters action. | 4 | [R] |
+| A4 | Six level chips (Trace…Critical), multi-select, filtering applied **server-side** (no client-side level filtering of the fetched history). Half: all six chips render and one active chip filters server-side, but two or more active chips do not both reach the server. | 4 | [R] |
+| A5 | Read request contract: `Range/Read` with the exact param names `level` (singular), `message`, `offset`, `limit`, `descending=false` (ascending); empty `level`/`message` omitted, never sent as empty strings. Half: the chip-driven read carries the correct names and omits empties, while no text-driven read is ever observed. | 6 | [R] |
+| A6 | Pagination: next page is fetched automatically as the user scrolls toward the end, driven by the `NextOffset` cursor (next request uses the returned offset; `null` = exhausted, stop); pages arrive ascending, oldest→newest. Zero if no next-page fetch is ever invoked. Half: a next-page fetch does happen and the pages join in order, but the cursor chain or the stop-at-`null` rule is wrong. | 7 | [R] |
+| A7 | Result rendering: fetched pages concatenate in order with no dropped or duplicated entries; each row renders at least timestamp, level, and message from the returned fields. Half: page order is right but entries are dropped or duplicated, or a required field is missing from every row. | 5 | [R] |
+| A8 | First-fetch in-flight state, and an empty result with nothing loading shows an empty state distinct from "still loading" plus a Clear-filters action. Half: exactly one of the two states is demonstrated. | 4 | [R] |
 | A9 | Clear-filters resets both the search text and the level chips. | 3 | [R] |
-| A10 | While filters are active the scroll-to-bottom lock is not usable - disabled or absent both satisfy this - and it is usable again in the live tail once the filters are cleared. | 3 | [R] |
+| A10 | While filters are active the scroll-to-bottom lock is not usable - disabled or absent both satisfy this - and it is usable again in the live tail once the filters are cleared. Half: exactly one of the two holds (unusable while filtering; usable again once cleared). | 3 | [R] |
 | A11 | Download: no filters → the server's current log file; any filter → the filtered range using the same level/search filters. | 4 | [R] |
-| A12 | Download request contract: unfiltered hits `File/Current/Download`; filtered hits `Range/Download` with `level` (singular) + `message` correctly named. Wrong/absent param name = half at most. | 4 | [R] |
-| A13 | Download button shows a visible busy indicator while in flight; a failure produces an error toast. | 3 | [R] |
+| A12 | Download request contract: unfiltered hits `File/Current/Download`; filtered hits `Range/Download` with `level` (singular) + `message` correctly named. Half: endpoint selection is right and one of the two filter params is correctly named while the other is absent or misnamed. | 4 | [R] |
+| A13 | Download button shows a visible busy indicator while in flight; a failure produces an error toast. Half: exactly one of the two is demonstrated. | 3 | [R] |
 | A14 | Download actually saves in a browser: the click triggers a real, completed file download — whatever resource it hands the browser must outlive the download (an immediately-revoked URL, or a no-op, fails). | 1 | [S] |
 | A15 | The results list is virtualized — long lists are not rendered whole. | 1 | [S] |
-| A16 | Dead code the change obsoletes is removed (old log query file/types, any leftover search placeholder). | 1 | [S] |
-| A17 | **DSL pass-through**: a search expression that matches the server's prefix grammar is recognized and sent **unchanged** (the flags belong to the expression, not to a wrapping layer) — e.g. `^:GET /api` reaches `message` verbatim. The colon is what engages the grammar: a colon-less string (`^GET /api`) is a bare literal and is wrapped. The ticket states only that expressions must be honoured; the grammar itself must be **discovered from the server source**. | 17 | [R] |
-| A18 | **DSL wrap rule**: only plain, non-DSL input is wrapped as a case-insensitive contains (`c#:`); input already in the grammar is passed through, not wrapped. A string that merely contains a colon is plain input, not an expression: a colon-bearing literal (`http://x`, `a:b`) and a malformed head (`cfoo:bar`) are both wrapped. (Whether anything is sent at all for blank input is A3.) | 8 | [R] |
-| A19 | **Reconnect recovery**: on SignalR reconnect the tail resets so the fresh backlog replaces stale entries **without dropping entries that arrived around the reconnect** (any race-free ordering). | 8 | [R] |
+| A16 | Dead code the change obsoletes is removed (old log query file/types, any leftover search placeholder). Half: the leftover placeholder markup is gone, but an obsoleted query file or type the change replaces is kept. | 1 | [S] |
+| A17 | **DSL pass-through**: a search expression that matches the server's prefix grammar is recognized and sent **unchanged** (the flags belong to the expression, not to a wrapping layer) — e.g. `^:GET /api` reaches `message` verbatim. The colon is what engages the grammar: a colon-less string (`^GET /api`) is a bare literal and is wrapped. The ticket states only that expressions must be honoured; the grammar itself must be **discovered from the server source**. Half: at least one grammar form reaches `message` verbatim while another does not, or is never sent. | 12 | [R] |
+| A18 | **DSL wrap rule**: only plain, non-DSL input is wrapped as a case-insensitive contains (`c#:`); input already in the grammar is passed through, not wrapped. A string that merely contains a colon is plain input, not an expression: a colon-bearing literal (`http://x`, `a:b`) and a malformed head (`cfoo:bar`) are both wrapped. (Whether anything is sent at all for blank input is A3.) Half: plain input is wrapped correctly while a colon-bearing literal or a malformed head is misclassified. | 13 | [R] |
+| A19 | **Reconnect recovery**: on SignalR reconnect the tail resets so the fresh backlog replaces stale entries **without dropping entries that arrived around the reconnect** (any race-free ordering). Half: the fresh backlog replaces the stale entries, but an entry that arrived in the reconnect window is dropped. | 8 | [R] |
 | A20 | **Cancellation**: changing the filters cancels or ignores the in-flight search/read request — a stale response never renders over newer results. | 6 | [R] |
 | A21 | **Failure surfacing**: a failed read/search request produces a visible error state distinct from the "no results" empty state (download failures keep their toast — A13). | 3 | [R] |
 | | **Score A total** | **100** | |
@@ -77,17 +77,17 @@ Unstated in the ticket by design — in scope, not extra credit. These are the b
 
 | # | Behavior | Pts |
 |---|---|---:|
-| B1 | Level filter derived into a **stable, content-sensitive, order-independent** query key (sorted; a Set hashed directly, or toggle-order-significant, is half). | 11 |
-| B2 | Scroll lock (behavioral): unlocks on a genuine user scroll-up and **stays locked** through programmatic `scrollToIndex` and virtualizer measurement corrections. Re-engagement is **explicit** (the lock control) — a released follow is not silently re-engaged by scrolling back to the bottom. Grade the outcome; the bottom-distance check is one valid mechanism. While filters are active the control stays visible and merely unusable - removing it from the screen is the wrong answer. | 11 |
+| B1 | Level filter derived into a **stable, content-sensitive, order-independent** query key. Half: the key is content-sensitive but not order-independent - e.g. a sorted CSV is sent as the request param while the key itself hashes the set, so two toggle orders still collide. | 11 |
+| B2 | Scroll lock (behavioral): unlocks on a genuine user scroll-up and **stays locked** through programmatic `scrollToIndex` and virtualizer measurement corrections. Re-engagement is **explicit** (the lock control) — a released follow is not silently re-engaged by scrolling back to the bottom. Grade the outcome; the bottom-distance check is one valid mechanism. While filters are active the control stays visible and merely unusable - removing it from the screen is the wrong answer. Half: the follow behaviour works (new entries keep the newest pinned) and at least one of the other three holds; zero if the follow itself is broken. | 11 |
 | B3 | Virtualizer sized from live container dimensions (the `scrollRect` workaround), not a snapshot. | 11 |
-| B4 | Empty-tail spinner: shown while the live tail has no entries — including just after a reconnect reset — and gone once entries exist. | 12 |
-| B5 | Phantom loader row for a subsequent page (distinct from the first-fetch full-height state). | 9 |
+| B4 | Empty-tail spinner: shown while the live tail has no entries — including just after a reconnect reset — and gone once entries exist. Half: the initial empty-tail spinner shows, but the post-reconnect reset case does not. | 12 |
+| B5 | Phantom loader row for a subsequent page (distinct from the first-fetch full-height state). Half: a distinct loading-more affordance exists, but it sits outside the virtualized list rather than as a phantom row inside it. | 9 |
 | B6 | Level chips carry tooltips **and** active styling (active styling only = half). | 9 |
 | B7 | Header reflects mode (live-tail count vs. server-search hint). | 7 |
 | B8 | The shared `IconButton` gains a `loading` prop wired to the button (rewards the component extension, not merely a spinner). | 7 |
-| B9 | Typing quality: event/level/result types model the real API/event shape; `Level` is the `LogLevelType` union (not bare `string`); no `any` leakage. Grade against the DTO. | 9 |
+| B9 | Typing quality: event/level/result types model the real API/event shape; `Level` is the `LogLevelType` union (not bare `string`); no `any` leakage. Grade against the DTO. Half: no `any` leakage and the wire shapes are modelled, but `Level` is a bare `string` or one other clause fails. | 9 |
 | B10 | No **newly-added** unused exports (lint does not catch unused exports — check manually). Removal of code the change obsoletes is A16, not here. | 7 |
-| B11 | **Search-input discipline** (behavioral): rapid typing coalesces — a request per keystroke is a fail — and the value sent is trimmed. The interval itself is not pinned: the app's own search inputs vary. | 7 |
+| B11 | **Search-input discipline** (behavioral): rapid typing coalesces — a request per keystroke is a fail — and the value sent is trimmed. The interval itself is not pinned: the app's own search inputs vary. Half: exactly one of coalescing and trimming holds. | 7 |
 | | **Score B total** | **100** |
 
 B2 and B11 are **behavioural** and are asserted at runtime by the harness; every other B line is graded statically from the patch.

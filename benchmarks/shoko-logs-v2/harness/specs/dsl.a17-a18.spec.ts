@@ -5,9 +5,9 @@ import { searchInput } from '../helpers/selectors';
 /**
  * A17 / A18 — DSL-aware search (runtime).
  *
- * A17 (17): a search expression that matches the server's filter-expression prefix
+ * A17 (12): a search expression that matches the server's filter-expression prefix
  *           grammar is recognised and sent UNCHANGED (no `c#:` wrapping).
- * A18 (8):  only plain, non-DSL input is wrapped as a case-insensitive contains
+ * A18 (13): only plain, non-DSL input is wrapped as a case-insensitive contains
  *           (`c#:`); an empty search is neither wrapped nor sent.
  *
  * Grammar (rubric "Server contract" + ShokoServer `LogService.TryParseLogFilterDsl`):

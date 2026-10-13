@@ -1,6 +1,6 @@
 import { test, expect } from '../helpers/fixtures';
 import { openLogsPage } from '../helpers/app';
-import { downloadBusyIndicator, downloadButton, errorToast, levelChip, searchInput } from '../helpers/selectors';
+import { downloadBusyIndicator, downloadButton, downloadControlSignature, errorToast, levelChip, searchInput } from '../helpers/selectors';
 import type { RecordedRequest } from '../helpers/mock-server';
 
 /**
@@ -61,23 +61,28 @@ test.describe('A13 — busy state + error toast', () => {
     server.setDownload({ delayMs: 1500 });
 
     const button = downloadButton(page);
+    const idle = await downloadControlSignature(page);
     await button.click();
 
-    // A13: busy while in flight — the control disables itself (`loading` sets the
-    // button's `disabled` attribute)...
-    await expect(button).toBeDisabled();
-    // ...and shows a VISIBLE busy affordance (the `disabled` attribute alone is not a
-    // visible indicator). Tolerant chain (see `downloadBusyIndicator`): `aria-busy`,
-    // a `data-loading` marker, or the reference's overlaid spinner SVG inside it.
-    await expect(downloadBusyIndicator(page).first()).toBeVisible();
-    // A13: the affordance is gone once the request settles (this first download
-    // succeeds, so the button returns to its idle, enabled state). `.first()` +
-    // `toBeHidden()` (rather than `toHaveCount`) keeps the assertion stable across
-    // both the multi-match CSS list and any candidate's own affordance shape — an
-    // empty match set resolves `.first()` to nothing, which `toBeHidden()` treats as
-    // hidden, while a present spinner is visible.
-    await expect(downloadBusyIndicator(page).first()).toBeHidden({ timeout: 10_000 });
-    await expect(button).toBeEnabled();
+    // A13: busy while in flight — the control must show a VISIBLE affordance (a bare
+    // `disabled` attribute is not one). Two acceptable shapes: a marker the locator
+    // names (`aria-busy`, a `data-loading` marker, the reference's overlaid spinner
+    // SVG), or the control's own rendered content changing while the request is in
+    // flight (an icon swap). Polled, because the change races the request.
+    await expect
+      .poll(
+        async () =>
+          (await downloadBusyIndicator(page).count()) > 0 ||
+          (await downloadControlSignature(page)) !== idle,
+        { timeout: 5_000 },
+      )
+      .toBe(true);
+    // A13: the control returns to its idle appearance once the request settles (this
+    // first download succeeds). Compared against the signature captured before the
+    // click, so a control that stays busy forever fails here.
+    await expect
+      .poll(async () => (await downloadControlSignature(page)) === idle, { timeout: 10_000 })
+      .toBe(true);
 
     // A13: a failed download surfaces an error toast.
     server.setDownload({ status: 500 });

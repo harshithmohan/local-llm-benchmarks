@@ -68,6 +68,14 @@ test.describe('A3 — empty/blank input is not a filter (2 pts, [R])', () => {
 test.describe('A4 — chips filter server-side', () => {
   test('every read carries a level param while a chip is active', async ({ page, server }) => {
     await openLogsPage(page);
+
+    // A4: the ticket names the roster — Trace, Debug, Information, Warning, Error,
+    // Critical. A level with no chip at all is a conformance failure, and a two-chip
+    // click cannot detect a missing sixth, so the roster is asserted explicitly.
+    for (const level of ['Trace', 'Debug', 'Information', 'Warning', 'Error', 'Critical']) {
+      await expect(levelChip(page, level), `${level} chip is present`).toHaveCount(1);
+    }
+
     await levelChip(page, 'Trace').click();
     await levelChip(page, 'Error').click();
 

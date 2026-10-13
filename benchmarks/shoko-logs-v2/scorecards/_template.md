@@ -41,8 +41,10 @@ lines A1–A21, graded from `prompt.md` only) and **Score B** (robustness & refe
 lines B1–B11). Build gates are a precondition, shown ✅/❌, never points. Per stage also record
 the harness result (`x/37`), model time (that stage's implementation run — harness and grading
 time are excluded), context size, and a per-stage flag for OUTPUT-CAP NUDGES (a run that burned
-its output budget on reasoning and stopped unimplemented is resumed with "stop planning and
-implement", at most five times per stage). A nudge is a harness/provider intervention, not
+its output budget on reasoning and stopped unimplemented **at the cap** is resumed with "stop
+planning and implement", at most five times per stage; a turn that stops unimplemented
+*without* hitting the cap is resumed too, but it is **not a nudge** and is recorded separately
+as a zero-work stop). A nudge is a harness/provider intervention, not
 part of the task — record the count so a reader knows how much help the number came with. A
 genuine environment failure (dropped socket -> 0-byte patch, model server unloaded mid-run) is
 NOT recorded: the stage is re-run. A stage whose build is **red** cannot carry a Score-A number
@@ -71,7 +73,7 @@ Reviewer: `<reviewer model#variant>` · Judge: `<judge model#variant>` — pinne
 |---|---|---|---|---|---|---|---|
 | <quant> | <paramset, e.g. kv-q8 / w4a16 fp8 KV / Strata int8 KV> | <level> | converged: stage <0\|1\|2> \| not converged | | | ✅ tscheck · ✅ lint · ✅ build | |
 
-> <optional blockquote: retired notice / output-cap nudge / maintainer correction>
+> <optional blockquote: retired notice / nudge / maintainer correction>
 
 ## <Quant> — <Level> reasoning
 
@@ -82,7 +84,7 @@ Parameter set: <paramset + level — as in the row above; repeat only when a lat
 - Gates: ✅ / ❌
 - Harness: x/37
 - Score A: /100   Score B: /100
-- Flags: <output-cap nudges: N of max 5 | none>; context size:
+- Flags: <nudges: N of max 5 | none; zero-work stop: yes | no>; context size:
 - Findings:
 
 ### Review round 1 → Stage 1

@@ -52,12 +52,29 @@ export const searchInput = (page: Page): Locator =>
  * tooltip is `${active ? 'Hide' : 'Show'} ${level} logs`; the chip itself is the
  * button's text/accessible name. Prefer the tooltip attribute, fall back to the
  * accessible name so an independent implementation still resolves.
+ *
+ * The name match accepts the ticket's level word OR its common short form
+ * ("Info"/"Warn"/"Crit"), because these lines measure the chip's behaviour, never its
+ * spelling - an exact-name requirement made a four-letter abbreviation time out
+ * pagination, the parameter contract and the lock instead of measuring them, and made
+ * the A4 roster assertion read a present chip as missing.
  */
-export const levelChip = (page: Page, level: string): Locator =>
-  page
+const LEVEL_NAME: Record<string, RegExp> = {
+  trace: /^trace\b/i,
+  debug: /^debug\b/i,
+  information: /^info(rmation)?\b/i,
+  warning: /^warn(ing)?\b/i,
+  error: /^error\b/i,
+  critical: /^(critical|crit)\b/i,
+};
+
+export const levelChip = (page: Page, level: string): Locator => {
+  const name = LEVEL_NAME[level.toLowerCase()] ?? new RegExp(`^${level}\\b`, 'i');
+  return page
     .locator(`button[data-tooltip-content*="${level}" i]`)
-    .or(page.getByRole('button', { name: level, exact: true }))
+    .or(page.getByRole('button', { name }))
     .first();
+};
 
 /**
  * A level chip that currently PRESENTS AS ACTIVE (A9).
@@ -154,12 +171,54 @@ export const downloadBusyIndicator = (page: Page): Locator => {
     [
       ':scope[aria-busy="true"]',
       ':scope[data-loading]',
+      ':scope[data-busy]',
+      ':scope[data-state*="load" i]',
+      ':scope[data-state*="busy" i]',
+      ':scope[class*="spin" i]',
       ':scope [data-loading]',
       ':scope [class*="spin" i]',
+      ':scope [class*="loading" i]',
       ':scope svg:has(style)',
       ':scope svg:has([style*="animation"])',
     ].join(', '),
   );
+};
+
+/**
+ * The download control's rendered signature, for the busy signal the marker locator
+ * above cannot see.
+ *
+ * A13 asks for a *visible* busy indicator while a download is in flight. The locator
+ * can only recognise the shapes it names, and a conformant implementation may instead
+ * change the control itself — swapping a download glyph for a loading glyph, dimming or
+ * transforming it inline, or flipping a state attribute/class of its own — which need
+ * carry none of those markers. So the spec also samples this signature before the
+ * request and while it is in flight: either a recognised affordance appears, or the
+ * control's own appearance changes. Both are visible to the user, and a control that
+ * does nothing still fails, which is what the line is for.
+ *
+ * Deliberately excludes `disabled`: it is not a *visible* indicator, so a control that
+ * merely disables itself must not satisfy this check. What it does sample is the
+ * control's own rendering (inner HTML), its inline `style`, the state attributes that
+ * mean "working" (`aria-busy` / `data-loading` / `data-busy` / `data-state`), and any
+ * busy-ish class token it carries — a *change* in any of those, since a class that is
+ * simply always there cannot differ between the two samples.
+ */
+export const downloadControlSignature = async (page: Page): Promise<string> => {
+  const signature = await downloadButton(page)
+    .first()
+    .evaluate((el) => {
+      const busyClassToken = /[^\s"'<>]*(?:spin|load|busy|progress|pending)[^\s"'<>]*/gi;
+      const stateAttrs = ['aria-busy', 'data-loading', 'data-busy', 'data-state'];
+      return [
+        el.innerHTML,
+        el.getAttribute('style') ?? '',
+        ...stateAttrs.map((a) => `${a}=${el.getAttribute(a) ?? ''}`),
+        (el.getAttribute('class') ?? '').match(busyClassToken)?.join(' ') ?? '',
+      ].join('|');
+    })
+    .catch(() => '');
+  return signature.replace(/\s+/g, ' ').trim();
 };
 
 /**
@@ -245,6 +304,24 @@ export const errorToast = (page: Page): Locator =>
     .or(page.locator('[role="alert"]'))
     .or(page.locator('[class*="toast" i][class*="error" i]'))
     .first();
+
+/**
+ * A visible error affordance for a failed READ (A21).
+ *
+ * The ticket asks a failed read/search for "a visible error state, distinct from the
+ * empty-results state", and reserves the toast for the download (A13, `errorToast`).
+ * An inline failure banner is therefore a valid shape, so union:
+ *   1. the toast/alert affordances above - the reference's shape;
+ *   2. failure wording inside the logs view - "failed to", "could not", "unable to",
+ *      "something went wrong". Deliberately NOT a bare /error/i: the "Error" level chip
+ *      would satisfy that for every implementation and make this hook vacuous.
+ */
+export const errorAffordance = (page: Page): Locator => {
+  const view = page.locator('main, .scroll-no-gutter').first();
+  return errorToast(page)
+    .or(view.getByText(/\b(failed to|could not|unable to|request failed|failure|something went wrong)\b/i))
+    .first();
+};
 
 /**
  * Drive the search list to its end so the virtualizer reaches the trailing loader
