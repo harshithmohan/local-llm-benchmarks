@@ -24,7 +24,7 @@ Updated: 2026-09-30 · [full experiment log](archive/katcoder-v2.5-dev.md) · [m
       --spec-type draft-mtp --spec-draft-n-max 2 \
       --cache-type-k-draft q8_0 --cache-type-v-draft q8_0 \
       -b 12288 -ub 12288 \
-      --temp 1.0 --top-k 20 --presence-penalty 1.5
+      --temp 1.0 --top-p 0.95 --top-k 20 --min-p 0.05 --presence-penalty 1.5 --repeat-penalty 1.0
 
 ## Notes
 

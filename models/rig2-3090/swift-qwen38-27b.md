@@ -30,6 +30,7 @@ All rows are served with `INT8_ACT=int8`.
     #      DRAFT_TOKENS=4  MAX_SEQS=4
     #      EXTRA_ARGS=--kv-cache-memory=6800000000
     #      INT8_ACT=int8  EMBED_UVA=1
+    # sampling (model default, from generation_config.json): temperature 1.0, top_p 0.95, top_k 20
 
 ### Swift-1.5-INT4-fast at 262144 - vLLM, KVarN 4/2-bit KV, 3 MTP drafts
 
@@ -41,6 +42,7 @@ All rows are served with `INT8_ACT=int8`.
     # env: MODEL=Swift-1.5-INT4-fast  CTX=huge  MAX_LEN=262144  GPU_UTIL=0.88
     #      EXTRA_ARGS=--kv-cache-memory=5300000000
     #      INT8_ACT=int8  KVARN_FP16_DEQUANT=1  EMBED_UVA=1
+    # sampling (model default, from generation_config.json): temperature 1.0, top_p 0.95, top_k 20
 
 ## Notes
 
@@ -53,6 +55,7 @@ All rows are served with `INT8_ACT=int8`.
 - The KVarN profile runs `KVARN_FP16_DEQUANT=1`: KVarN's fused decode kernels dequantize in fp16 while the dots still accumulate in fp32, which halves their register pressure and is what lifts the long-context split-K decode - ~34% more decode at ~60K and ~53% at ~120K here, with prefill, VRAM and acceptance unchanged. It is part of vLLM's compile cache key, so the first boot after enabling it recompiles once (~3.5 min).
 - Both profiles serve the int4-GPTQ head pair the base build runs (`lm_head` and the draft head, from a calibration pass over the fine-tune's own hidden states; the MTP module stays int8), so the fp8 profile now reads 22028 MiB peak at the standard 10k row, well inside the 22 GB budget. The port's first build kept every head at int8; on it the fp8 profile peaked at 22988 MiB (~460 MiB over the budget) and the KVarN profile at 22656 MiB (~128 MiB over). The requant also reads ~5% more decode at both ends and prefill flat, since less head weight is read per step.
 - The checkpoint needs one config edit before it serves: its `quantization_config.ignore` blanket-blacklists the MTP head, which the prepare pipeline requantizes - see the port study above.
+- Sampling is the checkpoint's own (`generation_config.json`: temperature 1.0, top_p 0.95, top_k 20) with no override in the served config; every other sampler setting is the vLLM default (min_p 0.0, repetition_penalty 1.0, presence/frequency penalty 0.0).
 
 ## Long-context refactor benchmark
 

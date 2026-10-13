@@ -131,7 +131,7 @@ Measured rows, one model and quant: [Flash-Next archive](models/rig1-3060/archiv
 | ubatch | `-ub` | same | same | `--max-num-batched-tokens` | `--prefill auto[:N]` |
 | Expert placement | `-ncmoe` | `--moe-expert-cache-size` (overrides `-ncmoe`) | `-ncmoe` | `GPU_UTIL` / pinned pool | `--expert-cache N/auto` |
 | MTP | `--spec-type draft-mtp --spec-draft-n-max` | same + `--spec-draft-ubatch-size` | `--spec-type mtp:n_max=` | `DRAFT_TOKENS` | `--mtp DIR --spec T --spec-min-p F` |
-| Sampling | `--temp/--top-k/--min-p` | same | same | `--temp/--top-p/--top-k` | `--temperature/--top-k/--top-p` |
+| Sampling | `--temp/--top-p/--top-k/--min-p/--presence-penalty/--repeat-penalty` | same | same | checkpoint `generation_config.json` | config JSON `sampling` block |
 
 ## Rules of thumb
 

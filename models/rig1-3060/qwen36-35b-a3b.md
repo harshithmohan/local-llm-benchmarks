@@ -24,7 +24,7 @@ Updated: 2026-10-08 · [full experiment log](archive/qwen36-35b-a3b.md) · [meth
       --spec-type draft-mtp --spec-draft-n-max 2 \
       --cache-type-k-draft q8_0 --cache-type-v-draft q8_0 \
       -b 6144 -ub 6144 \
-      --temp 0.6 --top-k 20 --min-p 0.0
+      --temp 0.6 --top-p 0.95 --top-k 20 --min-p 0.0 --presence-penalty 0.0 --repeat-penalty 1.0
 
 ### IQ4_XS 512K - moe-cache fork, cache 48, MTP off
 
@@ -36,7 +36,7 @@ Updated: 2026-10-08 · [full experiment log](archive/qwen36-35b-a3b.md) · [meth
       --cache-type-k q8_0 --cache-type-v q8_0 --flash-attn on \
       --load-mode none --no-mmproj-offload --threads 12 --parallel 1 \
       -b 6144 -ub 6144 \
-      --temp 0.6 --top-k 20 --min-p 0.0
+      --temp 0.6 --top-p 0.95 --top-k 20 --min-p 0.0 --presence-penalty 0.0 --repeat-penalty 1.0
 
 YaRN 2x - `--rope-scale` must equal ctx/262144 exactly (the command above uses 2).
 

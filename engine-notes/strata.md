@@ -35,6 +35,7 @@ Flags used on this benchmark:
 - `--max-context N` - KV/state capacity (default 4096). The pack's trained window is what it should stay within unless `--rope-scaling` is used. Size it to what you serve: at a fixed chunk and expert cache, raising the window alone still costs prefill even though the same prompt is read, so headroom you do not use is not free.
 - `--prompt-cache N` - how many conversation checkpoints the server keeps between requests (default 6, ~118 MB of RAM each; `0` = read every prompt from the start). This is what makes a resent prompt cheap - the second pass reports a nonzero `cache_n` - and it is an engine flag, not a request field. `--prompt-cache-every N` also checkpoints every N fresh prompt tokens (default 16384, `0` = off) and `--prompt-cache-tail` adds one more near the prompt's end. Checkpoints land only on prompt-chunk boundaries, so the spacing that matters is `ceil(N / chunk) x chunk` - the default 16384 is several chunks apart - and a growing session pays that gap on every turn. Pinning N to the chunk minimises the per-turn re-read, and the grid cannot be finer than one chunk, so the chunk size is the optimum. The measured ladder is in the [Flash-Next archive](../models/rig1-3060/archive/qwen38-flash-next.md).
 - `--conversation-cache-mib N` / `--conversation-cache-slots N` / `--conversation-cache-min-free-mib N` - parked conversations between requests: the RAM budget (default 0 = off), the number kept (default 4) and a RAM floor (default 2560).
+- `sampling` (config key, not a flag) - a JSON object with `temperature`, `top_p`, `top_k`, `min_p`, `presence_penalty`, `repetition_penalty` and `seed`. The served path ignores the sampling flags on the command line, and its own default is **greedy** (`temperature 0.0`, so the temperature never enters the sampler) - a served config therefore sets this object. Only non-default values are forwarded to the backend, and a request field still overrides it.
 
 ### Against the llama.cpp engines
 
@@ -46,7 +47,7 @@ Flags used on this benchmark:
 | expert cache | `--moe-expert-cache-size` ([moe-cache fork](moe-cache-fork.md)) | `--expert-cache N\|auto` (+ `--expert-profile`) |
 | spec decode (MTP) | `--spec-type draft-mtp --spec-draft-n-max` | `--mtp DIR --spec T --spec-min-p F` |
 | context extension | `--rope-scaling yarn --rope-scale F --yarn-orig-ctx N` | same names |
-| sampling | `--temp` / `--top-k` / `--min-p` / `--seed` | `--temperature` / `--top-k` / `--top-p` / `--seed` |
+| sampling | `--temp` / `--top-p` / `--top-k` / `--min-p` / `--presence-penalty` / `--repeat-penalty` / `--seed` | config JSON `sampling` object (`temperature` / `top_p` / `top_k` / `min_p` / `presence_penalty` / `repetition_penalty` / `seed`) |
 
 Known issue: [issues.md](../issues.md) §7 - a reasoning-only assistant turn is dropped from the prompt.
 

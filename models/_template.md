@@ -36,7 +36,7 @@ quant/quant+ctx; fold cache size and -b/-ub into Notes (they are not universal).
       --load-mode none --no-mmproj-offload --threads <n> --parallel 1 \
       <MTP flags; omit the line when MTP is off> \
       -b <b> -ub <ub> \
-      --temp <t> --top-k <k> --min-p <m>
+      --temp <t> --top-p <p> --top-k <k> --min-p <m> --presence-penalty <pp> --repeat-penalty <rp>
 
 ## Notes
 

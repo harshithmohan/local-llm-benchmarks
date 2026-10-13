@@ -30,6 +30,7 @@ All rows are served with `INT8_ACT=int8`.
     #      DRAFT_TOKENS=4  MAX_SEQS=4
     #      EXTRA_ARGS=--kv-cache-memory=6800000000
     #      INT8_ACT=int8  EMBED_UVA=1
+    # sampling (model default, from generation_config.json): temperature 1.0, top_p 0.95, top_k 20
 
 ### W4A16-AutoRound-fast at 262144 - vLLM, KVarN 4/2-bit KV, 3 MTP drafts
 
@@ -41,6 +42,7 @@ All rows are served with `INT8_ACT=int8`.
     # env: CTX=huge  MAX_LEN=262144  GPU_UTIL=0.88
     #      EXTRA_ARGS=--kv-cache-memory=5300000000
     #      INT8_ACT=int8  KVARN_FP16_DEQUANT=1  EMBED_UVA=1
+    # sampling (model default, from generation_config.json): temperature 1.0, top_p 0.95, top_k 20
 
 ## Notes
 
@@ -51,6 +53,7 @@ All rows are served with `INT8_ACT=int8`.
 - vLLM's automatic prefix caching is ON by default in these profiles - the image's `PREFIX_CACHE` env only *adds* `--enable-prefix-caching` (with `--mamba-cache-mode align`), it cannot turn caching off; use `--no-enable-prefix-caching` in `EXTRA_ARGS` for that, as the timing rows do so their recorded pass is cold.
 - `PREFIX_CACHE=1` with `MTP + CTX=huge` corrupts `prompt_logprobs` only (ordinary generation is unaffected).
 - The KVarN profile runs `KVARN_FP16_DEQUANT=1`: KVarN's fused decode kernels dequantize in fp16 while the dots still accumulate in fp32, which halves their register pressure and is what lifts the long-context split-K decode - ~26% more decode at ~60K and ~38% at ~120K here, with prefill, VRAM and acceptance unchanged. It is part of vLLM's compile cache key, so the first boot after enabling it recompiles once (~3.5 min).
+- Sampling is the checkpoint's own (`generation_config.json`: temperature 1.0, top_p 0.95, top_k 20) with no override in the served config; every other sampler setting is the vLLM default (min_p 0.0, repetition_penalty 1.0, presence/frequency penalty 0.0).
 
 ## Long-context refactor benchmark
 

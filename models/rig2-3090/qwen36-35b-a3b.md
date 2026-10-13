@@ -27,7 +27,7 @@ The native 262144 window runs on GPU, q8_0 KV, no expert cache (with `--phase-aw
       --cache-type-k-draft q8_0 --cache-type-v-draft q8_0 \
       -b 4096 -ub 4096 \
       --phase-aware-workspace \
-      --temp 0.6 --top-p 0.95 --top-k 20 --min-p 0.0
+      --temp 0.6 --top-p 0.95 --top-k 20 --min-p 0.0 --presence-penalty 0.0 --repeat-penalty 1.0
 
 ### UD-IQ4_XS 512k (YaRN 2x) - moe-cache fork, MTP on, cache 200 + `--phase-aware-workspace`, `-b/-ub 8192`
 
@@ -43,7 +43,7 @@ The native 262144 window runs on GPU, q8_0 KV, no expert cache (with `--phase-aw
       --spec-type draft-mtp --spec-draft-n-max 2 \
       --cache-type-k-draft q8_0 --cache-type-v-draft q8_0 \
       -b 8192 -ub 8192 \
-      --temp 0.6 --top-p 0.95 --top-k 20 --min-p 0.0
+      --temp 0.6 --top-p 0.95 --top-k 20 --min-p 0.0 --presence-penalty 0.0 --repeat-penalty 1.0
 
 ## Notes
 

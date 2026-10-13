@@ -123,6 +123,25 @@ The shape the main card carried for this quant before the Strata pack engine rep
 
 Measured: 505 / 34 at 11534 MiB - the `-ub` table below carries it with the local-NVMe spread.
 
+### Served config (Strata pack engine, retired 2026-10-13)
+
+The shape the main card carried for this quant once the Strata pack engine replaced the fork, dropped from the Rig 1 serving configuration on 2026-10-13 (the `IQ3_XXS` entry remains served; the checkpoint, pack and config JSON stay on disk):
+
+    {
+      "exe": "<engine>/strata",
+      "args": ["--pack", "<pack>/q2_0",
+               "--native", "<models>/Qwen3.8-Flash-Next-GSQ-RCO-Q2_0-00001-of-00002.gguf",
+               "--ple-gguf", "<models>/Qwen3.8-Flash-Next-GSQ-RCO-Q2_0-00002-of-00002.gguf",
+               "--expert-profile", "<pack>/expert-profile.bin", "--expert-cache", "auto",
+               "--prefill", "6144", "--spec", "4", "--spec-min-p", "0.5", "--mtp", "<mtp>/rt",
+               "--max-context", "200000", "--kv", "int8", "--prompt-cache-every", "6144"],
+      "cwd": "<engine>",
+      "tokenizer": "<pack>/q2_0/tokenizer",
+      "model_name": "qwen3.8-flash-next-q2_0"
+    }
+
+`--prefill 6144` was pinned because `--prefill auto` steps the chunk down with a wider window (8192 -> 6144 -> 4096 as the expert-cache loan shrinks); at 200000 the 6144 pin fits the 2670-slot cache. The chunk ladder and the loan caps are below. Two shards: shard 1 is the transformer and shard 2 is the 28.8 GB n-gram table, passed as `--native` (shard 1) and `--ple-gguf` (shard 2).
+
 ### Cache size (10k prompt, `-b/-ub 1024`)
 
 | cache | prefill t/s | decode t/s | VRAM |

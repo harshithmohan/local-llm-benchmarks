@@ -1,8 +1,12 @@
 # Swift-1.5-Qwen3.8-27B (Rig 1) - experiment archive
 
-Main page: [Swift-1.5-Qwen3.8-27B (Rig 1)](../swift-qwen38-27b.md). Methodology: [methodology.md](../../../methodology.md). Model-specific issues: [issues.md](../../../issues.md).
+`IQ2_XS` of the **Swift-1.5 fine-tune** of Qwen3.8-27B (`qwen35`, native ctx 262144, embedded MTP head). Dense hybrid SSM + attention - only every 4th layer carries full attention (`full_attention_interval=4`) - and not a MoE, so no expert split applies. This is the only Qwen3.8-27B variant benchmarked on Rig 1. Model card: [ukisai/Swift-1.5-Qwen3.8-27B-GSQ-RCO-GGUF](https://huggingface.co/ukisai/Swift-1.5-Qwen3.8-27B-GSQ-RCO-GGUF) (`IQ2_XS`).
 
-`Quants:` `IQ2_XS` (Swift-1.5 fine-tune) - the only quant on this rig.
+**Retired 2026-10-13** - dropped from the serving configuration, so this page is now the checkpoint's only card. Base model (Rig 2): [qwen38-27b.md](../rig2-3090/qwen38-27b.md). Methodology: [methodology.md](../../../methodology.md); issues: [issues.md](../../../issues.md).
+
+Quants:
+
+- `IQ2_XS` (Swift-1.5 fine-tune) - the only quant on this rig.
 
 ## Setup
 
@@ -46,6 +50,28 @@ Measured value (mean of passes 2-3): **prefill 467 / decode 35.6**, VRAM 11474 M
 | 2 | 383.5 | 24.4 |
 
 Measured value: **prefill 383.5 / decode 24.4**, VRAM 11472 MiB. Prompt n=59751.
+
+## Served config (retired registration)
+
+| Config | ctx | engine | MTP | prefill t/s | decode t/s | VRAM | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `IQ2_XS` | 81920 | stock | on | 467 | **35.6** | 11474 MiB | q4_0 KV; default `-b/-ub` |
+
+`IQ2_XS` (Swift-1.5 fine-tune) at 81920 - stock, q4_0 KV + MTP:
+
+    llama-server --port PORT \
+      -m <models>/Swift-1.5-Qwen3.8-27B-GSQ-RCO-IQ2_XS.gguf \
+      --ctx-size 81920 -ngl all -fit off \
+      --cache-type-k q4_0 --cache-type-v q4_0 --flash-attn on \
+      --load-mode none --no-mmproj-offload --threads 12 --parallel 1 \
+      --spec-type draft-mtp --spec-draft-n-max 2 \
+      --cache-type-k-draft q8_0 --cache-type-v-draft q8_0
+
+`-b/-ub` and sampling are the server defaults.
+
+## Retirement
+
+- 2026-10-13: the entry was dropped from the Rig 1 serving configuration (the checkpoint's GGUF stays on disk). Every row above is retained here as the checkpoint's record.
 
 ## Conclusions
 
