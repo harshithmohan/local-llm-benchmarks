@@ -1,6 +1,8 @@
 # Qwen3.6-35B-A3B — crucible results
 
-Updated: 2026-10-10 · model cards: [Rig 1](../../models/rig1-3060/qwen36-35b-a3b.md) · [Rig 2](../../models/rig2-3090/qwen36-35b-a3b.md) · [suite README](../README.md)
+Updated: 2026-10-13 · model cards: [Rig 1](../../models/rig1-3060/qwen36-35b-a3b.md) · [Rig 2](../../models/rig2-3090/qwen36-35b-a3b.md) · [suite README](../README.md)
+
+> **Deprecated (2026-10-13).** Measured on Crucible **v0.1.3**. v0.1.5 changes the capability protocol, so these figures are **not comparable** to a current-binary run; re-measure before comparing.
 
 | Quant | KV cache | ctx | C1 NIAH | C2 reasoning | C3 structured | Notes |
 |---|---|---|---|---|---|---|

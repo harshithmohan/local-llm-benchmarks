@@ -15,10 +15,7 @@
 # (C1 alone is ~36 min with the real tokenizer, so silence for that long is not informative.)
 #
 # Engines: this suite records C1, C2, C3 (capability); --no-hardware drops Engine D (see README).
-# C1/C3 need a server started with --reasoning off - C1 also needs --sse-ping-interval -1, or its
-# long-prefill cells are silently scored as retrieval misses - and C2 needs the model's default,
-# so the set is normally measured in two passes with explicit engine names - the no-engine default runs
-# all three against whatever endpoint you point it at.
+# All three run against one endpoint in a single pass. Name engines explicitly to run a subset.
 #
 # NOTE: Crucible's --export file carries only stream metrics (from its timing engines), and
 # this suite runs none of them, so the export is not used. The capability verdicts (C1/C2/C3)
@@ -50,8 +47,8 @@ case "$cmd" in
     if [ -n "$TIMEOUT" ]; then args+=(--timeout "$TIMEOUT"); fi
     if [ -n "$TOKENIZER" ]; then args+=(--tokenizer "$TOKENIZER"); fi
     # Engine set: C1, C2, C3 (capability). With no engine args, select this set explicitly
-    # (Crucible's own default also pulls in the timing and concurrency engines). C1/C3 require a
-    # --reasoning off server and C2 the model's default - normally two passes, named explicitly.
+    # (Crucible's own default also pulls in the timing and concurrency engines). All three run
+    # against one endpoint; name engines to run a subset.
     if [ "$#" -eq 0 ]; then set -- niah reasoning structured; fi
     for e in "$@"; do args+=(--engine "$e"); done
     echo "Run: $model  URL: $URL  Date: $(date +%F)"
