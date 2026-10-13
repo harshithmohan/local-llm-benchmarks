@@ -16,14 +16,14 @@ The **model is the unit**: each card covers all of a model's quants, and near-id
 
 | Model | Quant | Level | Outcome | Stage 0 A / B | Stage 1 A / B | Stage 2 A / B | Total model time (min) | Notes |
 |---|---|---|---|---|---|---|---|---|
-| qwen36-35b-a3b | UD-IQ4_XS | default | not converged | 15.5 / 25 | 55.5 / 19.5 | 67.5 / 30.5 | 26.3 | Stage 2's first turn ended with zero edits (a zero-work stop, not an output-cap nudge — this trajectory hit no cap) and was resumed once |
-| katcoder-v2.5-dev | APEX-I-Compact | default | not converged | 31 / 37.5 | 37.5 / 37.5 | 38 / 37.5 | 21.8 | No output-cap nudge and no zero-work stop in any stage; the model compacted its own session via the host plugin in Stages 1–2 |
+| qwen36-35b-a3b | UD-IQ4_XS | default | not converged | 15.5 / 25 | 55.5 / 19.5 | 67.5 / 30.5 | 26.3 | Stage 2's first turn ended with zero edits (a zero-work stop, not an output-cap nudge — this trajectory hit no cap) and was resumed once; the host's billion-context plugin made 8 `compress` calls, peaking at ~120k tokens of context and ending at ~36k |
+| katcoder-v2.5-dev | APEX-I-Compact | default | not converged | 31 / 37.5 | 37.5 / 37.5 | 38 / 37.5 | 21.8 | No output-cap nudge and no zero-work stop in any stage; the host's billion-context plugin made 5 `compress` calls, peaking at ~127k tokens of context and ending at ~41k |
 
 ### opencode-go (cloud) models
 
 | Model | Quant | Level | Outcome | Stage 0 A / B | Stage 1 A / B | Stage 2 A / B | Total model time (min) | Notes |
 |---|---|---|---|---|---|---|---|---|
-_No runs recorded yet._
+| deepseek-v4.1-flash | — | high | converged: stage 2 | 89 / 62.5 | 90 / 65.5 | 100 / 84 | 27.6 | No output-cap nudge and no zero-work stop in any stage; the first Stage-0 attempt was void — the checkout exposed the merged upstream implementation through its git history — so this is the clean re-run in an isolated checkout; the host's billion-context plugin made 7 `compress` calls; the trajectory ended at ~86k tokens of context |
 
 ## Nudges
 
