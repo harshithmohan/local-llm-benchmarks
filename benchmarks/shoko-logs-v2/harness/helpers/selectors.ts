@@ -20,11 +20,17 @@ import { expect, type Locator, type Page } from '@playwright/test';
  */
 
 /**
- * Title block proving the logs page mounted. The reference renders it as a plain
- * `<div>Logs</div>` (not a heading element), so match the exact text.
+ * The layout's routed-content wrapper, used as the MOUNT signal for the logs route.
+ *
+ * This is deliberately not the page title: the ticket pins no literal copy, so the
+ * visible title is reference-cosmetic and may not gate Score A (see the file header
+ * rule) — a candidate that renames it would otherwise black out the whole suite. The
+ * `MainPage` shell renders `.scroll-no-gutter`, and the `main` fallback covers an
+ * implementation that introduces a landmark; the ticket never touches either.
+ * Per-spec assertions still decide every behavioural line.
  */
-export const logsHeading = (page: Page): Locator =>
-  page.getByText('Logs', { exact: true }).first();
+export const logsViewRoot = (page: Page): Locator =>
+  page.locator('main, .scroll-no-gutter').first();
 
 /**
  * The server-search text input.
@@ -270,7 +276,7 @@ export const rows = (page: Page): Locator =>
  * response is held), so this hook only needs to be present, not exclusive.
  */
 export const searchingState = (page: Page): Locator => {
-  const view = page.locator('main, .scroll-no-gutter').first();
+  const view = logsViewRoot(page);
   return view
     .locator('[role="status"], [aria-busy="true"], [class*="spinner" i], [class*="loading" i], [class*="skeleton" i]')
     .or(page.getByText(/loading|searching|fetching|retrieving|looking/i))
@@ -317,7 +323,7 @@ export const errorToast = (page: Page): Locator =>
  *      would satisfy that for every implementation and make this hook vacuous.
  */
 export const errorAffordance = (page: Page): Locator => {
-  const view = page.locator('main, .scroll-no-gutter').first();
+  const view = logsViewRoot(page);
   return errorToast(page)
     .or(view.getByText(/\b(failed to|could not|unable to|request failed|failure|something went wrong)\b/i))
     .first();

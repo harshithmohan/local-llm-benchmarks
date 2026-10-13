@@ -1,5 +1,5 @@
 import { expect, type Page } from '@playwright/test';
-import { logsHeading, searchInput } from './selectors';
+import { logsViewRoot, searchInput } from './selectors';
 import { MOCK_BACKLOG } from '../fixtures/mock-data';
 
 /** The logs route (the app is served under Vite `base: "/webui/"`). */
@@ -26,10 +26,10 @@ export async function seedAuth(page: Page): Promise<void> {
   }, TEST_APIKEY);
 }
 
-/** Navigate to the logs page and wait until it has rendered. */
+/** Navigate to the logs page and wait until the routed view has rendered. */
 export async function openLogsPage(page: Page): Promise<void> {
   await page.goto(LOGS_PATH);
-  await expect(logsHeading(page)).toBeVisible();
+  await expect(logsViewRoot(page)).toBeVisible();
 }
 
 /**
