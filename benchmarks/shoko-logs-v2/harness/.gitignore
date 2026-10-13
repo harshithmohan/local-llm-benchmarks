@@ -1,0 +1,7 @@
+# Playwright-only artifacts.
+node_modules/
+test-results/
+playwright-report/
+blob-report/
+.playwright/
+harness-report.md

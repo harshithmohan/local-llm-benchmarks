@@ -1,0 +1,927 @@
+diff --git a/src/components/Input/IconButton.tsx b/src/components/Input/IconButton.tsx
+index 971dda87..6e6a54c9 100644
+--- a/src/components/Input/IconButton.tsx
++++ b/src/components/Input/IconButton.tsx
+@@ -11,6 +11,7 @@ type IconButtonProps = {
+   icon: string;
+   className?: string;
+   disabled?: boolean;
++  loading?: boolean;
+   onClick: MouseEventHandler<HTMLButtonElement>;
+   buttonType: ButtonType;
+   buttonSize: SizeType;
+@@ -18,7 +19,7 @@ type IconButtonProps = {
+ };
+ 
+ const IconButton = (
+-  { buttonSize, buttonType, className, disabled, icon, onClick, tooltip }: IconButtonProps,
++  { buttonSize, buttonType, className, disabled, icon, loading, onClick, tooltip }: IconButtonProps,
+ ) => (
+   <Button
+     className={cx(
+@@ -26,11 +27,11 @@ const IconButton = (
+       className,
+       buttonTypeClasses[buttonType],
+       buttonSizeClasses[buttonSize],
+-      !disabled && 'cursor-pointer',
+     )}
+     onClick={onClick}
+     tooltip={tooltip}
+     disabled={disabled}
++    loading={loading}
+   >
+     <Icon path={icon} size={1} />
+   </Button>
+diff --git a/src/core/react-query/logging/helpers.ts b/src/core/react-query/logging/helpers.ts
+new file mode 100644
+index 00000000..61b4e59b
+--- /dev/null
++++ b/src/core/react-query/logging/helpers.ts
+@@ -0,0 +1,9 @@
++// DSL grammar the server accepts (LogService.TryParseLogFilterDsl): a mode char first — c: contains,
++// =: equals, ^: starts, $: ends, ~: fuzzy, *: regex — optionally followed by at most one ! (negate)
++// and one # (case-insensitive) in either order, then ':'. ! and # are modifiers, never prefixes on
++// their own (e.g. "!c:foo" or "#:foo" are server-side 400s). A bare value is shorthand for "c:"
++// (case-sensitive contains), so we make it case-insensitive by default unless the user typed valid
++// DSL themselves; anything else gets wrapped as a literal.
++const hasDslPrefix = (value: string) => /^[c=^$~*](?:!#|#!|!|#)?:/.test(value);
++
++export const toServerSearch = (value: string) => (!value || hasDslPrefix(value) ? value : `c#:${value}`);
+diff --git a/src/core/react-query/logging/mutations.ts b/src/core/react-query/logging/mutations.ts
+new file mode 100644
+index 00000000..a616ad6a
+--- /dev/null
++++ b/src/core/react-query/logging/mutations.ts
+@@ -0,0 +1,43 @@
++import { useMutation } from '@tanstack/react-query';
++
++import { axios } from '@/core/axios';
++import { dayjs } from '@/core/util';
++
++import type { LogsSearchParamsType } from '@/core/react-query/logging/types';
++
++export const useLogsDownloadMutation = () =>
++  useMutation<Blob, unknown, LogsSearchParamsType>({
++    mutationFn: ({ levels, search }) => {
++      // Same derivation as filtersActive in LogsPage: any active filter switches
++      // from the current-file download to a range download with those filters.
++      const filtersActive = levels.size > 0 || search !== '';
++      return axios.get(
++        filtersActive ? 'Logging/Range/Download' : 'Logging/File/Current/Download',
++        {
++          responseType: 'blob',
++          params: filtersActive
++            ? {
++              level: [...levels].sort().join(',') || undefined,
++              message: search || undefined,
++            }
++            : undefined,
++        },
++      );
++    },
++    onSuccess: (blob) => {
++      // The shared axios instance unwraps response.data in an interceptor, so the
++      // Content-Disposition header (and its server-side filename) is not reachable;
++      // derive a local filename instead.
++      const url = URL.createObjectURL(blob);
++      const anchor = document.createElement('a');
++      anchor.href = url;
++      anchor.download = `shoko-logs-${dayjs().format('YYYY-MM-DD_HH-mm-ss')}.txt`;
++      // Firefox requires the anchor to be in the DOM for `download` to take effect,
++      // and revoking the URL immediately after click() can cancel the download in
++      // Firefox/Safari before it starts — defer the revoke.
++      document.body.appendChild(anchor);
++      anchor.click();
++      anchor.remove();
++      setTimeout(() => URL.revokeObjectURL(url), 0);
++    },
++  });
+diff --git a/src/core/react-query/logging/queries.ts b/src/core/react-query/logging/queries.ts
+new file mode 100644
+index 00000000..a66ebf05
+--- /dev/null
++++ b/src/core/react-query/logging/queries.ts
+@@ -0,0 +1,97 @@
++import { useEffect } from 'react';
++import { HttpTransportType, HubConnectionBuilder, JsonHubProtocol, LogLevel } from '@microsoft/signalr';
++import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
++
++import { axios } from '@/core/axios';
++import queryClient from '@/core/react-query/queryClient';
++import { useSelector } from '@/core/store';
++
++import type { LogEventType, LogReadResultType, LogsSearchParamsType } from '@/core/react-query/logging/types';
++
++const logsQueryKey = ['logs'];
++
++const useLogsSubscription = () => {
++  const apikey = useSelector(state => state.apiSession.apikey);
++
++  useEffect(() => {
++    const connectionLogHub = '/signalr/logging';
++    const protocol = new JsonHubProtocol();
++    // oxlint-disable-next-line no-bitwise
++    const transport = HttpTransportType.WebSockets | HttpTransportType.LongPolling;
++    const options = {
++      transport,
++      logMessageContent: true,
++      logger: LogLevel.Warning,
++      accessTokenFactory: () => apikey,
++    };
++
++    const connectionLog = new HubConnectionBuilder().withUrl(connectionLogHub, options).withHubProtocol(protocol)
++      .withAutomaticReconnect([5000, 15000, 30000, 60000, 90000])
++      .build();
++
++    connectionLog.onreconnected(() => {
++      // The server re-sends GetBacklog on every connect; reset the tail so the
++      // fresh backlog replaces the stale one instead of duplicating entries.
++      queryClient.setQueryData(logsQueryKey, []);
++    });
++
++    connectionLog.on(
++      'GetBacklog',
++      (lines: LogEventType[]) => {
++        queryClient.setQueryData(
++          logsQueryKey,
++          (oldData: LogEventType[] | undefined) => (oldData ? [...oldData, ...lines] : lines),
++        );
++      },
++    );
++
++    connectionLog.on(
++      'Log',
++      (line: LogEventType) => {
++        queryClient.setQueryData(
++          logsQueryKey,
++          (oldData: LogEventType[] | undefined) => (oldData ? [...oldData, line] : [line]),
++        );
++      },
++    );
++
++    connectionLog.start().catch(console.error);
++
++    return () => {
++      connectionLog.stop().catch(console.error);
++    };
++  }, [apikey]);
++};
++
++export const useLogsQuery = () => {
++  useLogsSubscription();
++  return useQuery<LogEventType[]>({
++    queryKey: logsQueryKey,
++    queryFn: () => [],
++    initialData: [],
++    staleTime: Infinity,
++    gcTime: Infinity,
++  });
++};
++
++export const useLogsSearchQuery = ({ levels, search }: LogsSearchParamsType) => {
++  // Sets serialize to {} in the query key hash, so derive a stable, content-sensitive string instead.
++  // Sorted so any chip-toggle order produces the same key.
++  const levelKey = [...levels].sort().join(',');
++  return useInfiniteQuery<LogReadResultType>({
++    queryKey: ['logs', 'search', { search, levels: levelKey }],
++    queryFn: ({ pageParam }) =>
++      axios.get('Logging/Range/Read', {
++        params: {
++          offset: pageParam,
++          limit: 100,
++          descending: false,
++          // Server expects a comma-separated list of LogLevel names; omitted params are inactive filters.
++          level: levelKey || undefined,
++          message: search || undefined,
++        },
++      }),
++    getNextPageParam: lastPage => lastPage.NextOffset ?? undefined,
++    initialPageParam: 0,
++  });
++};
+diff --git a/src/core/react-query/logging/types.ts b/src/core/react-query/logging/types.ts
+new file mode 100644
+index 00000000..93b1878f
+--- /dev/null
++++ b/src/core/react-query/logging/types.ts
+@@ -0,0 +1,23 @@
++// Mirrors Microsoft.Extensions.Logging.LogLevel as serialized by the server (StringEnumConverter).
++export type LogLevelType = 'Trace' | 'Debug' | 'Information' | 'Warning' | 'Error' | 'Critical' | 'None';
++
++export type LogEventType = {
++  TimeStamp: string;
++  Level: LogLevelType;
++  ThreadID?: number;
++  ProcessID?: number;
++  Logger?: string;
++  Caller?: string;
++  Message: string;
++  Exception?: string;
++};
++
++export type LogReadResultType = {
++  NextOffset: number | null;
++  Entries: LogEventType[];
++};
++
++export type LogsSearchParamsType = {
++  search: string;
++  levels: Set<LogLevelType>;
++};
+diff --git a/src/core/react-query/logs/queries.ts b/src/core/react-query/logs/queries.ts
+deleted file mode 100644
+index 41e246a7..00000000
+--- a/src/core/react-query/logs/queries.ts
++++ /dev/null
+@@ -1,72 +0,0 @@
+-import { useEffect } from 'react';
+-import { HttpTransportType, HubConnectionBuilder, JsonHubProtocol, LogLevel } from '@microsoft/signalr';
+-import { useQuery } from '@tanstack/react-query';
+-
+-import queryClient from '@/core/react-query/queryClient';
+-import { useSelector } from '@/core/store';
+-import { dayjs } from '@/core/util';
+-
+-import type { LogLineType } from '@/core/types/api/common';
+-
+-const logsQueryKey = ['logs'];
+-
+-const formatStamp = (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss');
+-const formatTimestamps = (lines: LogLineType[]): LogLineType[] =>
+-  lines.map<LogLineType>(item => ({ ...item, TimeStamp: formatStamp(item.TimeStamp) }));
+-
+-const useLogsSubscription = () => {
+-  const apikey = useSelector(state => state.apiSession.apikey);
+-
+-  useEffect(() => {
+-    const connectionLogHub = '/signalr/logging';
+-    const protocol = new JsonHubProtocol();
+-    // oxlint-disable-next-line no-bitwise
+-    const transport = HttpTransportType.WebSockets | HttpTransportType.LongPolling;
+-    const options = {
+-      transport,
+-      logMessageContent: true,
+-      logger: LogLevel.Warning,
+-      accessTokenFactory: () => apikey,
+-    };
+-
+-    const connectionLog = new HubConnectionBuilder().withUrl(connectionLogHub, options).withHubProtocol(protocol)
+-      .build();
+-
+-    connectionLog.on(
+-      'GetBacklog',
+-      (lines: LogLineType[]) => {
+-        queryClient.setQueryData(logsQueryKey, (oldData: LogLineType[] | undefined) => {
+-          const newData = formatTimestamps(lines);
+-          return oldData ? [...oldData, ...newData] : newData;
+-        });
+-      },
+-    );
+-
+-    connectionLog.on(
+-      'Log',
+-      (line: LogLineType) => {
+-        queryClient.setQueryData(logsQueryKey, (oldData: LogLineType[] | undefined) => {
+-          const newData = { ...line, TimeStamp: formatStamp(line.TimeStamp) };
+-          return oldData ? [...oldData, newData] : [newData];
+-        });
+-      },
+-    );
+-
+-    connectionLog.start().catch(console.error);
+-
+-    return () => {
+-      connectionLog.stop().catch(console.error);
+-    };
+-  }, [apikey]);
+-};
+-
+-export const useLogsQuery = () => {
+-  useLogsSubscription();
+-  return useQuery<LogLineType[]>({
+-    queryKey: logsQueryKey,
+-    queryFn: () => [],
+-    initialData: [],
+-    staleTime: Infinity,
+-    gcTime: Infinity,
+-  });
+-};
+diff --git a/src/core/types/api/common.ts b/src/core/types/api/common.ts
+index e8448363..c0858d55 100644
+--- a/src/core/types/api/common.ts
++++ b/src/core/types/api/common.ts
+@@ -37,12 +37,6 @@ export type RatingType = {
+   Type: 'Permanent' | 'Temporary';
+ };
+ 
+-export type LogLineType = {
+-  TimeStamp: string;
+-  Message: string;
+-  Level: string;
+-};
+-
+ export type DataSourceValues =
+   | 'Plugin'
+   | 'LocallyGenerated'
+diff --git a/src/hooks/useVirtualizerScrollRectWorkaround.ts b/src/hooks/useVirtualizerScrollRectWorkaround.ts
+new file mode 100644
+index 00000000..dec79d05
+--- /dev/null
++++ b/src/hooks/useVirtualizerScrollRectWorkaround.ts
+@@ -0,0 +1,18 @@
++import type { RefObject } from 'react';
++
++import type { Virtualizer } from '@tanstack/react-virtual';
++
++// Workaround for https://github.com/TanStack/virtual/issues/634: the virtualizer can cache a
++// stale/zero-sized scrollRect when the scroll container mounts, breaking item measurement.
++// Patching it from the live element on every render fixes virtualization in Firefox and Chrome.
++const useVirtualizerScrollRectWorkaround = <TScrollElement extends HTMLElement, TItemElement extends Element>(
++  rowVirtualizer: Virtualizer<TScrollElement, TItemElement>,
++  parentRef: RefObject<TScrollElement | null>,
++) => {
++  if (parentRef.current) {
++    // oxlint-disable-next-line no-param-reassign -- mutating the virtualizer instance is the workaround itself
++    rowVirtualizer.scrollRect = { height: parentRef.current.clientHeight, width: parentRef.current.clientWidth };
++  }
++};
++
++export default useVirtualizerScrollRectWorkaround;
+diff --git a/src/pages/logs/LogLevelChip.tsx b/src/pages/logs/LogLevelChip.tsx
+new file mode 100644
+index 00000000..a95bc564
+--- /dev/null
++++ b/src/pages/logs/LogLevelChip.tsx
+@@ -0,0 +1,46 @@
++import cx from 'classnames';
++
++import type { LogLevelType } from '@/core/react-query/logging/types';
++
++const logLevelStyles: Record<LogLevelType, string> = {
++  Trace: 'bg-panel-text/25 text-panel-text/90',
++  Debug: 'bg-panel-text-other/15 text-panel-text-other',
++  Information: 'bg-panel-text-important/15 text-panel-text-important',
++  Warning: 'bg-panel-text-warning/15 text-panel-text-warning',
++  Error: 'bg-panel-text-danger/20 text-panel-text-danger',
++  Critical: 'bg-panel-text-danger text-button-danger-text',
++  None: 'bg-panel-text/25 text-panel-text/90',
++};
++
++const logLevelHoverStyles: Record<LogLevelType, string> = {
++  Trace: 'hover:bg-panel-text/25 hover:text-panel-text/90',
++  Debug: 'hover:bg-panel-text-other/15 hover:text-panel-text-other',
++  Information: 'hover:bg-panel-text-important/15 hover:text-panel-text-important',
++  Warning: 'hover:bg-panel-text-warning/15 hover:text-panel-text-warning',
++  Error: 'hover:bg-panel-text-danger/20 hover:text-panel-text-danger',
++  Critical: 'hover:bg-panel-text-danger hover:text-button-danger-text',
++  None: 'hover:bg-panel-text/25 hover:text-panel-text/90',
++};
++
++type Props = {
++  level: LogLevelType;
++  active?: boolean;
++};
++
++const LogLevelChip = ({ active = true, level }: Props) => (
++  <div
++    className={cx(
++      'rounded-md px-2 py-0.5 text-xs transition-colors',
++      active
++        ? logLevelStyles[level]
++        : cx(
++          'bg-panel-input/50 text-panel-text/85 ring-1 ring-panel-text/25 ring-inset hover:ring-0',
++          logLevelHoverStyles[level],
++        ),
++    )}
++  >
++    {level}
++  </div>
++);
++
++export default LogLevelChip;
+diff --git a/src/pages/logs/LogLiveView.tsx b/src/pages/logs/LogLiveView.tsx
+new file mode 100644
+index 00000000..ae72ecf6
+--- /dev/null
++++ b/src/pages/logs/LogLiveView.tsx
+@@ -0,0 +1,79 @@
++import { useEffect, useRef } from 'react';
++import { mdiLoading } from '@mdi/js';
++import { Icon } from '@mdi/react';
++import { useVirtualizer } from '@tanstack/react-virtual';
++
++import useVirtualizerScrollRectWorkaround from '@/hooks/useVirtualizerScrollRectWorkaround';
++import LogRow from '@/pages/logs/LogRow';
++
++import type { LogEventType } from '@/core/react-query/logging/types';
++
++type Props = {
++  logLines: LogEventType[];
++  scrollToBottom: boolean;
++  setScrollToBottom: (value: boolean) => void;
++};
++
++const LogLiveView = ({ logLines, scrollToBottom, setScrollToBottom }: Props) => {
++  const parentRef = useRef<HTMLDivElement>(null);
++  const rowVirtualizer = useVirtualizer({
++    count: logLines.length,
++    getScrollElement: () => parentRef.current,
++    estimateSize: () => 36,
++    useFlushSync: false,
++  });
++  const virtualItems = rowVirtualizer.getVirtualItems();
++  useVirtualizerScrollRectWorkaround(rowVirtualizer, parentRef);
++
++  useEffect(() => {
++    if (!scrollToBottom || logLines.length === 0) return;
++    rowVirtualizer.scrollToIndex(logLines.length - 1);
++  }, [logLines, scrollToBottom, rowVirtualizer]);
++
++  // Disables auto scroll when the user scrolls up. While locked, the only way the
++  // container stops being at the bottom is a user scroll — the programmatic
++  // scrollToIndex always lands at the bottom, and the virtualizer's measurement
++  // corrections keep it there.
++  const handleScroll = () => {
++    const container = parentRef.current;
++    if (!scrollToBottom || !container) return;
++    if (container.scrollHeight - container.scrollTop - container.clientHeight > 1) setScrollToBottom(false);
++  };
++
++  return (
++    <div
++      className="w-full overflow-y-auto rounded-lg border-16 border-panel-input bg-panel-input font-mono text-sm contain-strict"
++      ref={parentRef}
++      onScroll={handleScroll}
++    >
++      {logLines.length === 0 && (
++        <div className="flex h-full items-center justify-center text-panel-text-primary">
++          <Icon path={mdiLoading} size={4} spin />
++        </div>
++      )}
++
++      {logLines.length > 0 && (
++        <div
++          className="relative w-full"
++          style={{ height: rowVirtualizer.getTotalSize() }}
++        >
++          <div
++            className="absolute inset-x-4 top-0"
++            style={{ transform: `translateY(${virtualItems[0]?.start ?? 0}px)` }}
++          >
++            {virtualItems.map(virtualRow => (
++              <LogRow
++                key={virtualRow.key}
++                dataIndex={virtualRow.index}
++                event={logLines[virtualRow.index]}
++                measureRef={rowVirtualizer.measureElement}
++              />
++            ))}
++          </div>
++        </div>
++      )}
++    </div>
++  );
++};
++
++export default LogLiveView;
+diff --git a/src/pages/logs/LogRow.tsx b/src/pages/logs/LogRow.tsx
+new file mode 100644
+index 00000000..aabbea41
+--- /dev/null
++++ b/src/pages/logs/LogRow.tsx
+@@ -0,0 +1,64 @@
++import { useState } from 'react';
++import { mdiChevronDown, mdiChevronRight } from '@mdi/js';
++import { Icon } from '@mdi/react';
++
++import { dayjs } from '@/core/util';
++import LogLevelChip from '@/pages/logs/LogLevelChip';
++
++import type { LogEventType } from '@/core/react-query/logging/types';
++
++const formatStamp = (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss');
++
++type Props = {
++  dataIndex: number;
++  event: LogEventType;
++  measureRef: (node: HTMLDivElement | null) => void;
++};
++
++const LogRow = ({ dataIndex, event, measureRef }: Props) => {
++  const [exceptionExpanded, setExceptionExpanded] = useState(false);
++
++  // Logger and Caller are optional (older server versions may omit them)
++  const sourceParts: string[] = [];
++  if (event.Logger) sourceParts.push(event.Logger);
++  if (event.Caller) sourceParts.push(event.Caller);
++  const sourceText = sourceParts.join(' › ');
++
++  return (
++    <div className="flex items-start gap-x-4 py-1.5" data-index={dataIndex} ref={measureRef}>
++      <div className="shrink-0 whitespace-nowrap text-panel-text opacity-65">
++        {formatStamp(event.TimeStamp)}
++      </div>
++      <div className="w-24 shrink-0">
++        <LogLevelChip level={event.Level} />
++      </div>
++      <div className="w-56 shrink-0" title={sourceText}>
++        <span className="block truncate text-left opacity-65 [direction:rtl]">{sourceText}</span>
++      </div>
++      <div className="min-w-0 flex-1">
++        <div className="flex items-start gap-x-2">
++          <div className="break-all">{event.Message}</div>
++          {event.Exception && (
++            <button
++              type="button"
++              className="mt-0.5 shrink-0 text-panel-text opacity-65 transition-colors hover:opacity-100"
++              onClick={() => setExceptionExpanded(prev => !prev)}
++              data-tooltip-id="tooltip"
++              data-tooltip-content={`${exceptionExpanded ? 'Hide' : 'Show'} exception`}
++              data-tooltip-place="top"
++            >
++              <Icon path={exceptionExpanded ? mdiChevronDown : mdiChevronRight} size={0.75} />
++            </button>
++          )}
++        </div>
++        {exceptionExpanded && event.Exception && (
++          <pre className="mt-2 rounded-md border border-panel-border bg-panel-background p-3 text-xs/relaxed whitespace-pre-wrap opacity-80">
++            {event.Exception}
++          </pre>
++        )}
++      </div>
++    </div>
++  );
++};
++
++export default LogRow;
+diff --git a/src/pages/logs/LogSearchView.tsx b/src/pages/logs/LogSearchView.tsx
+new file mode 100644
+index 00000000..6198a460
+--- /dev/null
++++ b/src/pages/logs/LogSearchView.tsx
+@@ -0,0 +1,119 @@
++import { useEffect, useRef } from 'react';
++import { mdiLoading, mdiTextSearch } from '@mdi/js';
++import { Icon } from '@mdi/react';
++import { useVirtualizer } from '@tanstack/react-virtual';
++
++import Button from '@/components/Input/Button';
++import { toServerSearch } from '@/core/react-query/logging/helpers';
++import { useLogsSearchQuery } from '@/core/react-query/logging/queries';
++import useVirtualizerScrollRectWorkaround from '@/hooks/useVirtualizerScrollRectWorkaround';
++import LogRow from '@/pages/logs/LogRow';
++
++import type { LogLevelType } from '@/core/react-query/logging/types';
++
++type Props = {
++  activeLevels: Set<LogLevelType>;
++  onClearFilters: () => void;
++  search: string;
++};
++
++const LogSearchView = ({ activeLevels, onClearFilters, search }: Props) => {
++  const serverSearch = toServerSearch(search);
++
++  const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage } = useLogsSearchQuery({
++    search: serverSearch,
++    levels: activeLevels,
++  });
++
++  const logEntries = data?.pages.flatMap(page => page.Entries) ?? [];
++
++  const searching = isFetching && logEntries.length === 0;
++
++  const parentRef = useRef<HTMLDivElement>(null);
++  const rowVirtualizer = useVirtualizer({
++    count: logEntries.length + (hasNextPage ? 1 : 0),
++    getScrollElement: () => parentRef.current,
++    estimateSize: () => 36,
++    useFlushSync: false,
++  });
++  const virtualItems = rowVirtualizer.getVirtualItems();
++
++  // Trigger the next page fetch from an effect on the trailing virtual row instead of a
++  // render-phase side effect; fetchNextPage has stable identity so no debounce is needed.
++  const lastVirtualItem = virtualItems[virtualItems.length - 1];
++  const lastVirtualIndex = lastVirtualItem?.index;
++  useEffect(() => {
++    if (lastVirtualIndex === logEntries.length && hasNextPage && !isFetchingNextPage) {
++      fetchNextPage().catch(console.error);
++    }
++  }, [lastVirtualIndex, hasNextPage, isFetchingNextPage, fetchNextPage, logEntries.length]);
++
++  useVirtualizerScrollRectWorkaround(rowVirtualizer, parentRef);
++
++  return (
++    <div
++      className="w-full overflow-y-auto rounded-lg border-16 border-panel-input bg-panel-input font-mono text-sm contain-strict"
++      ref={parentRef}
++    >
++      {searching && (
++        <div className="flex h-full flex-col items-center justify-center gap-y-2 text-panel-text">
++          <Icon path={mdiLoading} size={2} spin className="text-panel-icon-action" />
++          <div className="font-semibold">Searching server logs...</div>
++          <div className="text-sm opacity-65">This covers the full log history, not just the live tail.</div>
++        </div>
++      )}
++
++      {!searching && !isFetching && logEntries.length === 0 && (
++        <div className="flex h-full flex-col items-center justify-center gap-y-2 text-panel-text">
++          <Icon path={mdiTextSearch} size={2} className="opacity-50" />
++          <div className="font-semibold">No server log entries match your search.</div>
++          <div className="text-sm opacity-65">Try different keywords or clear the filters.</div>
++          <Button buttonType="primary" buttonSize="small" className="mt-2" onClick={onClearFilters}>
++            Clear filters
++          </Button>
++        </div>
++      )}
++
++      {logEntries.length > 0 && (
++        <div className="flex flex-col">
++          <div
++            className="relative w-full"
++            style={{ height: rowVirtualizer.getTotalSize() }}
++          >
++            <div
++              className="absolute inset-x-4 top-0"
++              style={{ transform: `translateY(${virtualItems[0]?.start ?? 0}px)` }}
++            >
++              {virtualItems.map((virtualRow) => {
++                const event = logEntries[virtualRow.index];
++
++                if (!event) {
++                  return (
++                    <div
++                      key={virtualRow.key}
++                      className="flex items-center justify-center py-4"
++                      ref={rowVirtualizer.measureElement}
++                    >
++                      <Icon path={mdiLoading} size={1} spin className="text-panel-icon-action" />
++                    </div>
++                  );
++                }
++
++                return (
++                  <LogRow
++                    key={virtualRow.key}
++                    dataIndex={virtualRow.index}
++                    event={event}
++                    measureRef={rowVirtualizer.measureElement}
++                  />
++                );
++              })}
++            </div>
++          </div>
++        </div>
++      )}
++    </div>
++  );
++};
++
++export default LogSearchView;
+diff --git a/src/pages/logs/LogsPage.tsx b/src/pages/logs/LogsPage.tsx
+index 4d007d23..04ab22a9 100644
+--- a/src/pages/logs/LogsPage.tsx
++++ b/src/pages/logs/LogsPage.tsx
+@@ -1,79 +1,125 @@
+-import { useEffect, useRef, useState } from 'react';
+-import { mdiArrowVerticalLock, mdiLoading } from '@mdi/js';
+-import { Icon } from '@mdi/react';
+-import { useVirtualizer } from '@tanstack/react-virtual';
++import { useState } from 'react';
++import { mdiArrowVerticalLock, mdiDownload, mdiFilterRemoveOutline, mdiMagnify } from '@mdi/js';
+ import cx from 'classnames';
+-import { throttle } from 'lodash';
++import { useImmer } from 'use-immer';
++import { useDebounceValue } from 'usehooks-ts';
+ 
++import Button from '@/components/Input/Button';
+ import IconButton from '@/components/Input/IconButton';
+-import { useLogsQuery } from '@/core/react-query/logs/queries';
++import Input from '@/components/Input/Input';
++import { toServerSearch } from '@/core/react-query/logging/helpers';
++import { useLogsDownloadMutation } from '@/core/react-query/logging/mutations';
++import { useLogsQuery } from '@/core/react-query/logging/queries';
++import toast from '@/core/toast';
++import { formatThousand } from '@/core/util';
++import LogLevelChip from '@/pages/logs/LogLevelChip';
++import LogLiveView from '@/pages/logs/LogLiveView';
++import LogSearchView from '@/pages/logs/LogSearchView';
++
++import type { LogLevelType } from '@/core/react-query/logging/types';
++
++// `None` is MEL enum completeness only — the server never emits it, so it's not
++// offered as a filter here.
++const logLevels: LogLevelType[] = ['Trace', 'Debug', 'Information', 'Warning', 'Error', 'Critical'];
+ 
+ const LogsPage = () => {
+   const logLines = useLogsQuery().data;
+-  const [scrollToBottom, setScrollToBottom] = useState(true);
++  const { isPending: isDownloading, mutate: downloadLogs } = useLogsDownloadMutation();
+ 
+-  const parentRef = useRef<HTMLDivElement>(null);
+-  const rowVirtualizer = useVirtualizer({
+-    count: logLines.length,
+-    getScrollElement: () => parentRef.current,
+-    estimateSize: () => 34,
+-  });
+-  const virtualItems = rowVirtualizer.getVirtualItems();
+-  // Magic code stolen from https://github.com/TanStack/virtual/issues/634
+-  // Fixes autoscroll issue in firefox
+-  // and now apparently chrome too
+-  if (parentRef.current) {
+-    rowVirtualizer.scrollRect = { height: parentRef.current.clientHeight, width: parentRef.current.clientWidth };
+-  }
++  const [scrollToBottom, setScrollToBottom] = useState(true);
++  const [search, setSearch] = useState('');
++  const [debouncedSearch] = useDebounceValue(search.trim(), 250);
++  const [activeLevels, setActiveLevels] = useImmer<Set<LogLevelType>>(new Set());
+ 
+-  useEffect(() => {
+-    if (!rowVirtualizer || !scrollToBottom || logLines.length === 0) return;
+-    rowVirtualizer.scrollToIndex(logLines.length - 1);
+-  }, [logLines, scrollToBottom, rowVirtualizer]);
++  // Live mode shows the SignalR tail; any active filter (debounced search text or level chips)
++  // switches to server-side search over the full history. A future mode toggle could let the
++  // level chips and/or search text filter the live tail client-side instead, if needed.
++  const filtersActive = debouncedSearch !== '' || activeLevels.size > 0;
+ 
+-  // Taken from ChatGPT...
+-  // Disables auto scroll when user scrolls up
+-  const checkScrollDirection = useRef(
+-    throttle(() => {
+-      if (!parentRef.current) return;
+-      const currentScroll = parentRef.current.scrollTop;
++  const toggleLevel = (level: LogLevelType) => {
++    setActiveLevels((draft) => {
++      if (draft.has(level)) {
++        draft.delete(level);
++      } else {
++        draft.add(level);
++      }
++    });
++  };
+ 
+-      setTimeout(() => {
+-        if (parentRef.current && parentRef.current.scrollTop < currentScroll) setScrollToBottom(false);
+-      }, 50);
+-    }, 1000),
+-  ).current;
++  const clearFilters = () => {
++    setSearch('');
++    setActiveLevels(new Set());
++  };
+ 
+-  // This exists because the value of scrollToBottom won't change inside checkScrollDirection
+-  const handleScroll = () => {
+-    if (scrollToBottom) checkScrollDirection();
++  const handleDownload = () => {
++    downloadLogs({
++      levels: activeLevels,
++      search: toServerSearch(debouncedSearch),
++    }, {
++      onError: () => toast.error('Failed to download logs.'),
++    });
+   };
+ 
+   return (
+     <>
+       <title>Logs | Shoko</title>
+       <div className="flex grow flex-col gap-y-6">
+-        <div className="flex items-center justify-between rounded-lg border border-panel-border bg-panel-background p-6">
+-          <div className="text-xl font-semibold">Logs</div>
+-          <div className="flex gap-x-2">
+-            {/* TODO: Disabled until functionality is implemented */}
+-            {/* <Input */}
+-            {/*   id="search" */}
+-            {/*   onChange={event => setSearch(event.target.value)} */}
+-            {/*   type="text" */}
+-            {/*   value={search} */}
+-            {/*   placeholder="Search Logs..." */}
+-            {/*   startIcon={mdiMagnify} */}
+-            {/*   className="w-80" */}
+-            {/*   disabled */}
+-            {/* /> */}
+-            {/* <IconButton icon={mdiFilterOutline} buttonType="secondary" buttonSize="normal" tooltip="Filter"/> */}
+-            {/* <IconButton icon={mdiCogOutline} buttonType="secondary" buttonSize="normal" tooltip="Settings"/> */}
++        <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-panel-border bg-panel-background p-6">
++          <div className="flex flex-col">
++            <div className="text-xl font-semibold">
++              Logs
++            </div>
++            <div className="text-sm opacity-65">
++              {filtersActive
++                ? 'Searching the full log history on the server'
++                : `${formatThousand(logLines.length)} lines in the live tail`}
++            </div>
++          </div>
++
++          <div className="flex flex-wrap items-center gap-2">
++            <div className="flex items-center gap-1">
++              {logLevels.map(level => (
++                <Button
++                  key={level}
++                  onClick={() => toggleLevel(level)}
++                  tooltip={`${activeLevels.has(level) ? 'Hide' : 'Show'} ${level} logs`}
++                >
++                  <LogLevelChip level={level} active={activeLevels.has(level)} />
++                </Button>
++              ))}
++            </div>
++
++            <Input
++              id="search"
++              type="text"
++              placeholder="Search..."
++              startIcon={mdiMagnify}
++              value={search}
++              onChange={event => setSearch(event.target.value)}
++              inputClassName="py-2!"
++            />
++            <IconButton
++              icon={mdiFilterRemoveOutline}
++              buttonType="secondary"
++              buttonSize="normal"
++              disabled={!filtersActive}
++              onClick={clearFilters}
++              tooltip="Clear filters"
++            />
++            <IconButton
++              icon={mdiDownload}
++              buttonType="secondary"
++              buttonSize="normal"
++              loading={isDownloading}
++              onClick={handleDownload}
++              tooltip="Download logs"
++            />
+             <IconButton
+               icon={mdiArrowVerticalLock}
+               buttonType="secondary"
+               buttonSize="normal"
+-              className={cx(scrollToBottom ? 'text-panel-text-primary' : 'text-panel-text!')}
++              disabled={filtersActive}
++              className={cx(scrollToBottom ? 'text-panel-icon-action' : 'text-panel-text!')}
+               onClick={() => setScrollToBottom(prev => !prev)}
+               tooltip={`${scrollToBottom ? 'Disable' : 'Enable'} scroll to bottom`}
+             />
+@@ -81,45 +127,21 @@ const LogsPage = () => {
+         </div>
+ 
+         <div className="flex grow rounded-lg border border-panel-border bg-panel-background p-6">
+-          <div
+-            className="w-full overflow-y-auto rounded-lg border-16 border-panel-input bg-panel-input contain-strict"
+-            ref={parentRef}
+-            onScroll={handleScroll}
+-          >
+-            {logLines.length === 0
+-              ? (
+-                <div className="flex h-full items-center justify-center text-panel-text-primary">
+-                  <Icon path={mdiLoading} size={4} spin />
+-                </div>
+-              )
+-              : (
+-                <div
+-                  className="relative w-full"
+-                  style={{ height: rowVirtualizer.getTotalSize() }}
+-                >
+-                  <div
+-                    className="absolute inset-x-4 top-0"
+-                    style={{ transform: `translateY(${virtualItems[0]?.start ?? 0}px)` }}
+-                  >
+-                    {virtualItems.map((virtualRow) => {
+-                      const row = logLines[virtualRow.index];
+-                      return (
+-                        <div
+-                          className="flex gap-x-6 pt-2"
+-                          key={virtualRow.key}
+-                          data-index={virtualRow.index}
+-                          ref={rowVirtualizer.measureElement}
+-                        >
+-                          <div className="w-44 shrink-0 opacity-65">{row.TimeStamp}</div>
+-                          <div className="w-32 shrink-0 overflow-hidden whitespace-nowrap">{row.Level}</div>
+-                          <div className="break-all">{row.Message}</div>
+-                        </div>
+-                      );
+-                    })}
+-                  </div>
+-                </div>
+-              )}
+-          </div>
++          {filtersActive
++            ? (
++              <LogSearchView
++                search={debouncedSearch}
++                activeLevels={activeLevels}
++                onClearFilters={clearFilters}
++              />
++            )
++            : (
++              <LogLiveView
++                logLines={logLines}
++                scrollToBottom={scrollToBottom}
++                setScrollToBottom={setScrollToBottom}
++              />
++            )}
+         </div>
+       </div>
+     </>

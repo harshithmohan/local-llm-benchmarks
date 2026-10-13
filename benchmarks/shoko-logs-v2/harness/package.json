@@ -1,0 +1,21 @@
+{
+  "name": "shoko-logs-v2-harness",
+  "version": "0.1.0-draft",
+  "private": true,
+  "type": "module",
+  "description": "Runtime acceptance harness for the shoko-logs v2 benchmark. Asserts the Score A [R] lines of rubric.md against the running Shoko-WebUI app (outbound requests + observable DOM), with the backend API and SignalR hub stubbed by Playwright.",
+  "packageManager": "pnpm@12.8.1",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0"
+  }
+}
