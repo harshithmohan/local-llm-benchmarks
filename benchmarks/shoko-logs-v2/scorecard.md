@@ -18,6 +18,7 @@ The **model is the unit**: each card covers all of a model's quants, and near-id
 |---|---|---|---|---|---|---|---|---|
 | qwen36-35b-a3b | UD-IQ4_XS | default | not converged | 15.5 / 25 | 55.5 / 19.5 | 67.5 / 30.5 | 26.3 | Stage 2's first turn ended with zero edits (a zero-work stop, not an output-cap nudge — this trajectory hit no cap) and was resumed once; the host's billion-context plugin made 8 `compress` calls, peaking at ~120k tokens of context and ending at ~36k |
 | katcoder-v2.5-dev | APEX-I-Compact | default | not converged | 31 / 37.5 | 37.5 / 37.5 | 38 / 37.5 | 21.8 | No output-cap nudge and no zero-work stop in any stage; the host's billion-context plugin made 5 `compress` calls, peaking at ~127k tokens of context and ending at ~41k |
+| qwen38-flash-next | IQ3_XXS | xhigh | converged: stage 2 | 91 / 61 | 3 / 60 | 99.5 / 84 | 76.6 | Served by Strata at ctx 200000 with MTP; no output-cap nudge and no zero-work stop in any stage; stage 1's harness 0/37 is a genuine candidate regression, not an environment failure — that round renamed the page title away from the reference's `Logs`, breaking the suite's page-open check, and stage 2 fixed it; stage 0 carries the served entry's cold load |
 
 ### opencode-go (cloud) models
 
