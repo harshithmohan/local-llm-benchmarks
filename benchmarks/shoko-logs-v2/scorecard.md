@@ -5,10 +5,10 @@ Two **independent 0–100 scores per stage, never summed** (see `README.md` → 
 Which runs count:
 
 - **One trajectory per model per parameter set** — a clean-base implementation run (**stage 0**) plus up to two reviewer-driven repair rounds in the **same** session (**stages 1** and **2**). No repeats, no median.
-- **Outcome** is `converged: stage 0|1|2`, or **`not converged`** = still red after two rounds. *Converged* means the gates pass **and** the runtime harness passes in full (37/37 today). "Not converged" is a published result, never re-run or averaged (see README → "Method").
+- **Outcome** is `converged: stage 0|1|2`, or **`not converged`** = still red after two rounds — with the trajectory's **final harness result** in parentheses (`n/37`), so a run one assertion short and a run still in the red read differently at a glance. *Converged* means the gates pass **and** the runtime harness passes in full (37/37 today). "Not converged" is a published result, never re-run or averaged (see README → "Method").
 - A stage that needed a nudge is flagged in the card so its number is read with that help in mind.
 
-Per-model breakdown in `scorecards/<model>.md` (one card per model, a row per quant, one block per stage); run artifacts under `runs/<model>/` are deleted once recorded — the scorecards are the persistent record. The tables below carry each stage's Score A/B and the **total model time**; harness results and per-stage model times live in the card.
+Per-model breakdown in `scorecards/<model>.md` (one card per model, a row per quant, one block per stage); run artifacts under `runs/<model>/` are deleted once recorded — the scorecards are the persistent record. The tables below carry each stage's Score A/B, the **final harness result** and the **total model time**; per-stage harness results and per-stage model times live in the card.
 
 The **model is the unit**: each card covers all of a model's quants, and near-identical quants across rigs are collapsed — bench one and mark the other `— (not run: duplicate of <quant>)` rather than benching both.
 
@@ -16,15 +16,15 @@ The **model is the unit**: each card covers all of a model's quants, and near-id
 
 | Model | Quant | Level | Outcome | Stage 0 A / B | Stage 1 A / B | Stage 2 A / B | Total model time (min) | Notes |
 |---|---|---|---|---|---|---|---|---|
-| qwen36-35b-a3b | UD-IQ4_XS | default | not converged | 15.5 / 25 | 55.5 / 19.5 | 67.5 / 30.5 | 26.3 | Stage 2's first turn ended with zero edits (a zero-work stop, not an output-cap nudge — this trajectory hit no cap) and was resumed once; the host's billion-context plugin made 8 `compress` calls, peaking at ~120k tokens of context and ending at ~36k |
-| katcoder-v2.5-dev | APEX-I-Compact | default | not converged | 31 / 37.5 | 37.5 / 37.5 | 38 / 37.5 | 21.8 | No output-cap nudge and no zero-work stop in any stage; the host's billion-context plugin made 5 `compress` calls, peaking at ~127k tokens of context and ending at ~41k |
-| qwen38-flash-next | IQ3_XXS | xhigh | converged: stage 2 | 91 / 61 | 3 / 60 | 99.5 / 84 | 76.6 | Served by Strata at ctx 200000 with MTP; no output-cap nudge and no zero-work stop in any stage; stage 1's harness 0/37 is a genuine candidate regression, not an environment failure — that round renamed the page title away from the reference's `Logs`, breaking the suite's page-open check, and stage 2 fixed it; stage 0 carries the served entry's cold load |
+| qwen36-35b-a3b | UD-IQ4_XS | default | not converged (23/37) | 15.5 / 25 | 55.5 / 19.5 | 67.5 / 30.5 | 26.3 | Stage 2's first turn ended with zero edits (a zero-work stop, not an output-cap nudge — this trajectory hit no cap) and was resumed once; the host's billion-context plugin made 8 `compress` calls, peaking at ~120k tokens of context and ending at ~36k |
+| katcoder-v2.5-dev | APEX-I-Compact | default | not converged (15/37) | 31 / 37.5 | 37.5 / 37.5 | 38 / 37.5 | 21.8 | No output-cap nudge and no zero-work stop in any stage; the host's billion-context plugin made 5 `compress` calls, peaking at ~127k tokens of context and ending at ~41k |
+| qwen38-flash-next | IQ3_XXS | xhigh | not converged (36/37) | 78 / 58.5 | 92 / 64 | 96 / 100 | 94.2 | Served by Strata at ctx 200000 with MTP; no output-cap nudge and no zero-work stop in any stage; measured on the revised harness whose page-open gate no longer depends on the page title text; the last round's reconnect merge drops a live entry that shares the backlog cutoff timestamp; stage 0 carries the served entry's cold load |
 
 ### opencode-go (cloud) models
 
 | Model | Quant | Level | Outcome | Stage 0 A / B | Stage 1 A / B | Stage 2 A / B | Total model time (min) | Notes |
 |---|---|---|---|---|---|---|---|---|
-| deepseek-v4.1-flash | — | high | converged: stage 2 | 89 / 62.5 | 90 / 65.5 | 100 / 84 | 27.6 | No output-cap nudge and no zero-work stop in any stage; the first Stage-0 attempt was void — the checkout exposed the merged upstream implementation through its git history — so this is the clean re-run in an isolated checkout; the host's billion-context plugin made 7 `compress` calls; the trajectory ended at ~86k tokens of context |
+| deepseek-v4.1-flash | — | high | converged: stage 2 (37/37) | 89 / 62.5 | 90 / 65.5 | 100 / 84 | 27.6 | No output-cap nudge and no zero-work stop in any stage; the first Stage-0 attempt was void — the checkout exposed the merged upstream implementation through its git history — so this is the clean re-run in an isolated checkout; the host's billion-context plugin made 7 `compress` calls; the trajectory ended at ~86k tokens of context |
 
 ## Nudges
 
