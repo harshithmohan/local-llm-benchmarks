@@ -17,6 +17,7 @@ The **model is the unit**: each card covers all of a model's quants, and near-id
 | Model | Quant | Level | Outcome | Gates | Final A / B | Total model time (min) | Notes |
 |---|---|---|---|---|---|---|---|
 | qwen36-35b-a3b | UD-IQ4_XS | default | not converged | ✅✅✅ | 67.5 / 30.5 | 26.3 | Stage 2's first turn ended with zero edits (a zero-work stop, not an output-cap nudge — this trajectory hit no cap) and was resumed once |
+| katcoder-v2.5-dev | APEX-I-Compact | default | not converged | ✅✅✅ | 38 / 37.5 | 21.8 | No output-cap nudge and no zero-work stop in any stage; the model compacted its own session via the host plugin in Stages 1–2 |
 
 ### opencode-go (cloud) models
 
