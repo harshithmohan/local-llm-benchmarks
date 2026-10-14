@@ -1,6 +1,6 @@
 # local-llm-benchmarks
 
-Benchmark reports for running local LLMs on two consumer GPUs, using three builds of [llama.cpp](https://github.com/ggml-org/llama.cpp): upstream llama.cpp, [ik-llama.cpp](https://github.com/ikawrakow/ik_llama.cpp), and the [moe-cache fork](https://github.com/GenerelSchwerz/llama.cpp) (branch `moe-cache`). One Rig 2 model also has a [vLLM](https://github.com/syv-ai/HyperQwen) container stack, and Rig 1 runs the same Qwen3.8-Flash-Next Q2_0 weights on a fifth engine, the [Strata](https://github.com/Niko1221/Strata) pack engine.
+Benchmark reports for running local LLMs on two consumer GPUs, using three builds of [llama.cpp](https://github.com/ggml-org/llama.cpp): upstream llama.cpp, [ik-llama.cpp](https://github.com/ikawrakow/ik_llama.cpp), and the [moe-cache fork](https://github.com/GenerelSchwerz/llama.cpp) (branch `moe-cache`). One Rig 2 model also has a [vLLM](https://github.com/syv-ai/HyperQwen) container stack, and Rig 1 runs Qwen3.8-Flash-Next on a fifth engine, the [Strata](https://github.com/Niko1221/Strata) pack engine.
 
 ## Rigs
 
@@ -15,7 +15,7 @@ Rig 1 was first benchmarked 2026-09-10; the engines used on each rig are listed 
 - **llama.cpp** ([ggml-org/llama.cpp](https://github.com/ggml-org/llama.cpp)) - Rig 1: v0.5.0-dev d834d44 since the 2026-09-26 container rebuild (older stock rows on v0.4.0-dev 30b6a75); Rig 2: v0.5.0-dev build 11146 (7fe450e193).
 - **ik-llama.cpp** ([ikawrakow/ik_llama.cpp](https://github.com/ikawrakow/ik_llama.cpp), build 1aaf710 (v1; older rows 3bb386e), Rig 1) - Ilya Kawrakow's performance fork of llama.cpp. Flag syntax: [engine-notes/ik-llama.md](engine-notes/ik-llama.md).
 - **llama.cpp (moe-cache fork)** ([GenerelSchwerz/llama.cpp](https://github.com/GenerelSchwerz/llama.cpp), branch `moe-cache`, both rigs on build b11814-28d73c87c since 2026-10-08) - a llama.cpp fork adding a dynamic CUDA expert cache (`--moe-expert-cache-size`; no profile/trace step needed) and an opt-in generic hybrid CPU/GPU executor (`--moe-hybrid`) with model-bound expert profiles; while the cache is enabled it overrides `-ncmoe` placement. Flags and the `--experimental-logs` validation recipe: [engine-notes/moe-cache-fork.md](engine-notes/moe-cache-fork.md).
-- **Strata** ([Niko1221/Strata](https://github.com/Niko1221/Strata), engine 0.1.41, Rig 1) - a llama.cpp-derived engine that runs Qwen3.8-Flash-Next from a *pack* (expert rows indexed on the SSD, all experts pinned in host RAM, an adaptive VRAM expert cache) behind its own OpenAI/Anthropic API server. Not a `llama-server` build: its rows are measured through Strata's own `/v1/chat/completions` route with a chat template always applied, so they are not directly comparable with the llama.cpp rows above. Flags, the KV modes and the llama.cpp flag mapping: [engine-notes/strata.md](engine-notes/strata.md).
+- **Strata** ([Niko1221/Strata](https://github.com/Niko1221/Strata), engine 0.1.44.1, Rig 1) - a llama.cpp-derived engine that runs Qwen3.8-Flash-Next from a *pack* (expert rows indexed on the SSD, all experts pinned in host RAM, an adaptive VRAM expert cache) behind its own OpenAI/Anthropic API server. Not a `llama-server` build: its rows are measured through Strata's own `/v1/chat/completions` route with a chat template always applied, so they are not directly comparable with the llama.cpp rows above. Flags, the KV modes and the llama.cpp flag mapping: [engine-notes/strata.md](engine-notes/strata.md).
 
 The llama.cpp builds support MTP speculative decode; Strata has its own MTP. Timings are read from the `llama-server` response `timings` (or its request log) for llama.cpp, from the same `timings` fields for Strata, and vLLM's Prometheus metrics for vLLM. `llama-bench` is not used.
 
@@ -45,7 +45,7 @@ Headline tables list only usable configs (full context, no rejected/OOM setups);
 | --- | --- | --- | --- | --- |
 | Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | 262144 | 1761 | **83** |
 | Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | 524288 (YaRN 2x) | 2063 | **52** |
-| Qwen3.8-Flash-Next | GSQ-RCO IQ3_XXS + MTP (Strata) | 200000 | 1018 | **35.1** |
+| Qwen3.8-Flash-Next | GSQ-RCO IQ3_XXS + MTP (Strata) | 200000 | 1019 | **41.8** |
 | KAT-Coder-V2.5-Dev | APEX-I-Compact | 262144 | 1534 | **71** |
 
 All rows here are measured on the 10k opencode session prompt ([test-prompts.md](test-prompts.md)).
