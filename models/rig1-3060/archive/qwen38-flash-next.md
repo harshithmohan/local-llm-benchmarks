@@ -374,15 +374,17 @@ The same shape with `--vram-reserve-mib 768` in the config's `args` (what the 0.
 
 ### Engine 0.1.45 and the CUDA decode switches (2026-10-19)
 
-**Protocol rows (2026-10-19, the card's numbers).** One cold load of the served 200000 shape on engine 0.1.45 with the five CUDA decode switches on, one pair per prompt, second pass recorded, no request overrides (served `temperature 1.0`), `--prompt-cache 0`, `cache_n` 0, full 512-token window, `--prefill auto` + `STRATA_PREFILL_LEND_PCT=95` -> 5632 chunk, 1784-slot cache, 458 MiB free at load:
+**Protocol rows (2026-10-19, the card's numbers).** One cold load of the served 200000 shape on engine 0.1.45 with the five CUDA decode switches on and the `vision` block + `--vision` in the config (CPU encoder, see the vision section below): one pair per prompt, second pass recorded, no request overrides (served `temperature 1.0`), `--prompt-cache 0`, `cache_n` 0, full 512-token window, `--prefill auto` + `STRATA_PREFILL_LEND_PCT=95` -> 5632 chunk, 1781-slot cache, 458 MiB free at load, 11571 MiB per-process:
 
 | prompt | prefill t/s | decode t/s | draft accepted | VRAM |
 | --- | --- | --- | --- | --- |
-| 10k opencode (10554) | 1054.4 | 48.9 | 391 / 258 (66%) | 11557 MiB |
-| ~60K refactor (59802) | 1022.2 | 49.7 | 421 / 299 (71%) | 11557 MiB |
-| ~120K refactor (119344) | 984.3 | 43.7 | 328 / 210 (64%) | 11557 MiB |
+| 10k opencode (10554) | 1054.2 | 43.4 | 396 / 221 (56%) | 11571 MiB |
+| ~60K refactor (59802) | 1027.3 | 43.0 | 327 / 193 (59%) | 11571 MiB |
+| ~120K refactor (119344) | 987.8 | 37.8 | 371 / 179 (48%) | 11571 MiB |
 
-These sit 15-27% above the 0.1.44.1 rows (41.8 / 39.4 / 38.2). That gap is session level rather than an engine difference: three cold sessions of the identical 10k shape on this build read 48.9, 43.6 and 47.2 t/s (same 1784-slot cache and 11557 MiB; the low session logged SM 1995-2032 MHz, 140-170 W, 63-71 °C, so not throttling), and the 17-pass A/B arms sat at 40.8/42.7. Same-build 10k decode therefore spans 40.8-48.9 t/s across sessions, so only a same-session comparison can attribute a delta; the 17-pass A/B below is that comparison and its absolute level is not comparable with the protocol rows.
+A second cold 10k session on the same config read 1056.4 / 43.5 (223 of 383 drafts, 58%). Prefill is +3-4% above the 0.1.44.1 rows at every size (1054.2 against 1018.9, 1027.3 against 990.0, 987.8 against 952.9) and decode is at or above them at 10k and 60K (43.4 against 41.8, 43.0 against 39.4) and level at 120K (37.8 against 38.2) on a slightly smaller cache (1781 against 1787 slots) and a comparable hit rate (65-72% against 63-70%). The decode spread is the model's session band, which draft acceptance sets - not the encoder.
+
+**Vision on/off A/B (28 passes, same session).** 14 passes per arm of the identical 10k shape, alternating, `--prompt-cache 0`, `cache_n` 0, 512-token window, first pass after each cold load excluded: **43.16 t/s with the CPU encoder against 43.34 without** (40.8-46.9 overall, 49-60% acceptance), prefill 1048-1061 in both arms, cache hit rate 68.9-73.2% in both, VRAM and clocks unchanged. The encoder costs nothing measurable on the text path. Decode broadly follows acceptance pass by pass (40.8 at 47%, 45.0-46.9 at 55-60%) at roughly 0.4-0.5 t/s per point, with card temperature (2002 MHz at 66-70 °C on each arm's first pass, settling to 1980 MHz at 73-75 °C) worth ~1%.
 
 **Switch A/B (17 passes per arm, same session).** Engine 0.1.45 (tag `v0.1.45`, `477ac13c`) changed nothing measurable on its own: 17 passes of the 10k prompt at the served shape (`--prompt-cache 0`, `cache_n` 0, 512-token window, first pass after each cold load excluded) averaged 40.8 t/s decode (38.4-42.8) and ~1050 t/s prefill, against the 0.1.44.1 row's 41.8 / 1018.9 - decode inside this model's run-to-run noise, prefill +3%.
 
@@ -393,9 +395,28 @@ The engine's 0.1.45 CUDA opt-in switches do move decode at 10k. With `STRATA_ATT
 | 0.1.45, switches off | 17 | ~1050 | 40.8 (38.4-42.8) | 11482 MiB |
 | 0.1.45, switches on | 17 | ~1048 | **42.7 (39.6-46.7)** | 11482 MiB |
 
-Decode is bimodal by pass (a ~43-47 band and a ~39-41 band in both arms), so the arm difference is band occupancy rather than every pass shifting; a third load session of the on-arm, run after the off-arm had been re-measured, held 43.9 over 5 passes, so it is not a drift artefact. Both arms decode the same 512-token window with `cache_n` 0.
+Decode is bimodal by pass (a ~43-47 band and a ~39-41 band in both arms), so the arm difference is band occupancy rather than every pass shifting; a third load session of the on-arm, run after the off-arm had been re-measured, held 43.9 over 5 passes, so it is not a drift artefact. A later session re-measured the on-arm at 43.16 over 14 passes (the vision on/off A/B above), consistent with the 42.7 here. Both arms decode the same 512-token window with `cache_n` 0.
 
-Only 10k was measured; the 60K and 120K rows above were not re-run on 0.1.45. `STRATA_QSA_ROWS` was left off (negative on sm_86 in the engine's own measurements, which were taken after a 30K-token prompt), and `--parallel`, `MMQ_TAB` and `PCIE_BALANCE` were not tried.
+Only 10k was measured in this A/B; the 60K and 120K protocol rows above are on 0.1.45. `STRATA_QSA_ROWS` was left off (negative on sm_86 in the engine's own measurements, which were taken after a 30K-token prompt), and `--parallel`, `MMQ_TAB` and `PCIE_BALANCE` were not tried.
+
+## Vision encoder (2026-10-19)
+
+The served config gained a `vision` block and `--vision`, so `/v1/chat/completions` accepts `image_url` parts. The block is `{"exe": "<engine>/strata-vision", "mmproj": "<models>/mmproj-Qwen3.8-Flash-Next-BF16.gguf", "model": "<models>/…-IQ3_XXS-00001-of-00002.gguf", "gpu": false, "max_tokens": 1024, "threads": 10}` - the BF16 mmproj (907,543,008 B, `sha256 b1a82259…`), the native shard as `model`, the encoder **on the CPU**, and no `min_tokens`.
+
+- **Why CPU.** The GPU encoder keeps ~1.4 GB of VRAM free for itself, which this card cannot spare; the engine also adds `--vram-reserve-mib 700` to the args only when `"gpu"` is true (`serve/server.py:2655-2657`), so CPU mode keeps the full expert cache. The encoder is a separate process (~1.35 GB RSS while the engine is loaded; it exits with the engine) and a picture costs ~3.5-5 s end to end including prefill.
+- **What it costs the text path.** Nothing measurable: the encoder is a separate process (exits with the engine) and the engine's own VRAM, expert cache, free-at-load figure and prefill are unchanged - the 28-pass on/off A/B above reads 43.16 against 43.34 t/s. Image parts are charged to the prompt: ~300 tokens for 640x480, ~970 for 1280x960 (`"max_tokens": 1024` caps it per picture).
+- **Encoder tests** (three generated images: 640x480 at 11 px text, 640x480 at 20 px, 1280x960; each asked to transcribe and to list three shapes):
+
+| image | `min_tokens` 1024 | no `min_tokens` |
+| --- | --- | --- |
+| 640x480, 11 px text | `STRAVISION TEST0.1.45 …` (spacing mangled) | exact: `STRATA VISION TEST 0.1.45 / circle square triangle / small text 7391 + 1258 = 8649` |
+| 640x480, 20 px text | exact | exact |
+| 1280x960 text | exact | exact |
+| shapes, all three sizes | correct (`red circle / green square / blue triangle`) | correct |
+
+  So `min_tokens` is not needed - it pads small pictures to 1024 image tokens, costing context and reading them *worse* - and the default cap of 1024 is enough for a full-page picture. This is the point of the `max_tokens`/`min_tokens` split in the encoder block: `max_tokens` caps the tokens per picture, `min_tokens` (unset here) would floor them.
+- **Gotcha that made it look broken.** With a small answer cap (a request with `max_tokens` 512 against a thinking model) the whole budget went to reasoning and the response came back with an empty `content`; the server's own budget logic raises the cap only when the caller does not set one. The same images answered correctly at the 1024 image budget with no request-side cap.
+- One image request logged `WARNING: only 322 MiB of VRAM free at the start of this request (below 512 MiB)` (#2065) while holding an image's embeddings, i.e. image requests sit closer to the paging line than text ones. No mitigation was applied: the engine's suggested `--vram-reserve-mib` is a load-time sizing input (and is added automatically only for a GPU encoder).
 
 ## Spec window and min-p sweep (Strata, `GSQ-RCO Q2_0`)
 
@@ -503,5 +524,5 @@ Every row above is a cold, cache-free read (`--prompt-cache 0`). A real session 
 - Remaining knobs are neutral or negative: `--ple-prefetch` (+1.2) and CPU affinity (+0.7) are within noise, while `-b 8192`, `--spec-default`, `--moe-early-router`, `--experimental-logs`, `--live-context-workspace`, `--phase-aware-workspace`, f16 KV and `--ctx-checkpoints 0` all cost decode. Decode overlap is kept because it is free.
 - `GSQ-RCO Q2_0` is the faster quant on this rig: at cache 80 it does 436/25.7 at 10k and 407/14.7 at 60K (vs 362/21.4 and 341/13.1 for UD-IQ3_XXS) at lower VRAM; with the MTP head it does 428/35 at 96k/cache 40 and 429/35 at 80k/cache 40 (the shared head reached 388/33 and 390/24 at 96k, or 426/35 and 398/24 at 80k/cache 48). It is a 2.40 bpw quant, so this is a speed/VRAM win - the GSQ-RCO model card reports a lower task-average quality than IQ3_XXS (89.07 vs 92.57).
 - `GSQ-RCO Coder IQ1_M` runs (with `GGML_CUDA_DISABLE_FUSION=1`) but is the slowest quant tested here: 458/19.9 at 96k/cache 40, and the only one whose expert cache needs the fusion workaround. It is a pruned coder checkpoint (256 experts, 1.89 bpw effective), not a re-quant, so its decode is not directly comparable with the 512-expert quants - it trades speed for size and a code/agentic quality target. On the pack engine it reaches 932.8/30.3 at 10k and 950.2/28.4 at 60K on a 200000 window, against 1058.5/39.6 and 1020.5/39.9 for `GSQ-RCO Q2_0` on the same engine (0.1.38) and window.
-- `GSQ-RCO IQ3_XXS` on engine **0.1.45** with the CUDA decode switches (served since 2026-10-19): 1054.4 / 48.9 at 10k, 1022.2 / 49.7 at 60K, 984.3 / 43.7 at 120k, 11557 MiB per-process - at or above the 0.1.41 `Q2_0` figures (1058.5 / 44.2, 1045.0 / 42.4, 1007.7 / 41.8) at every size, from a slightly smaller cache (1784 vs 2670 slots).
+- `GSQ-RCO IQ3_XXS` on engine **0.1.45** with the CUDA decode switches and the vision encoder (CPU) on - the served shape since 2026-10-19: 1054.2 / 43.4 at 10k, 1027.3 / 43.0 at 60K, 987.8 / 37.8 at 120k, 11571 MiB per-process. Prefill is +3-4% over the 0.1.44.1 rows (1018.9 / 990.0 / 952.9) and within 2% of the 0.1.41 `Q2_0` figures (1058.5 / 1045.0 / 1007.7); decode is at or above the 0.1.44.1 rows at 10k and 60K and level at 120K (41.8 / 39.4 / 38.2) and inside this build's 40.8-46.9 session band against `Q2_0` (44.2 / 42.4 / 41.8), so the two quants read as equivalent, on a smaller cache (1781 against 2670 slots). The vision encoder costs nothing measurable on the text path (28-pass on/off A/B: 43.16 against 43.34 t/s).
 - `GSQ-RCO IQ3_XXS` on engine **0.1.44.1** (the served shape, 2026-10-15): 1018.9 / 41.8 at 10k, 990.0 / 39.4 at 60K, 952.9 / 38.2 at 120k, 11466 MiB per-process. Prefill is unchanged from 0.1.41 (within 0.5% at every size) while decode gains +6% at 120k to +19% at 10k - the shorter the prompt, the bigger the gain - which narrows the Q2_0 decode gap from -14..-21% to -5..-9%. The 0.1.44 start-up advisory asks for `--vram-reserve-mib 768` at 462 MiB free; that flag is a load-time sizing input, not a floor (the prompt-path borrow and verify windows come out of it), and following it only shrinks the cache (1787 -> 1746 slots) and the chunk (5632 -> 5376) with decode unchanged, so the served shape keeps the engine default.
