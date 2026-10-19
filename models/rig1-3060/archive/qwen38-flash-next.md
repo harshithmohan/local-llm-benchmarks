@@ -382,7 +382,7 @@ The same shape with `--vram-reserve-mib 768` in the config's `args` (what the 0.
 | ~60K refactor (59802) | 1022.2 | 49.7 | 421 / 299 (71%) | 11557 MiB |
 | ~120K refactor (119344) | 984.3 | 43.7 | 328 / 210 (64%) | 11557 MiB |
 
-These sit 15-27% above the 0.1.44.1 rows (41.8 / 39.4 / 38.2). That gap is session level rather than an engine difference: the same build's 10k decode spans 40.8-48.9 t/s across sessions on this model, so only a same-session comparison can attribute a delta. The 17-pass A/B below is that comparison; its absolute level is not comparable with the protocol rows.
+These sit 15-27% above the 0.1.44.1 rows (41.8 / 39.4 / 38.2). That gap is session level rather than an engine difference: a second cold session of the identical 10k shape (2026-10-19, same 1784-slot cache and 11557 MiB, SM 1995-2032 MHz, 63-71 °C, 140-170 W) read 1014.4/42.8 then 1059.3/43.6 - 11% below the 48.9 above - and the 17-pass A/B arms sat at 40.8/42.7. So the same build's 10k decode spans 40.8-48.9 t/s across sessions, and only a same-session comparison can attribute a delta. The 17-pass A/B below is that comparison; its absolute level is not comparable with the protocol rows.
 
 **Switch A/B (17 passes per arm, same session).** Engine 0.1.45 (tag `v0.1.45`, `477ac13c`) changed nothing measurable on its own: 17 passes of the 10k prompt at the served shape (`--prompt-cache 0`, `cache_n` 0, 512-token window, first pass after each cold load excluded) averaged 40.8 t/s decode (38.4-42.8) and ~1050 t/s prefill, against the 0.1.44.1 row's 41.8 / 1018.9 - decode inside this model's run-to-run noise, prefill +3%.
 
