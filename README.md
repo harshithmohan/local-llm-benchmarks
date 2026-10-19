@@ -45,7 +45,7 @@ Headline tables list only usable configs (full context, no rejected/OOM setups);
 | --- | --- | --- | --- | --- |
 | Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | 262144 | 1761 | **83** |
 | Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | 524288 (YaRN 2x) | 2063 | **52** |
-| Qwen3.8-Flash-Next | GSQ-RCO IQ3_XXS + MTP (Strata) | 200000 | 1019 | **41.8** |
+| Qwen3.8-Flash-Next | GSQ-RCO IQ3_XXS + MTP (Strata) | 200000 | 1054 | **48.9** |
 | KAT-Coder-V2.5-Dev | APEX-I-Compact | 262144 | 1534 | **71** |
 
 All rows here are measured on the 10k opencode session prompt ([test-prompts.md](test-prompts.md)).

@@ -374,7 +374,17 @@ The same shape with `--vram-reserve-mib 768` in the config's `args` (what the 0.
 
 ### Engine 0.1.45 and the CUDA decode switches (2026-10-19)
 
-Engine 0.1.45 (tag `v0.1.45`, `477ac13c`) changed nothing measurable on its own: 17 passes of the 10k prompt at the served shape (`--prompt-cache 0`, `cache_n` 0, 512-token window, first pass after each cold load excluded) averaged 40.8 t/s decode (38.4-42.8) and ~1050 t/s prefill, against the 0.1.44.1 row's 41.8 / 1018.9 - decode inside this model's run-to-run noise, prefill +3%.
+**Protocol rows (2026-10-19, the card's numbers).** One cold load of the served 200000 shape on engine 0.1.45 with the five CUDA decode switches on, one pair per prompt, second pass recorded, no request overrides (served `temperature 1.0`), `--prompt-cache 0`, `cache_n` 0, full 512-token window, `--prefill auto` + `STRATA_PREFILL_LEND_PCT=95` -> 5632 chunk, 1784-slot cache, 458 MiB free at load:
+
+| prompt | prefill t/s | decode t/s | draft accepted | VRAM |
+| --- | --- | --- | --- | --- |
+| 10k opencode (10554) | 1054.4 | 48.9 | 391 / 258 (66%) | 11557 MiB |
+| ~60K refactor (59802) | 1022.2 | 49.7 | 421 / 299 (71%) | 11557 MiB |
+| ~120K refactor (119344) | 984.3 | 43.7 | 328 / 210 (64%) | 11557 MiB |
+
+These sit 15-27% above the 0.1.44.1 rows (41.8 / 39.4 / 38.2). That gap is session level rather than an engine difference: the same build's 10k decode spans 40.8-48.9 t/s across sessions on this model, so only a same-session comparison can attribute a delta. The 17-pass A/B below is that comparison; its absolute level is not comparable with the protocol rows.
+
+**Switch A/B (17 passes per arm, same session).** Engine 0.1.45 (tag `v0.1.45`, `477ac13c`) changed nothing measurable on its own: 17 passes of the 10k prompt at the served shape (`--prompt-cache 0`, `cache_n` 0, 512-token window, first pass after each cold load excluded) averaged 40.8 t/s decode (38.4-42.8) and ~1050 t/s prefill, against the 0.1.44.1 row's 41.8 / 1018.9 - decode inside this model's run-to-run noise, prefill +3%.
 
 The engine's 0.1.45 CUDA opt-in switches do move decode at 10k. With `STRATA_ATTN_DAILY`, `STRATA_EXPDEC`, `STRATA_SIDE_MIXER`, `STRATA_B6_MMVQ_ROWS` and `STRATA_QSA_SPLIT_ATTN` set, the same 17-pass protocol averaged **42.7 t/s** decode, +4.5% over the same engine without them, with prefill and VRAM unchanged.
 
@@ -493,4 +503,5 @@ Every row above is a cold, cache-free read (`--prompt-cache 0`). A real session 
 - Remaining knobs are neutral or negative: `--ple-prefetch` (+1.2) and CPU affinity (+0.7) are within noise, while `-b 8192`, `--spec-default`, `--moe-early-router`, `--experimental-logs`, `--live-context-workspace`, `--phase-aware-workspace`, f16 KV and `--ctx-checkpoints 0` all cost decode. Decode overlap is kept because it is free.
 - `GSQ-RCO Q2_0` is the faster quant on this rig: at cache 80 it does 436/25.7 at 10k and 407/14.7 at 60K (vs 362/21.4 and 341/13.1 for UD-IQ3_XXS) at lower VRAM; with the MTP head it does 428/35 at 96k/cache 40 and 429/35 at 80k/cache 40 (the shared head reached 388/33 and 390/24 at 96k, or 426/35 and 398/24 at 80k/cache 48). It is a 2.40 bpw quant, so this is a speed/VRAM win - the GSQ-RCO model card reports a lower task-average quality than IQ3_XXS (89.07 vs 92.57).
 - `GSQ-RCO Coder IQ1_M` runs (with `GGML_CUDA_DISABLE_FUSION=1`) but is the slowest quant tested here: 458/19.9 at 96k/cache 40, and the only one whose expert cache needs the fusion workaround. It is a pruned coder checkpoint (256 experts, 1.89 bpw effective), not a re-quant, so its decode is not directly comparable with the 512-expert quants - it trades speed for size and a code/agentic quality target. On the pack engine it reaches 932.8/30.3 at 10k and 950.2/28.4 at 60K on a 200000 window, against 1058.5/39.6 and 1020.5/39.9 for `GSQ-RCO Q2_0` on the same engine (0.1.38) and window.
+- `GSQ-RCO IQ3_XXS` on engine **0.1.45** with the CUDA decode switches (served since 2026-10-19): 1054.4 / 48.9 at 10k, 1022.2 / 49.7 at 60K, 984.3 / 43.7 at 120k, 11557 MiB per-process - at or above the 0.1.41 `Q2_0` figures (1058.5 / 44.2, 1045.0 / 42.4, 1007.7 / 41.8) at every size, from a slightly smaller cache (1784 vs 2670 slots).
 - `GSQ-RCO IQ3_XXS` on engine **0.1.44.1** (the served shape, 2026-10-15): 1018.9 / 41.8 at 10k, 990.0 / 39.4 at 60K, 952.9 / 38.2 at 120k, 11466 MiB per-process. Prefill is unchanged from 0.1.41 (within 0.5% at every size) while decode gains +6% at 120k to +19% at 10k - the shorter the prompt, the bigger the gain - which narrows the Q2_0 decode gap from -14..-21% to -5..-9%. The 0.1.44 start-up advisory asks for `--vram-reserve-mib 768` at 462 MiB free; that flag is a load-time sizing input, not a floor (the prompt-path borrow and verify windows come out of it), and following it only shrinks the cache (1787 -> 1746 slots) and the chunk (5632 -> 5376) with decode unchanged, so the served shape keeps the engine default.
