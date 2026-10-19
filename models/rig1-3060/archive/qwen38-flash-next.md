@@ -372,6 +372,21 @@ The recorded row is the second pass of each pair; both passes reported `cache_n`
 
 The same shape with `--vram-reserve-mib 768` in the config's `args` (what the 0.1.44 start-up advisory suggests at 462 MiB free) resolves `768 MiB reserved (+184 MiB for the draft head) -> 1324 slots`, ends at `expert cache 1746 slots, 2.87 GiB`, and the auto scan drops to `prompt chunk auto: 5376 tokens` borrowing 1595 slots: 528 MiB free at load, 406 MiB at the start of a request, where the advisory then asks for 896 instead. The reserve is a load-time sizing input, not a runtime floor - the prompt-path borrow and the verify windows come out of it - so the free figure at request start stays ~400-460 MiB either way and following the advice only shrinks the cache and the chunk. 10k decode with the 768 reserve: 41.7 (vs 41.8 at the default 700). The served shape therefore keeps the engine default.
 
+### Engine 0.1.45 and the CUDA decode switches (2026-10-19)
+
+Engine 0.1.45 (tag `v0.1.45`, `477ac13c`) changed nothing measurable on its own: 17 passes of the 10k prompt at the served shape (`--prompt-cache 0`, `cache_n` 0, 512-token window, first pass after each cold load excluded) averaged 40.8 t/s decode (38.4-42.8) and ~1050 t/s prefill, against the 0.1.44.1 row's 41.8 / 1018.9 - decode inside this model's run-to-run noise, prefill +3%.
+
+The engine's 0.1.45 CUDA opt-in switches do move decode at 10k. With `STRATA_ATTN_DAILY`, `STRATA_EXPDEC`, `STRATA_SIDE_MIXER`, `STRATA_B6_MMVQ_ROWS` and `STRATA_QSA_SPLIT_ATTN` set, the same 17-pass protocol averaged **42.7 t/s** decode, +4.5% over the same engine without them, with prefill and VRAM unchanged.
+
+| arm | passes | prefill t/s | decode t/s | VRAM |
+| --- | --- | --- | --- | --- |
+| 0.1.45, switches off | 17 | ~1050 | 40.8 (38.4-42.8) | 11482 MiB |
+| 0.1.45, switches on | 17 | ~1048 | **42.7 (39.6-46.7)** | 11482 MiB |
+
+Decode is bimodal by pass (a ~43-47 band and a ~39-41 band in both arms), so the arm difference is band occupancy rather than every pass shifting; a third load session of the on-arm, run after the off-arm had been re-measured, held 43.9 over 5 passes, so it is not a drift artefact. Both arms decode the same 512-token window with `cache_n` 0.
+
+Only 10k was measured; the 60K and 120K rows above were not re-run on 0.1.45. `STRATA_QSA_ROWS` was left off (negative on sm_86 in the engine's own measurements, which were taken after a 30K-token prompt), and `--parallel`, `MMQ_TAB` and `PCIE_BALANCE` were not tried.
+
 ## Spec window and min-p sweep (Strata, `GSQ-RCO Q2_0`)
 
 The `GSQ-RCO Q2_0` card runs this quant on the Strata pack engine, so the speculative pair was tuned there: `--spec T` (verify window) x `--spec-min-p F` (draft acceptance floor), `T` in 2/3/4 and `F` in 0.0/0.5. `T = 1` is not available here - a native (IQ) pack refuses to start without `--spec T` with `T >= 2`.
