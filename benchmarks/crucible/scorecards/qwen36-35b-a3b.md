@@ -1,6 +1,6 @@
 # Qwen3.6-35B-A3B — crucible results
 
-Updated: 2026-10-13 · model cards: [Rig 1](../../models/rig1-3060/qwen36-35b-a3b.md) · [Rig 2](../../models/rig2-3090/qwen36-35b-a3b.md) · [suite README](../README.md)
+Updated: 2026-10-13 · model cards: [Rig 1](../../../models/rig1-3060/qwen36-35b-a3b.md) · [Rig 2](../../../models/rig2-3090/qwen36-35b-a3b.md) · [suite README](../README.md)
 
 | Quant | KV cache | ctx | C1 NIAH | C2 reasoning | C3 structured | Notes |
 |---|---|---|---|---|---|---|

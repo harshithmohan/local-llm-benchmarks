@@ -1,6 +1,6 @@
 # Upstream (stock) llama.cpp
 
-[ggml-org/llama.cpp](https://github.com/ggml-org/llama.cpp). Rig 1: v0.5.0-dev d834d44 (since the 2026-09-26 container rebuild; older stock rows were measured on v0.4.0-dev 30b6a75). Rig 2: v0.5.0-dev build 11146 (7fe450e193).
+[ggml-org/llama.cpp](https://github.com/ggml-org/llama.cpp). Current stock pins per rig: [rig1-3060.md](../rig1-3060.md) / [rig2-3090.md](../rig2-3090.md); older Rig 1 stock rows (before 2026-09-26) were on v0.4.0-dev 30b6a75.
 
 The reference build. No expert cache.
 

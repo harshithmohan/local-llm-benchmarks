@@ -1,5 +1,5 @@
 <!--
-Model-card template. Copy to models/<rig>/<model>.md and fill the placeholders. Keep the section order; if a section has no data, keep its heading and mark it ("not yet run" / "see the archive") rather than deleting it.
+Model-card template. Copy to models/<rig>/<model>.md and fill the placeholders. Keep the section order; if a section has no data, keep its heading and mark it ("not yet run" / "see the archive") rather than deleting it - the Notes heading is the exception: omit it when there is nothing model-specific to note.
 
 Audience: someone who wants to pick a config and replicate it in one glance. Rule of thumb - a fact belongs here only if it is specific to THIS model/config. Global protocol -> methodology.md §Measurement methods. Prompt history, retired engines, failed quants -> archive/<model>.md. Prompt texts -> test-prompts.md.
 

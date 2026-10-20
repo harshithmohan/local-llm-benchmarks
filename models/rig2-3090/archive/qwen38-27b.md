@@ -137,7 +137,7 @@ Across sessions, the first raw `/completion` call (and occasionally a second) af
 
 ## vLLM short-prompt rows (retired C#/React prompts, 2026-09-27)
 
-`INT8_ACT=int8` served throughout (fp8 profile build `31f8b7a3`, KVarN `c68ac895`); retired short C#/React prompts averaged, single pass, requests routed through llama-swap. Superseded by the ~10k-prompt rows on the model page.
+`INT8_ACT=int8` served throughout (fp8 profile build `31f8b7a3`, KVarN `c68ac895`); retired short C#/React prompts averaged, single pass. Superseded by the ~10k-prompt rows on the model page.
 
 | Quant | Spec | ctx | KV | prefill t/s | decode t/s | acceptance | VRAM used |
 | --- | --- | --- | --- | --- | --- | --- | --- |

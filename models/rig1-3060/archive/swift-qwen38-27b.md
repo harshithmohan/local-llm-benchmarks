@@ -2,7 +2,7 @@
 
 `IQ2_XS` of the **Swift-1.5 fine-tune** of Qwen3.8-27B (`qwen35`, native ctx 262144, embedded MTP head). Dense hybrid SSM + attention - only every 4th layer carries full attention (`full_attention_interval=4`) - and not a MoE, so no expert split applies. This is the only Qwen3.8-27B variant benchmarked on Rig 1. Model card: [ukisai/Swift-1.5-Qwen3.8-27B-GSQ-RCO-GGUF](https://huggingface.co/ukisai/Swift-1.5-Qwen3.8-27B-GSQ-RCO-GGUF) (`IQ2_XS`).
 
-**Retired 2026-10-13** - dropped from the serving configuration, so this page is now the checkpoint's only card. Base model (Rig 2): [qwen38-27b.md](../rig2-3090/qwen38-27b.md). Methodology: [methodology.md](../../../methodology.md); issues: [issues.md](../../../issues.md).
+**Retired 2026-10-13** - dropped from the serving configuration, so this page is now the checkpoint's only card. Base model (Rig 2): [qwen38-27b.md](../../rig2-3090/qwen38-27b.md). Methodology: [methodology.md](../../../methodology.md); issues: [issues.md](../../../issues.md).
 
 Quants:
 

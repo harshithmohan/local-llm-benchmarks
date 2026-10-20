@@ -11,11 +11,13 @@ Rig 1 was first benchmarked 2026-09-10; the engines used on each rig are listed 
 
 ## Inference engines
 
-- **vLLM** ([syv-ai/HyperQwen](https://github.com/syv-ai/HyperQwen), vLLM 0.31.0) - a vLLM container stack running MTP with two KV modes, fp8 and KVarN 4/2-bit, both with pinned pools.
-- **llama.cpp** ([ggml-org/llama.cpp](https://github.com/ggml-org/llama.cpp)) - Rig 1: v0.5.0-dev d834d44 since the 2026-09-26 container rebuild (older stock rows on v0.4.0-dev 30b6a75); Rig 2: v0.5.0-dev build 11146 (7fe450e193).
-- **ik-llama.cpp** ([ikawrakow/ik_llama.cpp](https://github.com/ikawrakow/ik_llama.cpp), build 1aaf710 (v1; older rows 3bb386e), Rig 1) - Ilya Kawrakow's performance fork of llama.cpp. Flag syntax: [engine-notes/ik-llama.md](engine-notes/ik-llama.md).
-- **llama.cpp (moe-cache fork)** ([GenerelSchwerz/llama.cpp](https://github.com/GenerelSchwerz/llama.cpp), branch `moe-cache`, both rigs on build `f3f31a788` (`0.6.0-dev`, build 11997) since 2026-10-20; rows measured before that date are `b11814-28d73c87c`) - a llama.cpp fork adding a dynamic CUDA expert cache (`--moe-expert-cache-size`; no profile/trace step needed) and an opt-in generic hybrid CPU/GPU executor (`--moe-hybrid`) with model-bound expert profiles; while the cache is enabled it overrides `-ncmoe` placement. Flags and the `--experimental-logs` validation recipe: [engine-notes/moe-cache-fork.md](engine-notes/moe-cache-fork.md).
-- **Strata** ([Niko1221/Strata](https://github.com/Niko1221/Strata), engine 0.1.45, Rig 1) - a llama.cpp-derived engine that runs Qwen3.8-Flash-Next from a *pack* (expert rows indexed on the SSD, all experts pinned in host RAM, an adaptive VRAM expert cache) behind its own OpenAI/Anthropic API server. Not a `llama-server` build: its rows are measured through Strata's own `/v1/chat/completions` route with a chat template always applied, so they are not directly comparable with the llama.cpp rows above. Flags, the KV modes and the llama.cpp flag mapping: [engine-notes/strata.md](engine-notes/strata.md).
+- **vLLM** ([syv-ai/HyperQwen](https://github.com/syv-ai/HyperQwen)) - a vLLM container stack running MTP with two KV modes, fp8 and KVarN 4/2-bit, both with pinned pools (Rig 2). Flags: [engine-notes/vllm.md](engine-notes/vllm.md).
+- **llama.cpp** ([ggml-org/llama.cpp](https://github.com/ggml-org/llama.cpp)) - upstream stock builds (Rig 1, Rig 2). Flags/defaults: [engine-notes/upstream-stock.md](engine-notes/upstream-stock.md).
+- **ik-llama.cpp** ([ikawrakow/ik_llama.cpp](https://github.com/ikawrakow/ik_llama.cpp), Rig 1) - Ilya Kawrakow's performance fork of llama.cpp. Flag syntax: [engine-notes/ik-llama.md](engine-notes/ik-llama.md).
+- **llama.cpp (moe-cache fork)** ([GenerelSchwerz/llama.cpp](https://github.com/GenerelSchwerz/llama.cpp), branch `moe-cache`, both rigs) - a llama.cpp fork adding a dynamic CUDA expert cache (`--moe-expert-cache-size`; no profile/trace step needed) and an opt-in generic hybrid CPU/GPU executor (`--moe-hybrid`) with model-bound expert profiles; while the cache is enabled it overrides `-ncmoe` placement. Flags and the `--experimental-logs` validation recipe: [engine-notes/moe-cache-fork.md](engine-notes/moe-cache-fork.md).
+- **Strata** ([Niko1221/Strata](https://github.com/Niko1221/Strata), Rig 1) - a llama.cpp-derived engine that runs Qwen3.8-Flash-Next from a *pack* (expert rows indexed on the SSD, all experts pinned in host RAM, an adaptive VRAM expert cache) behind its own OpenAI/Anthropic API server. Not a `llama-server` build: its rows are measured through Strata's own `/v1/chat/completions` route with a chat template always applied, so they are not directly comparable with the llama.cpp rows above. Flags, the KV modes and the llama.cpp flag mapping: [engine-notes/strata.md](engine-notes/strata.md).
+
+Current per-rig engine pins (build ids with dates) live on the rig pages: [rig1-3060.md](rig1-3060.md), [rig2-3090.md](rig2-3090.md).
 
 The llama.cpp builds support MTP speculative decode; Strata has its own MTP. Timings are read from the `llama-server` response `timings` (or its request log) for llama.cpp, from the same `timings` fields for Strata, and vLLM's Prometheus metrics for vLLM. `llama-bench` is not used.
 
@@ -32,44 +34,47 @@ The llama.cpp builds support MTP speculative decode; Strata has its own MTP. Tim
 - [models/rig1-3060/](models/rig1-3060/) - Rig 1 model pages (recommended configs per model)
 - [models/rig2-3090/](models/rig2-3090/) - Rig 2 model pages (recommended configs per model)
 - [experiments/](experiments/) - transferability studies of low-level inference knobs (engine/arch-specific tuning evaluated against the recommended stacks)
-- [benchmarks/shoko-logs/](benchmarks/shoko-logs/) - agentic coding benchmark (reproduce the Shoko-WebUI logs-page rewrite + log download)
+- [benchmarks/shoko-logs-v2/](benchmarks/shoko-logs-v2/) - agentic coding benchmark, v2 (reproduce the Shoko-WebUI logs-page rewrite + log download; v1 removed 2026-10-18)
 - [benchmarks/crucible/](benchmarks/crucible/) - capability benchmark (Crucible LLM: long-context retrieval, reasoning, structured output)
 
 Each model page carries its full experiment log in the matching `archive/<model>.md` alongside it.
 
 ## Rig 1 results
 
-Headline tables list only usable configs (full context, no rejected/OOM setups); all tested quants, including archived ones, are on the model pages ([Contents](#contents) above). YaRN-extended rows raise context past the native window; engine labels are per-row on the model pages.
+Headline tables list only usable configs (full context, no rejected/OOM setups); all tested quants, including archived ones, are on the model pages ([Contents](#contents) above). YaRN-extended rows raise context past the native window; each row names its engine.
 
-| Model | Quant | Full-ctx support | Prefill t/s | Decode t/s |
-| --- | --- | --- | --- | --- |
-| Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | 262144 | 1761 | **83** |
-| Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | 524288 (YaRN 2x) | 2063 | **52** |
-| Qwen3.8-Flash-Next | GSQ-RCO IQ3_XXS + MTP (Strata) | 204800 | 1054 | **43.4** |
-| KAT-Coder-V2.5-Dev | APEX-I-Compact | 262144 | 1534 | **71** |
+| Model | Quant | Engine | Full-ctx support | Prefill t/s | Decode t/s |
+| --- | --- | --- | --- | --- | --- |
+| Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | moe-cache fork | 262144 | 2047 | **83.5** |
+| Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | moe-cache fork | 524288 (YaRN 2x) | 2318 | **59.6** |
+| Qwen3.8-Flash-Next | GSQ-RCO IQ3_XXS + MTP | Strata | 204800 | 1054.2 | **43.4** |
+| KAT-Coder-V2.5-Dev | APEX-I-Compact | moe-cache fork | 262144 | 1770 | **72.2** |
+| Gemma4-26B-A4B | Q4_K_M | moe-cache fork | 32768 | 1252 | **83.5** |
 
-All rows here are measured on the 10k opencode session prompt ([test-prompts.md](test-prompts.md)).
+All rows here are measured on the 10k opencode session prompt ([test-prompts.md](test-prompts.md)) on the current engine pins (rig pages). The Gemma4 row is a chat-tuned config - not useful for coding on Rig 1.
 
 ## Rig 2 results
 
-Headline tables list only usable configs (full context, no rejected/OOM setups); all tested quants, including archived ones, are on the model pages ([Contents](#contents) above). YaRN-extended rows raise context past the native window. llama.cpp rows use q8_0 KV under the 22 GB cap; vLLM rows pin their KV pool by bytes to stay under the cap. vLLM rows also run MTP spec decode, so decode moves with the run's draft acceptance ([engine-notes/vllm.md](engine-notes/vllm.md)) - sub-15% decode differences between two vLLM rows are not significant. Engine labels are per-row on the model pages.
+Headline tables list only usable configs (full context, no rejected/OOM setups); all tested quants, including archived ones, are on the model pages ([Contents](#contents) above). YaRN-extended rows raise context past the native window. llama.cpp rows use q8_0 KV under the 22 GB cap; vLLM rows pin their KV pool by bytes to stay under the cap. vLLM rows also run MTP spec decode, so decode moves with the run's draft acceptance ([engine-notes/vllm.md](engine-notes/vllm.md)) - sub-15% decode differences between two vLLM rows are not significant; each row names its engine.
 
-| Model | Quant | ctx | Prefill t/s | Decode t/s |
-| --- | --- | --- | --- | --- |
-| Qwen3.6-35B-A3B | UD-IQ4_XS | 262144 | 4983 | **223** |
-| Qwen3.6-35B-A3B | UD-IQ4_XS | 524288 (YaRN 2x) | 3984 | **170** |
-| KAT-Coder-V2.5-Dev | APEX-I-Compact | 262144 | 4591 | **163** |
-| Qwen3.8-27B | W4A16-AutoRound-fast | 176128 | 2465 | **120.6** |
-| Qwen3.8-27B | W4A16-AutoRound-fast | 262144 | 2403 | **101.8** |
-| Swift-1.5-Qwen3.8-27B | Swift-1.5-INT4-fast | 176128 | 2433 | **107.7** |
-| Swift-1.5-Qwen3.8-27B | Swift-1.5-INT4-fast | 262144 | 2374 | **97.6** |
+| Model | Quant | Engine | ctx | Prefill t/s | Decode t/s |
+| --- | --- | --- | --- | --- | --- |
+| Qwen3.6-35B-A3B | UD-IQ4_XS | moe-cache fork | 262144 | 5258 | **189** |
+| Qwen3.6-35B-A3B | UD-IQ4_XS | moe-cache fork | 524288 (YaRN 2x) | 4553 | **152.6** |
+| KAT-Coder-V2.5-Dev | APEX-I-Compact | moe-cache fork | 262144 | 5254 | **155.6** |
+| Qwen3.8-27B | W4A16-AutoRound-fast | vLLM | 176128 | 2465 | **120.6** |
+| Qwen3.8-27B | W4A16-AutoRound-fast | vLLM | 262144 | 2403 | **101.8** |
+| Swift-1.5-Qwen3.8-27B | Swift-1.5-INT4-fast | vLLM | 176128 | 2433 | **107.7** |
+| Swift-1.5-Qwen3.8-27B | Swift-1.5-INT4-fast | vLLM | 262144 | 2374 | **97.6** |
 
-## Coding benchmark (shoko-logs)
+All rows here are measured on the 10k opencode session prompt ([test-prompts.md](test-prompts.md)) on the current engine pins (rig pages).
 
-A separate, agentic benchmark under [benchmarks/shoko-logs/](benchmarks/shoko-logs/): from a clean Shoko-WebUI base commit, a model must reproduce the upstream logs-page rewrite (server-side search + infinite-scroll pagination) and log download against a backend API it discovers itself. Scored by build gates (tscheck/lint/build, 5 pts) plus a 95-point behavior rubric vs a reference diff.
+## Coding benchmark (shoko-logs-v2)
 
-- Protocol, rubric, and prompts: [benchmarks/shoko-logs/README.md](benchmarks/shoko-logs/README.md)
-- Results: [benchmarks/shoko-logs/scorecard.md](benchmarks/shoko-logs/scorecard.md)
+A separate, agentic benchmark under [benchmarks/shoko-logs-v2/](benchmarks/shoko-logs-v2/): from a clean Shoko-WebUI base commit, a model must reproduce the upstream logs-page rewrite (server-side search + infinite-scroll pagination) and log download against a backend API it discovers itself. Scored by build gates (tscheck/lint/build, 5 pts) plus a 95-point behavior rubric vs a reference diff.
+
+- Protocol, rubric, and prompts: [benchmarks/shoko-logs-v2/README.md](benchmarks/shoko-logs-v2/README.md)
+- Results: [benchmarks/shoko-logs-v2/scorecard.md](benchmarks/shoko-logs-v2/scorecard.md)
 
 ## Crucible (capability)
 
@@ -86,5 +91,5 @@ External repositories referenced on these pages.
 - [GenerelSchwerz/llama.cpp](https://github.com/GenerelSchwerz/llama.cpp) - moe-cache fork (dynamic CUDA expert cache), branch `moe-cache`
 - [ikawrakow/ik_llama.cpp](https://github.com/ikawrakow/ik_llama.cpp) - ik-llama.cpp performance fork
 - [Niko1221/Strata](https://github.com/Niko1221/Strata) - pack-based Qwen3.8-Flash-Next engine with its own API server (Rig 1)
-- [syv-ai/HyperQwen](https://github.com/syv-ai/HyperQwen) - vLLM 0.31.0 container stack (Rig 2 Qwen3.8-27B W4A16 and Swift-1.5-INT4; all rows re-measured 2026-10-12 on the ~10k opencode prompt)
+- [syv-ai/HyperQwen](https://github.com/syv-ai/HyperQwen) - vLLM container stack (Rig 2 Qwen3.8-27B W4A16 and Swift-1.5-INT4)
 - [da3dsoul/Qwen3.8-vLLM-KVarN-MTP-Arc-Experiments](https://github.com/da3dsoul/Qwen3.8-vLLM-KVarN-MTP-Arc-Experiments) - source of the long-context refactor prompt and of the tuning experiments tested in [experiments/](experiments/)

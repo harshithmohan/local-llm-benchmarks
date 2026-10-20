@@ -150,7 +150,7 @@ A different engine on the same weights, not a `llama-server` flag set: `strata` 
 
 ## Retirement
 
-Retired 2026-10-09, after the [shoko-logs](../../../benchmarks/shoko-logs/README.md) agentic coding benchmark, where the fine-tune scored below the base model's Q2_0 at every reasoning level (two-repeat means, /100):
+Retired 2026-10-09, after the `shoko-logs` v1 agentic coding benchmark, where the fine-tune scored below the base model's Q2_0 at every reasoning level (two-repeat means, /100):
 
 | Reasoning | Swift IQ2_XS | Base Q2_0 |
 | --- | --- | --- |
@@ -158,7 +158,7 @@ Retired 2026-10-09, after the [shoko-logs](../../../benchmarks/shoko-logs/README
 | medium | 56.5 | 70.25 |
 | xhigh | 69.0 | 72.5 |
 
-The fine-tune was also slower end to end on the comparable cold-load runs, and its medium repeat 1 shipped an unintegrated data-layer scaffold that failed `pnpm lint` - the only gate miss in either campaign. Per-repeat line tables: [scorecards/swift-qwen38-flash-next-iq2xs-strata.md](../../../benchmarks/shoko-logs/scorecards/swift-qwen38-flash-next-iq2xs-strata.md). The registration was removed from the serving configuration; the pack, the GGUFs and the two config files stay on disk unregistered.
+The fine-tune was also slower end to end on the comparable cold-load runs, and its medium repeat 1 shipped an unintegrated data-layer scaffold that failed `pnpm lint` - the only gate miss in either campaign. Per-repeat line tables: the v1 scorecard `swift-qwen38-flash-next-iq2xs-strata.md`, recoverable from git history (last present before the 2026-10-18 v1 removal; `git show 66d5487^:benchmarks/shoko-logs/scorecards/swift-qwen38-flash-next-iq2xs-strata.md`). The registration was removed from the serving configuration; the pack, the GGUFs and the two config files stay on disk unregistered.
 
 ## Conclusions
 

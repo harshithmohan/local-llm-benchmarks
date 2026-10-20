@@ -22,7 +22,7 @@ Both Swift profiles were later updated to serve `INT8_ACT=int8` (the int8 Marlin
 
 ## vLLM short-prompt rows (retired C#/React prompts, 2026-09-27)
 
-`INT8_ACT=int8` served throughout (Swift build `641274bd`/`4f4a6a1f`); retired short C#/React prompts averaged, single pass, requests routed through llama-swap. Superseded by the ~10k-prompt rows on the model page.
+`INT8_ACT=int8` served throughout (Swift build `641274bd`/`4f4a6a1f`); retired short C#/React prompts averaged, single pass. Superseded by the ~10k-prompt rows on the model page.
 
 | Quant | Spec | ctx | KV | prefill t/s | decode t/s | acceptance | VRAM used |
 | --- | --- | --- | --- | --- | --- | --- | --- |

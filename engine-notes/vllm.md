@@ -1,6 +1,6 @@
 # vLLM
 
-[syv-ai/HyperQwen](https://github.com/syv-ai/HyperQwen) container stack, vLLM 0.31.0, on Rig 2. Used for the Qwen3.8-27B W4A16-AutoRound quant and the Swift-1.5-INT4 fine-tune quant. The recorded Rig 2 rows are on this pin.
+[syv-ai/HyperQwen](https://github.com/syv-ai/HyperQwen) container stack, Rig 2. Used for the Qwen3.8-27B W4A16-AutoRound quant and the Swift-1.5-INT4 fine-tune quant; the notes below hold for vLLM 0.31.0 (current pin: [rig2-3090.md](../rig2-3090.md)).
 
 ## Flags
 

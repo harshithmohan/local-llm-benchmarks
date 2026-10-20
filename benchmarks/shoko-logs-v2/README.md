@@ -1,6 +1,6 @@
 # shoko-logs (v2) — two-score coding benchmark
 
-Supersedes v1's single-score scheme (the sibling `shoko-logs` benchmark): same task, but two independent scores instead of one conflated number. This directory is self-contained.
+Supersedes v1's single-score scheme (the `shoko-logs` v1 benchmark, removed from this repo 2026-10-18): same task, but two independent scores instead of one conflated number. This directory is self-contained.
 
 ## Why v2
 

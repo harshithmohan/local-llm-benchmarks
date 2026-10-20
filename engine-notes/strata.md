@@ -1,6 +1,6 @@
 # Strata
 
-[Niko1221/Strata](https://github.com/Niko1221/Strata), engine 0.1.45 on Rig 1.
+[Niko1221/Strata](https://github.com/Niko1221/Strata), the pack engine on Rig 1; the notes below are for engine 0.1.45 (current pin: [rig1-3060.md](../rig1-3060.md)).
 
 A llama.cpp-derived engine that runs [Qwen3.8-Flash-Next](https://huggingface.co/Qwen/Qwen3.8-Flash-Next) (~125B parameters, 24,576 routed experts, ~10 of them used per token) on one 12 GB consumer card, by splitting the work across the whole PC instead of fitting the model in VRAM:
 

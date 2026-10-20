@@ -16,7 +16,7 @@ Strata serves no raw `/v1/completions` route and ignores `cache_prompt` and `ign
 
 ## Measurement methods
 
-- Prefill/decode bench (the only method in current use): llama-server, served through llama-swap, hit with a **raw `/v1/completions`** request (no chat template) using one of three prompts - the ~10k opencode session-context prompt (the default timing prompt), the ~60K long-context refactor prompt, or the ~120K long-context refactor prompt - with `n_predict` 512. The bullets in this section are the **canonical request protocol**; the prompt texts live in [test-prompts.md](test-prompts.md). `llama-bench` is not used.
+- Prefill/decode bench (the only method in current use): llama-server, hit with a **raw `/v1/completions`** request (no chat template) using one of three prompts - the ~10k opencode session-context prompt (the default timing prompt), the ~60K long-context refactor prompt, or the ~120K long-context refactor prompt - with `n_predict` 512. The bullets in this section are the **canonical request protocol**; the prompt texts live in [test-prompts.md](test-prompts.md). `llama-bench` is not used.
 - **`cache_prompt: false` on every request.** Without it, a resend on the same slot is served from the KV-prefix cache and reports a fake near-zero prefill (only the few uncached tokens get evaluated). With it, every pass does a full prefill.
 - **`ignore_eos: true` on every request.** Forces the full `n_predict` decode window, so every pass measures the same number of decode steps and no pass ends early (some engines emit a spurious first-token EOS on the long prompts - see issues.md §3/§5).
 - Timings come from the response `timings` object: `prompt_per_second` (prefill), `predicted_per_second` (decode), plus `cache_n` and the MTP draft `draft_n` / `draft_n_accepted`. The server log's `slot print_timing` lines (`prompt eval time` / `eval time`) carry the same numbers when a log read is needed instead. With MTP spec decode, decode moves with draft acceptance from session to session, so compare decode rows only within a session.
@@ -52,6 +52,6 @@ There is no fixed free-VRAM number that holds across models and configs. How muc
 
 ## Benchmark suites with their own methodology
 
-The agentic coding benchmark under [benchmarks/shoko-logs/](benchmarks/shoko-logs/) has its own, independent methodology — task, build-gate + rubric scoring, and grading protocol. It is documented in [benchmarks/shoko-logs/README.md](benchmarks/shoko-logs/README.md) and is separate from the inference-timing methodology above.
+The agentic coding benchmark under [benchmarks/shoko-logs-v2/](benchmarks/shoko-logs-v2/) has its own, independent methodology — task, build-gate + rubric scoring, and grading protocol. It is documented in [benchmarks/shoko-logs-v2/README.md](benchmarks/shoko-logs-v2/README.md) and is separate from the inference-timing methodology above.
 
 The capability benchmark under [benchmarks/crucible/](benchmarks/crucible/) is also independent: [Crucible LLM](https://github.com/MadGoatHaz/crucible-llm) drives a chat route with its own sampling and client-side timing, so its results are not comparable to the model-card timing rows. It is documented in [benchmarks/crucible/README.md](benchmarks/crucible/README.md).
