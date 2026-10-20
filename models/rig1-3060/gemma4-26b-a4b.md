@@ -1,6 +1,6 @@
 # Gemma4-26B-A4B (Rig 1) - recommended configs
 
-Updated: 2026-10-01 · [full experiment log](archive/gemma4-26b-a4b.md) · [methodology](../../methodology.md)
+Updated: 2026-10-20 · [full experiment log](archive/gemma4-26b-a4b.md) · [methodology](../../methodology.md)
 
 `Q4_K_M` (`gemma4` arch, native ctx 262144, MTP draft head). Model card: [HauhauCS/Gemma4-26B-A4B-QAT-Uncensored-HauhauCS-Balanced-MTP](https://huggingface.co/HauhauCS/Gemma4-26B-A4B-QAT-Uncensored-HauhauCS-Balanced-MTP) (`Q4_K_M`).
 
@@ -10,7 +10,7 @@ Updated: 2026-10-01 · [full experiment log](archive/gemma4-26b-a4b.md) · [meth
 
 | Config | ctx | engine | MTP | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Q4_K_M | 32768 | moe-cache fork | on | 937 | **68** | 11468 MiB | chatting (not coding), cache 72, `-b/-ub 1024` |
+| Q4_K_M | 32768 | moe-cache fork | on | 1252 | **83.5** | 11370 MiB | chatting (not coding), cache 72, `-b/-ub 1024` |
 
 ## Configs
 

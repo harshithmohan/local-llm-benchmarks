@@ -1,6 +1,6 @@
 # KAT-Coder-V2.5-Dev (Rig 2) - recommended configs
 
-Updated: 2026-09-30 · [full experiment log](archive/katcoder-v2.5-dev.md) · [methodology](../../methodology.md)
+Updated: 2026-10-20 · [full experiment log](archive/katcoder-v2.5-dev.md) · [methodology](../../methodology.md)
 
 `APEX-I-Compact` (`qwen35moe`, 41 blocks, 256 experts / 8 active, native ctx 262144, embedded MTP head). Model card: [gbuzhf/KAT-Coder-V2.5-Dev-MTP-GGUF](https://huggingface.co/gbuzhf/KAT-Coder-V2.5-Dev-MTP-GGUF).
 
@@ -8,7 +8,7 @@ Updated: 2026-09-30 · [full experiment log](archive/katcoder-v2.5-dev.md) · [m
 
 | Config | ctx | engine | MTP | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| APEX-I-Compact | 262144 | moe-cache fork | on | 4591 | **163** | 22204 MiB | cache 200 (max fit), `-b/-ub 12288` (~320 MiB headroom) |
+| APEX-I-Compact | 262144 | moe-cache fork | on | 5254 | **155.6** | 22324 MiB | cache 200 (max fit), `-b/-ub 12288` (~200 MiB headroom) |
 
 ## Configs
 
@@ -38,5 +38,5 @@ Real-task timing test of a long-context code-refactor task ([test-prompts.md](..
 
 | Config | ctx | engine | MTP | prompt | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| APEX-I-Compact | 262144 | moe-cache fork | on | ~60K | 3701 | **126** | 22204 MiB | cache 200, `-b/-ub 12288` |
-| APEX-I-Compact | 262144 | moe-cache fork | on | ~120K | 2812 | **85.6** | 22204 MiB | 119293-token prompt, cache 200, `-b/-ub 12288` |
+| APEX-I-Compact | 262144 | moe-cache fork | on | ~60K | 4140 | **121** | 22324 MiB | cache 200, `-b/-ub 12288` |
+| APEX-I-Compact | 262144 | moe-cache fork | on | ~120K | 3193 | **90.2** | 22362 MiB | 119293-token prompt, cache 200, `-b/-ub 12288` |

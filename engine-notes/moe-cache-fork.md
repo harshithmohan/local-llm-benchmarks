@@ -1,6 +1,6 @@
 # moe-cache fork
 
-[GenerelSchwerz/llama.cpp](https://github.com/GenerelSchwerz/llama.cpp), branch `moe-cache`. Both rigs serve `f3f31a788` (`0.6.0-dev`, build 11997) since 2026-10-20: built on Rig 1 and copied verbatim to Rig 2 (no rebuild; rollback dirs `moe-cache-llama.cpp.prev-28d73c8` on both rigs). It is an **untagged branch tip** — pinned locally as tag `moe-cache-tip-f3f31a7`; the previous pinned build was `b11814-28d73c87c`. Rows measured before 2026-10-20 are `b11814` or `b11608` as noted on each page. Build/deploy steps live in the local `llm-workspace` repo, `builds/moe-cache.md`.
+[GenerelSchwerz/llama.cpp](https://github.com/GenerelSchwerz/llama.cpp), branch `moe-cache`. Both rigs serve `f3f31a788` (`0.6.0-dev`, build 11997) since 2026-10-20: built on Rig 1 and copied verbatim to Rig 2 (no rebuild; rollback dirs `moe-cache-llama.cpp.prev-28d73c8` on both rigs). It is an **untagged branch tip** — pinned locally as tag `moe-cache-tip-f3f31a7`; the previous pinned build was `b11814-28d73c87c`. Build/deploy steps live in the local `llm-workspace` repo, `builds/moe-cache.md`.
 
 Two opt-in, CUDA-only features: a *dynamic* CUDA LRU/frequency-aware expert cache (no routing profile, no trace step) and a *generic hybrid* CPU/GPU MoE executor that shares that cache as its single residency owner. Their flags are fork-specific and do not exist in the upstream or ik-llama.cpp builds.
 
