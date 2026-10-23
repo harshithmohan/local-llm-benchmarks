@@ -1,6 +1,6 @@
 # Swift-1.5-Qwen3.8-27B (Rig 2) - recommended configs
 
-Updated: 2026-10-12 · [full experiment log](archive/swift-qwen38-27b.md) · [methodology](../../methodology.md)
+Updated: 2026-10-23 · [full experiment log](archive/swift-qwen38-27b.md) · [methodology](../../methodology.md)
 
 `Swift-1.5-INT4`, the Swift-1.5 fine-tune of Qwen3.8-27B (`qwen35` dense hybrid SSM + attention - only every 4th layer carries full attention, `full_attention_interval=4` - native ctx 262144, embedded MTP head). Dense, not a MoE, so no expert split applies. Served on the same [syv-ai/HyperQwen](https://github.com/syv-ai/HyperQwen) vLLM container (vLLM 0.31.0) as the base model. The served build is `Swift-1.5-INT4-fast`: the port's int8 heads requantized to the same int4-GPTQ `lm_head` and draft head the base build runs, which brings the profile inside the rig's VRAM budget (the step the port skipped - experiment 6 of the port study). Model card: [ukisai/Swift-1.5-Qwen3.8-27b-INT4](https://huggingface.co/ukisai/Swift-1.5-Qwen3.8-27b-INT4). The base `W4A16-AutoRound-fast` quant is a separate model: [qwen38-27b.md](qwen38-27b.md).
 
@@ -63,7 +63,7 @@ The real-task long-context refactor prompts ([test-prompts.md](../../test-prompt
 
 | Config | ctx | engine | MTP | prompt | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Swift-1.5-INT4-fast | 176128 | vLLM | on | ~60K | 1590 | **99.9** | 22030 MiB | fp8 KV; accept 58.5% |
-| Swift-1.5-INT4-fast | 176128 | vLLM | on | ~120K | 1122 | **95.9** | 22030 MiB | fp8 KV; accept 68.9% |
-| Swift-1.5-INT4-fast | 262144 | vLLM | on | ~60K | 1595 | **67.8** | 21856 MiB | KVarN k4v2 KV; accept 56.0% |
-| Swift-1.5-INT4-fast | 262144 | vLLM | on | ~120K | 1228 | **53.9** | 21856 MiB | KVarN k4v2 KV; accept 58.9% |
+| Swift-1.5-INT4-fast | 176128 | vLLM | on | ~60K | 1756 | **99.9** | 22030 MiB | fp8 KV; accept 58.5% |
+| Swift-1.5-INT4-fast | 176128 | vLLM | on | ~120K | 1293 | **95.9** | 22030 MiB | fp8 KV; accept 68.9% |
+| Swift-1.5-INT4-fast | 262144 | vLLM | on | ~60K | 1821 | **67.8** | 21856 MiB | KVarN k4v2 KV; accept 56.0% |
+| Swift-1.5-INT4-fast | 262144 | vLLM | on | ~120K | 1429 | **53.9** | 21856 MiB | KVarN k4v2 KV; accept 58.9% |

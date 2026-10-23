@@ -5,7 +5,7 @@ Benchmark reports for running local LLMs on two consumer GPUs, using three build
 ## Rigs
 
 - **Rig 1:** RTX 3060 12GB + i7-12700, 128 GB RAM - hardware and build info in [rig1-3060.md](rig1-3060.md)
-- **Rig 2:** RTX 3090 24GB + Ryzen 7 5700X, 32 GB RAM - hardware and build info in [rig2-3090.md](rig2-3090.md)
+- **Rig 2:** RTX 3090 24GB + Ryzen 7 5700X, 32 GB RAM; GA102 FP/BF16 issue rate unlocked at boot with [gpu-unlock](https://github.com/Zagitta/gpu-unlock) - hardware and build info in [rig2-3090.md](rig2-3090.md)
 
 Rig 1 was first benchmarked 2026-09-10; the engines used on each rig are listed below. Measurement methodology: [methodology.md](methodology.md); per-engine flags: [engine-notes/](engine-notes/). Known issues and gotchas: [issues.md](issues.md).
 
@@ -93,3 +93,4 @@ External repositories referenced on these pages.
 - [Niko1221/Strata](https://github.com/Niko1221/Strata) - pack-based Qwen3.8-Flash-Next engine with its own API server (Rig 1)
 - [syv-ai/HyperQwen](https://github.com/syv-ai/HyperQwen) - vLLM container stack (Rig 2 Qwen3.8-27B W4A16 and Swift-1.5-INT4)
 - [da3dsoul/Qwen3.8-vLLM-KVarN-MTP-Arc-Experiments](https://github.com/da3dsoul/Qwen3.8-vLLM-KVarN-MTP-Arc-Experiments) - source of the long-context refactor prompt and of the tuning experiments tested in [experiments/](experiments/)
+- [Zagitta/gpu-unlock](https://github.com/Zagitta/gpu-unlock) - GA102/GA103/GA104/GA106 FP/BF16 issue-rate unlock, used on Rig 2

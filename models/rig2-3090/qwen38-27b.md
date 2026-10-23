@@ -1,6 +1,6 @@
 # Qwen3.8-27B (Rig 2) - recommended configs
 
-Updated: 2026-10-12 · [full experiment log](archive/qwen38-27b.md) · [methodology](../../methodology.md)
+Updated: 2026-10-23 · [full experiment log](archive/qwen38-27b.md) · [methodology](../../methodology.md)
 
 `W4A16-AutoRound-fast` (`qwen35` dense hybrid SSM + attention - only every 4th layer carries full attention, `full_attention_interval=4` - native ctx 262144, embedded MTP head). Dense, not a MoE, so no expert split applies. Runs on the [syv-ai/HyperQwen](https://github.com/syv-ai/HyperQwen) vLLM container (vLLM 0.31.0). Model card: [dbirks/Qwen3.8-27B-W4A16-AutoRound](https://huggingface.co/dbirks/Qwen3.8-27B-W4A16-AutoRound); the dense llama.cpp [unsloth/Qwen3.8-27B-GGUF](https://huggingface.co/unsloth/Qwen3.8-27B-GGUF) quant and the DFlash2 profile are archived. The Swift-1.5 fine-tune of this model is a separate model: [swift-qwen38-27b.md](swift-qwen38-27b.md).
 
@@ -61,7 +61,7 @@ The real-task long-context refactor prompts ([test-prompts.md](../../test-prompt
 
 | Config | ctx | engine | MTP | prompt | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| W4A16-AutoRound-fast | 176128 | vLLM | on | ~60K | 1610 | **86.7** | 21870 MiB | fp8 KV; accept 46.6% |
-| W4A16-AutoRound-fast | 176128 | vLLM | on | ~120K | 1130 | **91.3** | 21870 MiB | fp8 KV; accept 63.1% |
-| W4A16-AutoRound-fast | 262144 | vLLM | on | ~60K | 1686 | **64.0** | 21756 MiB | KVarN k4v2 KV; accept 47.1% |
-| W4A16-AutoRound-fast | 262144 | vLLM | on | ~120K | 1235 | **49.2** | 21758 MiB | KVarN k4v2 KV; accept 49.8% |
+| W4A16-AutoRound-fast | 176128 | vLLM | on | ~60K | 1828 | **86.7** | 21870 MiB | fp8 KV; accept 46.6% |
+| W4A16-AutoRound-fast | 176128 | vLLM | on | ~120K | 1311 | **91.3** | 21870 MiB | fp8 KV; accept 63.1% |
+| W4A16-AutoRound-fast | 262144 | vLLM | on | ~60K | 1877 | **64.0** | 21756 MiB | KVarN k4v2 KV; accept 47.1% |
+| W4A16-AutoRound-fast | 262144 | vLLM | on | ~120K | 1438 | **49.2** | 21758 MiB | KVarN k4v2 KV; accept 49.8% |
