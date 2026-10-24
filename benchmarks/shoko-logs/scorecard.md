@@ -27,3 +27,4 @@ The **model is the unit**: each card covers all of a model's quants, and near-id
 | Model | Quant | Level | Outcome | Stage 0 A / B | Stage 1 A / B | Stage 2 A / B | Total model time (min) | Notes |
 |---|---|---|---|---|---|---|---|---|
 | DeepSeek V4.1 Flash | — | high | converged: stage 1 | 99 / 62 | 100 / 71 | — | 19.8 | [card](scorecards/deepseek-v4.1-flash.md) — converged in one round; B 71 held by polish the note never named |
+| MiMo-V2.6-Flash | — | default | not converged (34/37) | 80 / 44.5 | 84 / 78.5 | 92 / 72.5 | 47.7 | [card](scorecards/mimo-v2.6-flash.md) — the reconnect reset and the filtered lock control survived both rounds |
