@@ -2,6 +2,8 @@
 
 Two **independent 0–100 scores per stage, never summed** (see `README.md` → "Scoring" and `rubric.md`): **Score A** = ticket conformance (only what `prompt.md` asks for), **Score B** = robustness & reference fidelity (behaviors the ticket leaves unstated). Build gates (`pnpm tscheck` / `pnpm lint` / `pnpm build`) are a **precondition**, not points — a stage carries a score only if all three pass, and the per-stage gate results are in the card.
 
+> **No results recorded yet for the current harness.** The runner, the harness and the scoring were rewritten in place (v2 → the Python runner, `expected_total: 37` pinned); results produced before that rewrite were measured against a different ticket, harness and denominator and are withdrawn rather than carried over. They remain readable in git history under the old paths, and they are **not comparable** to anything recorded here.
+
 Which runs count:
 
 - **One trajectory per model per parameter set** — a clean-base implementation run (**stage 0**) plus up to two reviewer-driven repair rounds in the **same** session (**stages 1** and **2**). No repeats, no median.
@@ -17,13 +19,21 @@ The **model is the unit**: each card covers all of a model's quants, and near-id
 
 | Model | Quant | Level | Outcome | Stage 0 A / B | Stage 1 A / B | Stage 2 A / B | Total model time (min) | Notes |
 |---|---|---|---|---|---|---|---|---|
-| qwen36-35b-a3b | UD-IQ4_XS | default | not converged (23/37) | 15.5 / 25 | 55.5 / 19.5 | 67.5 / 30.5 | 26.3 | Stage 2's first turn ended with zero edits and was resumed once; the host's billion-context plugin made 8 `compress` calls, peaking at ~120k tokens of context and ending at ~36k |
-| katcoder-v2.5-dev | APEX-I-Compact | default | not converged (15/37) | 31 / 37.5 | 37.5 / 37.5 | 38 / 37.5 | 21.8 | The host's billion-context plugin made 5 `compress` calls, peaking at ~127k tokens of context and ending at ~41k |
-| qwen38-flash-next | IQ3_XXS | xhigh | not converged (36/37) | 78 / 58.5 | 92 / 64 | 96 / 100 | 94.2 | Served by Strata at ctx 200000 with MTP; measured on the revised harness whose page-open gate no longer depends on the page title text; the last round's reconnect merge drops a live entry that shares the backlog cutoff timestamp; stage 0 carries the served entry's cold load |
-| swift-qwen38-27b | Swift-1.5-INT4-fast | xhigh | not converged (34/37) | 76.5 / 46.5 | 78 / 45 | 84 / 66.5 | 65.8 | Served at ctx 176128 (fp8 KV, 4 MTP drafts, int8 act); the persistent miss is the search-list continuation — a pagination trigger that never fires under the harness, costing A6 outright and A7 as its cascade at every stage — plus the reconnect-window merge held at A19 half; the first Stage-0 attempt (client connection dropped mid-run, zero edits, tree untouched) is an environment failure and is not recorded, and the stage was re-run |
+| — | — | — | — | — | — | — | — | No runs recorded on the current harness |
 
 ### opencode-go (cloud) models
 
 | Model | Quant | Level | Outcome | Stage 0 A / B | Stage 1 A / B | Stage 2 A / B | Total model time (min) | Notes |
 |---|---|---|---|---|---|---|---|---|
-| deepseek-v4.1-flash | — | high | converged: stage 2 (37/37) | 89 / 62.5 | 90 / 65.5 | 100 / 84 | 27.6 | The first Stage-0 attempt was void — the checkout exposed the merged upstream implementation through its git history — so this is the clean re-run in an isolated checkout; the host's billion-context plugin made 7 `compress` calls; the trajectory ended at ~86k tokens of context |
+| — | — | — | — | — | — | — | — | No runs recorded on the current harness |
+
+## Nudges
+
+Models are served with an output cap (see README → Protocol → "Output limit and nudges"). A reasoning model can spend the whole budget on a planning chain-of-thought and end the turn with nothing implemented, stopping **at the cap**. That run is resumed with a nudge to start implementing, **at most five times per stage**. A nudge is an **intervention, not part of the task** — record the stage it happened in and how many nudges it took, here and in the card, so that stage's number is read with the help in mind.
+
+A turn that ends unimplemented **without** hitting the cap is resumed the same way, but it is **not a nudge** and is not listed here: it is recorded in the card's stage flags as a **zero-work stop**.
+
+| Model | Quant | Level | Stage | Nudges | Note |
+|---|---|---|---|---|---|
+
+The table lists only stages that needed a nudge — a turn that stopped **at the cap** with nothing implemented. Stages that ran without one, and stages whose extra run came from a zero-work stop rather than a cap, are not listed here. A stage that was still unimplemented after five nudges is listed with the count and stands as recorded.
