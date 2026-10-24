@@ -78,7 +78,13 @@ The settings key is camelCase `reasoningEffort`; the OpenAI-compatible provider 
 
 ### Output limit
 
-Every model is served with an output cap. A reasoning model can spend the whole budget on a planning chain-of-thought and end the turn with the work unimplemented — the plan is complete, no tool was called, and the run stopped **at the cap**. opencode resumes such a turn in the **same** session and nudges it to stop reasoning and start implementing, **at most twice**; the runner adds no nudge of its own. If the turn is still unimplemented after that, the stage stands as it stands and is recorded as it stands — it is never re-run to look for a better sample.
+Every model is served with an output cap. A reasoning model can spend the whole budget on a planning chain-of-thought and end the turn with the work unimplemented — the plan is complete, no tool was called, and the run stopped **at the cap**. opencode continues such a turn in the **same** session on its own; the runner never intervenes. Whatever the turn reaches is what the stage records — no stage is re-run to look for a better sample.
+
+### Context management
+
+The implement session runs with the host's opencode configuration as it stands: the runner scrubs `OPENCODE_CONFIG*`, `OPENCODE_PORT`, `OPENCODE_SESSION_ID` and `OPENCODE_TERMINAL` only (recorded as `child_env` in `run.json`), so every plugin the host loads is loaded for the run too. That includes **[billion-context](https://github.com/ranxianglei/billion-context)**, which gives the model `compress`, `decompress` and `acp_status` tools — it can fold consumed conversation into a summary it writes itself, restore a folded range, and read its own context status.
+
+That is the model's decision, not the runner's: nothing folds the conversation for it, and how it manages its own history is part of what the benchmark observes. The card records the call counts per stage (`Context:` line and the per-stage table in Summary) with the run totals and the final context usage in the headline row. The plugin is not pinned by the benchmark — the run uses whatever the host has loaded — so counts are comparable within a host's configuration, not across configurations.
 
 ### Reliability
 

@@ -2,7 +2,7 @@
 
 Two **independent 0–100 scores per stage, never summed** (see `README.md` → "Scoring" and `rubric.md`): **Score A** = ticket conformance (only what `prompt.md` asks for), **Score B** = robustness & reference fidelity (behaviors the ticket leaves unstated). Build gates (`pnpm tscheck` / `pnpm lint` / `pnpm build`) are a **precondition**, not points — a stage carries a score only if all three pass, and the per-stage gate results are in the card.
 
-> **No results recorded yet for the current harness.** The runner, the harness and the scoring were rewritten in place (v2 → the Python runner, `expected_total: 37` pinned); results produced before that rewrite were measured against a different ticket, harness and denominator and are withdrawn rather than carried over. They remain readable in git history under the old paths, and they are **not comparable** to anything recorded here.
+> **Recording on the current harness restarts here.** The runner, the harness and the scoring were rewritten in place (v2 → the Python runner, `expected_total: 37` pinned); results produced before that rewrite were measured against a different ticket, harness and denominator and are withdrawn rather than carried over. They remain readable in git history under the old paths, and they are **not comparable** to anything recorded here.
 
 Which runs count:
 
@@ -19,21 +19,10 @@ The **model is the unit**: each card covers all of a model's quants, and near-id
 
 | Model | Quant | Level | Outcome | Stage 0 A / B | Stage 1 A / B | Stage 2 A / B | Total model time (min) | Notes |
 |---|---|---|---|---|---|---|---|---|
-| — | — | — | — | — | — | — | — | No runs recorded on the current harness |
+| Qwen3.6-35B-A3B | UD-IQ4_XS | default | not converged (11/37) | 31.5 / 52.5 | 35 / 43.5 | 29 / 42 | 28.4 | [card](scorecards/qwen36-35b-ud-iq4xs.md) — filter mode never engaged at any stage |
 
 ### opencode-go (cloud) models
 
 | Model | Quant | Level | Outcome | Stage 0 A / B | Stage 1 A / B | Stage 2 A / B | Total model time (min) | Notes |
 |---|---|---|---|---|---|---|---|---|
 | — | — | — | — | — | — | — | — | No runs recorded on the current harness |
-
-## Nudges
-
-Models are served with an output cap (see README → Protocol → "Output limit and nudges"). A reasoning model can spend the whole budget on a planning chain-of-thought and end the turn with nothing implemented, stopping **at the cap**. That run is resumed with a nudge to start implementing, **at most five times per stage**. A nudge is an **intervention, not part of the task** — record the stage it happened in and how many nudges it took, here and in the card, so that stage's number is read with the help in mind.
-
-A turn that ends unimplemented **without** hitting the cap is resumed the same way, but it is **not a nudge** and is not listed here: it is recorded in the card's stage flags as a **zero-work stop**.
-
-| Model | Quant | Level | Stage | Nudges | Note |
-|---|---|---|---|---|---|
-
-The table lists only stages that needed a nudge — a turn that stopped **at the cap** with nothing implemented. Stages that ran without one, and stages whose extra run came from a zero-work stop rather than a cap, are not listed here. A stage that was still unimplemented after five nudges is listed with the count and stands as recorded.
