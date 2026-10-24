@@ -973,15 +973,23 @@ def prepare_run(ctx):
                 "base %s not a commit in %s" % (base, webui_dir),
             )
 
-        if server_pin:
-            rc, out, _ = git_text(
-                git_bin, "-C", server_dir, "cat-file", "-t", server_pin
+        # A missing pin is not "no server checkout needed": the run tree would
+        # carry no ShokoServer at all, and the model would have nothing to
+        # discover the API from.  Fail here, by name, rather than let it
+        # surface later as a server-greps miss on four tokens.
+        if not server_pin:
+            rep.fail(
+                "precond-server-pin",
+                "server_pin is not set in %s; the run tree would carry no "
+                "ShokoServer checkout" % ctx.config_path,
             )
-            if rc != 0 or out.strip() != "commit":
-                rep.fail(
-                    "precond-server-commit",
-                    "pin %s not a commit in %s" % (server_pin, server_dir),
-                )
+
+        rc, out, _ = git_text(git_bin, "-C", server_dir, "cat-file", "-t", server_pin)
+        if rc != 0 or out.strip() != "commit":
+            rep.fail(
+                "precond-server-commit",
+                "pin %s not a commit in %s" % (server_pin, server_dir),
+            )
 
         # --- P0b stale Playwright transform caches -------------
         # Playwright compiles specs into `<os.tmpdir()>/playwright-transform-

@@ -1,6 +1,6 @@
 {
   "base": "a715a49c4feb1b9d32c21b6691f652b298632b14",
-  "server_pin": null,
+  "server_pin": "4aabad5c3719358e4d7323e47691194016b05193",
   "branch": "bench/shoko-logs",
   "harness": {
     "port": 3100,
