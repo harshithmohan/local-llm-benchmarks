@@ -3,7 +3,11 @@
 
 import json
 import os
+import select
 import subprocess
+import time
+
+import shoko_stream
 
 OPENCODE_PREFIX = "OPENCODE_"
 
@@ -105,6 +109,7 @@ def spawn_host(
     trace=False,
     trace_prefix="",
     trace_out=None,
+    trace_root=None,
     env_path=None,
 ):
     env, _scrubbed = child_env(env_extra=env_extra)
@@ -113,6 +118,18 @@ def spawn_host(
         env.pop("OLDPWD", None)
     os.makedirs(os.path.dirname(stdout_path) or ".", exist_ok=True)
     argv = list(inner)
+    if trace:
+        return _spawn_traced(
+            argv,
+            stdout_path,
+            timeout,
+            cwd=cwd,
+            env=env,
+            merge_stderr=merge_stderr,
+            trace_prefix=trace_prefix,
+            trace_out=trace_out,
+            trace_root=trace_root,
+        )
     return _spawn_streaming(
         argv,
         stdout_path,
@@ -164,6 +181,117 @@ def _spawn_streaming(
             with open(stdout_path, "ab") as fh:
                 fh.write(b"[shoko stderr] " + err[-4096:] + b"\n")
     return SpawnResult(exit_code, stdout_path, timed_out, argv)
+
+
+def _spawn_traced(
+    argv,
+    stdout_path,
+    timeout,
+    poll=0.2,
+    cwd=None,
+    env=None,
+    merge_stderr=False,
+    trace_prefix="",
+    trace_out=None,
+    trace_root=None,
+):
+    """Same contract as _spawn_streaming, but the child's stdout is teed.
+
+    The bytes are written to stdout_path exactly as they arrive (so the jsonl
+    record stays byte-faithful), and each line is also offered to the trace
+    renderer.  Draining both pipes while the child runs also removes the old
+    64 KB stderr deadlock: previously stderr was pipe-buffered and only read
+    after exit.
+    """
+    renderer = shoko_stream.TraceRenderer(root=trace_root, out=trace_out)
+    deadline = time.monotonic() + timeout if timeout else None
+    timed_out = False
+    err_tail = b""
+    pending = b""
+    with open(stdout_path, "wb") as out:
+        p = subprocess.Popen(
+            argv,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT if merge_stderr else subprocess.PIPE,
+            stdin=subprocess.DEVNULL,
+            start_new_session=True,
+            cwd=cwd,
+            env=env,
+            bufsize=0,
+        )
+        open_pipes = [f for f in (p.stdout, p.stderr) if f is not None]
+        try:
+            while open_pipes:
+                wait = poll
+                if deadline is not None:
+                    left = deadline - time.monotonic()
+                    if left <= 0:
+                        timed_out = True
+                        _kill_group(p)
+                        break
+                    wait = min(poll, left)
+                try:
+                    ready = select.select(open_pipes, [], [], wait)[0]
+                except InterruptedError:
+                    continue
+                for f in ready:
+                    try:
+                        chunk = os.read(f.fileno(), 65536)
+                    except (OSError, ValueError):
+                        chunk = b""
+                    if not chunk:
+                        open_pipes.remove(f)
+                        continue
+                    if f is not p.stdout:
+                        err_tail = (err_tail + chunk)[-4096:]
+                        continue
+                    out.write(chunk)
+                    out.flush()
+                    pending += chunk
+                    while b"\n" in pending:
+                        raw, pending = pending.split(b"\n", 1)
+                        _trace(renderer, raw, trace_prefix)
+            if p.stdout is not None:
+                try:
+                    rest = p.stdout.read()
+                except (OSError, ValueError):
+                    rest = b""
+                if rest:
+                    out.write(rest)
+                    out.flush()
+                    pending += rest
+                    while b"\n" in pending:
+                        raw, pending = pending.split(b"\n", 1)
+                        _trace(renderer, raw, trace_prefix)
+            if pending.strip():
+                _trace(renderer, pending, trace_prefix)
+        finally:
+            for f in (p.stdout, p.stderr):
+                if f is not None:
+                    try:
+                        f.close()
+                    except (OSError, ValueError):
+                        pass
+    try:
+        p.wait(timeout=30)
+    except subprocess.TimeoutExpired:
+        pass
+    exit_code = p.returncode if p.returncode is not None else -9
+    if timed_out:
+        with open(stdout_path, "ab") as fh:
+            fh.write(b"\n[shoko] timed out after %s s\n" % str(timeout).encode())
+            if err_tail:
+                fh.write(b"[shoko stderr] " + err_tail + b"\n")
+    return SpawnResult(exit_code, stdout_path, timed_out, argv)
+
+
+def _trace(renderer, raw, prefix):
+    try:
+        obj = json.loads(raw)
+    except (ValueError, TypeError):
+        return
+    if isinstance(obj, dict):
+        renderer.emit(obj, prefix=prefix)
 
 
 def _kill_group(p):

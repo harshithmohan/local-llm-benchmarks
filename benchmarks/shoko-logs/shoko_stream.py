@@ -2,7 +2,10 @@
 """shoko_stream — parse the opencode NDJSON event stream a role turn emits."""
 
 import json
+import os
 import re
+import sys
+import time
 
 TOOL_LINE_RE = re.compile(r"^⚙ (\S+)")
 
@@ -131,3 +134,127 @@ def parse_stream(raw):
         p.finish = "stop"
         p.finish_raw = p.finish_raw or "stop(derived)"
     return p
+
+
+class TraceRenderer:
+    """Render live NDJSON events as one-line progress for the run's output.
+
+    This is for a human watching a run, not for grading: every event that
+    carries nothing an operator can act on (a step boundary, an empty part)
+    renders to nothing.  The raw bytes still land in the jsonl stream file
+    unchanged -- the trace is a view of that record, never a substitute.
+    Paths are shown relative to the run tree so a line stays readable.
+    """
+
+    def __init__(self, root=None, clip=96, out=None, label_width=9, event_width=7):
+        self.root = os.path.abspath(root) if root else None
+        self.clip = clip
+        self.out = out
+        self.label_width = label_width
+        self.event_width = event_width
+
+    def _clip(self, text, limit=None):
+        s = " ".join(str(text or "").split())
+        limit = self.clip if limit is None else limit
+        return s[:limit] + ("…" if len(s) > limit else "")
+
+    def _short(self, path):
+        p = str(path or "")
+        if not p:
+            return ""
+        if self.root and (p == self.root or p.startswith(self.root + os.sep)):
+            p = "./" + os.path.relpath(p, self.root)
+        home = os.path.expanduser("~")
+        if home and p.startswith(home + os.sep):
+            p = "~" + p[len(home) :]
+        return self._clip(p, 88)
+
+    def _tool(self, part):
+        tool = part.get("tool") or "tool"
+        state = part.get("state") or {}
+        args = state.get("input") or {}
+        status = state.get("status")
+        if tool == "shell":
+            lines = str(args.get("command") or "").strip().splitlines()
+            detail = self._clip(lines[0], 110) if lines else ""
+        elif tool in ("read", "edit", "write"):
+            detail = self._short(args.get("filePath") or args.get("path"))
+            if tool == "write" and args.get("content") is not None:
+                detail += " (%d lines)" % len(str(args["content"]).splitlines())
+            elif tool == "edit":
+                detail += " (edit)"
+        elif tool == "grep":
+            detail = "%s in %s" % (
+                self._clip(args.get("pattern"), 60),
+                self._short(args.get("path") or "."),
+            )
+        elif tool == "glob":
+            detail = self._clip(args.get("pattern"), 88)
+        else:
+            detail = self._clip(json.dumps(args, sort_keys=True), 88) if args else ""
+        if status and status != "completed":
+            detail = (detail + " [%s]" % status).strip()
+        return tool, detail
+
+    def line(self, obj):
+        """(event, detail) for one event, or None when it says nothing."""
+        part = obj.get("part") or {}
+        kind = part.get("type")
+        if kind == "reasoning":
+            body = self._clip(part.get("text"))
+            return ("think", '"%s"' % body) if body else None
+        if kind == "text":
+            body = self._clip(part.get("text"))
+            return ("text", '"%s"' % body) if body else None
+        if kind == "tool":
+            return self._tool(part)
+        if kind == "step-finish":
+            tokens = part.get("tokens") or {}
+            cache = tokens.get("cache") or {}
+            return (
+                "step",
+                "finish=%s out=%s cache-read=%s"
+                % (part.get("reason"), tokens.get("output"), cache.get("read")),
+            )
+        return None
+
+    def emit(self, obj, prefix="", out=None):
+        got = self.line(obj)
+        if not got:
+            return None
+        event, detail = got
+        stamp = time.strftime("%H:%M:%S")
+        ts = obj.get("timestamp")
+        if ts:
+            try:
+                stamp = time.strftime("%H:%M:%S", time.localtime(float(ts) / 1000.0))
+            except (TypeError, ValueError, OSError):
+                pass
+        text = "%s  %-*s %-*s %s" % (
+            stamp,
+            self.label_width,
+            prefix,
+            self.event_width,
+            event,
+            detail,
+        )
+        fh = out or self.out or sys.stdout
+        try:
+            fh.write(text.rstrip() + "\n")
+            fh.flush()
+        except (BrokenPipeError, ValueError, OSError):
+            # A trace line is never worth failing a run over: a closed or
+            # full output stream must not take the turn down with it.
+            return None
+        return text
+
+
+def trace_line(raw, prefix="", out=None, root=None):
+    """Emit one trace line for a raw NDJSON stdout line; ignore anything else."""
+    try:
+        obj = json.loads(raw)
+    except (ValueError, TypeError, UnicodeDecodeError):
+        return None
+    if not isinstance(obj, dict):
+        return None
+    return TraceRenderer(root=root, out=out).emit(obj, prefix=prefix)

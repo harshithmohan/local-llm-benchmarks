@@ -6,6 +6,8 @@ import json
 import os
 import re
 import shutil
+import sys
+import time
 
 import shoko as S, shoko_proc as proc, shoko_stream as stream
 
@@ -18,6 +20,39 @@ DEFAULT_ROLE_PERMISSIONS = ("edit", "write", "read", "shell", "glob", "grep")
 def read_text(p):
     with open(p, "r", encoding="utf-8") as fh:
         return fh.read()
+
+
+def say(scope, event, detail=""):
+    """One progress line for the operator: time, phase, event, detail.
+
+    Printed and flushed immediately so `shoko.py run > run.log` shows a live
+    log instead of one buffered burst at exit; a closed log never kills a run.
+    """
+    try:
+        print(
+            "%s  %-9s %-7s %s" % (time.strftime("%H:%M:%S"), scope, event, detail),
+            flush=True,
+        )
+    except (BrokenPipeError, ValueError, OSError):
+        pass
+
+
+def elapsed(t0):
+    return "%.0fs" % (time.monotonic() - t0)
+
+
+def size(text):
+    n = len(text.encode("utf-8")) if isinstance(text, str) else 0
+    return "%.1fK" % (n / 1024.0)
+
+
+def stat_line(path):
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as fh:
+            lines = [x.strip() for x in fh.read().splitlines() if x.strip()]
+    except (OSError, TypeError):
+        return "(no diffstat)"
+    return lines[-1] if lines else "(no diffstat)"
 
 
 def fill(template, **kw):
@@ -297,6 +332,10 @@ class RealExecutor:
             env_extra={
                 "OPENCODE_CONFIG_CONTENT": self.role_config_content("implement")
             },
+            trace=bool(getattr(self.ctx.args, "trace_streams", True)),
+            trace_prefix="s%d impl" % stage,
+            trace_out=sys.stdout,
+            trace_root=self.run_dir,
         )
         parsed = stream.parse_stream(r.read())
         res = TurnResult(r.exit_code, parsed, stdout_path, r.timed_out)
@@ -538,9 +577,10 @@ class Pipeline:
             )
             if res.artifact_text is not None:
                 return res
-            print(
-                "[s%d %s] attempt %d produced no %s"
-                % (stage, role, attempt, artifact_name)
+            say(
+                "s%d" % stage,
+                role,
+                "attempt %d produced no %s" % (attempt, artifact_name),
             )
         return None
 
@@ -559,6 +599,17 @@ class Pipeline:
         )
         session_id = None
         last_review = ""
+        say(
+            "run",
+            "start",
+            "model=%s endpoint=%s ctx=%s out_cap=%s"
+            % (
+                self.spec.role_model("impl"),
+                self.spec.endpoint,
+                self.spec.ctx_limit,
+                self.spec.out_cap,
+            ),
+        )
         for stage in range(3):
             if stage == 0:
                 text = prompt
@@ -569,29 +620,82 @@ class Pipeline:
                     % stage
                     + last_review
                 )
+            label = "s%d" % stage
+            kind = "initial" if stage == 0 else "repair"
+            say(label, "impl", "start kind=%s attempt=1" % kind)
+            t0 = time.monotonic()
             res = ex.impl_turn(
                 text=text,
                 session_id=session_id,
                 attempt=1,
                 stage=stage,
-                kind="initial" if stage == 0 else "repair",
+                kind=kind,
             )
             session_id = res.session_id or session_id
-            print(
-                "[s%d impl] finish=%s exit=%s touched=%s"
+            say(
+                label,
+                "impl",
+                "end finish=%s exit=%s touched=%s %s"
                 % (
-                    stage,
                     res.parsed.finish if res.parsed else None,
                     res.exit_code,
                     getattr(res, "_touched", False),
-                )
+                    elapsed(t0),
+                ),
             )
-            ex.normalize(stage=stage)
+            say(label, "normalize", "start")
+            norm = ex.normalize(stage=stage)
+            nbad = [r for r in norm if r.get("exit") != 0]
+            say(
+                label,
+                "normalize",
+                "%d/%d ok%s"
+                % (
+                    len(norm) - len(nbad),
+                    len(norm),
+                    ""
+                    if not nbad
+                    else " failed=" + ",".join(r["cmd"][-1] for r in nbad),
+                ),
+            )
+            say(label, "gates", "start")
             gates = ex.gates(stage=stage)
             with open(os.path.join(self.run_dir, "gates-s%d.json" % stage), "w") as fh:
                 json.dump(gates, fh, indent=2)
-            ex.export(stage=stage)
+            bad = [n for n, r in gates.items() if r.get("exit") != 0]
+            say(
+                label,
+                "gates",
+                "%s %d/%d %s"
+                % (
+                    "fail" if bad else "pass",
+                    len(gates) - len(bad),
+                    len(gates),
+                    " ".join(bad or list(gates)),
+                ),
+            )
+            exp = ex.export(stage=stage)
+            if exp.get("error"):
+                say(label, "export", "error %s" % str(exp["error"]).splitlines()[0])
+            elif exp.get("empty"):
+                say(label, "export", "empty patch vs run base")
+            else:
+                say(
+                    label,
+                    "export",
+                    "patch-s%d.diff %s" % (stage, stat_line(exp.get("stat"))),
+                )
+            say(label, "harness", "start")
             h = ex.harness(stage=stage)
+            if h.get("passed") is None:
+                say(
+                    label,
+                    "harness",
+                    "no result exit=%s%s"
+                    % (h.get("exit"), " timeout" if h.get("timed_out") else ""),
+                )
+            else:
+                say(label, "harness", "%s/%s passed" % (h["passed"], h["total"]))
             with open(
                 os.path.join(self.run_dir, "harness-s%d.json" % stage), "w"
             ) as fh:
@@ -614,6 +718,7 @@ class Pipeline:
                     "%d failure(s) not keyed in harness/lines.json: %s"
                     % (len(h["unmapped"]), "; ".join(h["unmapped"])),
                 )
+            say(label, "judge", "start")
             judge_prompt = fill(
                 judge_base,
                 run=self.spec.run,
@@ -632,9 +737,10 @@ class Pipeline:
                 artifact_name="score-s%d.md" % stage,
             )
             if jres is None:
-                print("[s%d judge] no score sheet; stopping" % stage)
+                say(label, "judge", "no score sheet; stopping")
                 return S.EXIT_INTERNAL
             score_txt = jres.artifact_text
+            say(label, "judge", "end score-s%d.md %s" % (stage, size(score_txt)))
             open(os.path.join(self.run_dir, "score-s%d.md" % stage), "w").write(
                 score_txt
             )
@@ -644,10 +750,12 @@ class Pipeline:
                 with open(os.path.join(self.run_dir, "score.md"), "w") as fh:
                     fh.write(score_txt + "\n\n" + harness_text[:4000])
                 if green:
-                    print("[s%d done] green; score.md written" % stage)
+                    say(label, "verdict", "green; score.md written")
                     return S.EXIT_OK
-                print("[s%d not converged] score.md written" % stage)
+                say(label, "verdict", "not converged; score.md written")
                 return S.EXIT_HALTED
+            say(label, "verdict", "not green; reviewer notes next")
+            say(label, "reviewer", "start")
             review_prompt = fill(review_base, run=self.spec.run, stage=stage)
             score_path = os.path.join(self.run_dir, "score-s%d.md" % stage)
             rfiles = {
@@ -662,10 +770,15 @@ class Pipeline:
                 artifact_name="review-s%d.md" % stage,
             )
             if rres is None:
-                print("[s%d reviewer] no review; stopping" % stage)
+                say(label, "reviewer", "no review; stopping")
                 return S.EXIT_INTERNAL
             open(os.path.join(self.run_dir, "review-s%d.md" % stage), "w").write(
                 rres.artifact_text
+            )
+            say(
+                label,
+                "reviewer",
+                "end review-s%d.md %s" % (stage, size(rres.artifact_text)),
             )
             last_review = rres.artifact_text
         return S.EXIT_OK
