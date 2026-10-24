@@ -1229,6 +1229,8 @@ def prepare_run(ctx):
             postimage,
             dev_p1=p1,
             run_base_commit=run_base_commit,
+            dev_webui=webui_dir,
+            dev_server=server_dir,
         )
         dump_json(store.run_path, run_json)
         ctx.set_spec(RunSpec.from_file(store.run_path))
@@ -1347,6 +1349,8 @@ def build_run_json(
     postimage,
     dev_p1=None,
     run_base_commit=None,
+    dev_webui=None,
+    dev_server=None,
 ):
     inputs = {}
     for rel in (
@@ -1397,8 +1401,10 @@ def build_run_json(
         "provider_id": provider_id,
         "endpoint": None if host else ctx.args.endpoint,
         "dev": {
-            "webui": os.path.abspath(webui_dir),
-            "server": os.path.abspath(server_dir),
+            # The developer's source checkouts the run was built from (the
+            # cache clones in ~/.cache/shoko), not the run tree.
+            "webui": os.path.abspath(dev_webui) if dev_webui else None,
+            "server": os.path.abspath(dev_server) if dev_server else None,
         },
         "level": model["variant"],
         "ctx": None if host else ctx.args.ctx,
