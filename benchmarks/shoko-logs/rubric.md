@@ -1,18 +1,6 @@
-<!-- Two independent scores, never summed: Score A grades only what prompt.md asks for, Score B grades
-reference-level polish a production implementation has anyway. Every Score A line is a behaviour the
-reference implementation itself exhibits, so the reference scores 100 on both. All graded behaviours
-live in ONE ticket (prompt.md) — the search/download features plus DSL-aware search, reconnect
-recovery and cancellation/failure handling — so a missing one surfaces in the next review round
-instead of being ungradeable. The ticket states outcomes, not mechanisms: details a human would
-never say out loud — a debounce interval, a trim, a library name, a copy string — are deliberately
-left out, and the conventions a developer is expected to pick up from the codebase are graded in
-Score B (B11) instead.
+<!-- Two independent scores, never summed: Score A grades only what prompt.md asks for, Score B grades reference-level polish a production implementation has anyway. Every Score A line is a behaviour the reference implementation itself exhibits, so the reference scores 100 on both. All graded behaviours live in ONE ticket (prompt.md) — the search/download features plus DSL-aware search, reconnect recovery and cancellation/failure handling — so a missing one surfaces in the next review round instead of being ungradeable. The ticket states outcomes, not mechanisms: details a human would never say out loud — a debounce interval, a trim, a library name, a copy string — are deliberately left out, and the conventions a developer is expected to pick up from the codebase are graded in Score B (B11) instead.
 
-A10/B2: the ticket's "off while filters are active" reads as absent, but the reference keeps the
-scroll-to-bottom control on screen while merely disabling it, so that visible-but-unusable quality
-is graded in B2 (removing the control is the wrong answer) while A10 accepts either state - absent
-or disabled - and still requires the control to be usable again in the live tail once the filters
-are cleared. -->
+A10/B2: the ticket's "off while filters are active" reads as absent, but the reference keeps the scroll-to-bottom control on screen while merely disabling it, so that visible-but-unusable quality is graded in B2 (removing the control is the wrong answer) while A10 accepts either state - absent or disabled - and still requires the control to be usable again in the live tail once the filters are cleared. -->
 
 
 # Rubric — shoko-logs

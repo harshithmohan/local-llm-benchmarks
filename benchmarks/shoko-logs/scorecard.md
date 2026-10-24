@@ -6,7 +6,7 @@ Two **independent 0–100 scores per stage, never summed** (see `README.md` → 
 
 Which runs count:
 
-- **One trajectory per model per parameter set** — a clean-base implementation run (**stage 0**) plus up to two reviewer-driven repair rounds in the **same** session (**stages 1** and **2**). No repeats, no median.
+- **One trajectory per model per parameter set** — a clean-base implementation run (**stage 0**) plus up to two review-driven repair rounds in the **same** session (**stages 1** and **2**). No repeats, no median.
 - **Outcome** is `converged: stage 0|1|2`, or **`not converged`** = still red after two rounds — with the trajectory's **final harness result** in parentheses (`n/37`), so a run one assertion short and a run still in the red read differently at a glance. *Converged* means the gates pass **and** the runtime harness passes in full (37/37 today). "Not converged" is a published result, never re-run or averaged (see README → "Method").
 
 Per-model breakdown in `scorecards/<model>.md` (one card per model, a row per quant, one block per stage); the run directory (under the bench root) is deleted once recorded — the scorecards are the persistent record. The tables below carry each stage's Score A/B, the **final harness result** and the **total model time**; per-stage harness results and per-stage model times live in the card.
