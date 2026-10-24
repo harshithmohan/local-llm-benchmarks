@@ -56,6 +56,12 @@ CONFIG_ALLOWLIST_EXACT = {
     "core.filemode",
     "core.bare",
     "core.logallrefupdates",
+    # macOS host artifacts: git init writes `core.ignorecase` on a
+    # case-insensitive APFS volume and `core.precomposeunicode` on any macOS
+    # build.  Neither carries a remote, ref, stash, alternate or reference
+    # information -- the things this check exists to catch.
+    "core.ignorecase",
+    "core.precomposeunicode",
 }
 
 # Host git runs hardened: no ambient GIT_*, no host global/system config, no
