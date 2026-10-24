@@ -2,7 +2,7 @@
 
 The Swift-1.5 fine-tune of Qwen3.8-Flash-Next, first benchmarked 2026-10-08 on the Strata pack engine - the same engine that serves the base model's Q2_0. Everything here was measured on one rig under one engine; there are no llama.cpp rows for this checkpoint.
 
-**Retired 2026-10-09** - dropped from the serving configuration on the shoko-logs result ([Retirement](#retirement)), so this page is now the checkpoint's only card. Base model: [qwen38-flash-next.md](../qwen38-flash-next.md) and its [archive](qwen38-flash-next.md). Methodology: [methodology.md](../../../methodology.md); issues: [issues.md](../../../issues.md).
+**Retired 2026-10-09** - dropped from the serving configuration ([Retirement](#retirement)), so this page is now the checkpoint's only card. Base model: [qwen38-flash-next.md](../qwen38-flash-next.md) and its [archive](qwen38-flash-next.md). Methodology: [methodology.md](../../../methodology.md); issues: [issues.md](../../../issues.md).
 
 Quants:
 
@@ -150,15 +150,7 @@ A different engine on the same weights, not a `llama-server` flag set: `strata` 
 
 ## Retirement
 
-Retired 2026-10-09, after the `shoko-logs` v1 agentic coding benchmark, where the fine-tune scored below the base model's Q2_0 at every reasoning level (two-repeat means, /100):
-
-| Reasoning | Swift IQ2_XS | Base Q2_0 |
-| --- | --- | --- |
-| low | 64.0 | 73.0 |
-| medium | 56.5 | 70.25 |
-| xhigh | 69.0 | 72.5 |
-
-The fine-tune was also slower end to end on the comparable cold-load runs, and its medium repeat 1 shipped an unintegrated data-layer scaffold that failed `pnpm lint` - the only gate miss in either campaign. Per-repeat line tables: the v1 scorecard `swift-qwen38-flash-next-iq2xs-strata.md`, recoverable from git history (last present before the 2026-10-18 v1 removal; `git show 66d5487^:benchmarks/shoko-logs/scorecards/swift-qwen38-flash-next-iq2xs-strata.md`). The registration was removed from the serving configuration; the pack, the GGUFs and the two config files stay on disk unregistered.
+- 2026-10-09: the entry was dropped from the Rig 1 serving configuration (the pack, the GGUFs and the two config files stay on disk, unregistered). Every row above is retained here as the checkpoint's record.
 
 ## Conclusions
 
