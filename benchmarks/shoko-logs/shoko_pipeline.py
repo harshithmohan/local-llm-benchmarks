@@ -393,6 +393,10 @@ class RealExecutor:
                 stdout_path=stdout_path,
                 timeout=timeout,
                 env_extra={"OPENCODE_CONFIG_CONTENT": self.role_config_content(role)},
+                trace=bool(getattr(self.ctx.args, "trace_streams", True)),
+                trace_prefix="s%d %s" % (stage, role),
+                trace_out=sys.stdout,
+                trace_root=view,
             )
         finally:
             # The view's tree is copied read-only so the pass cannot edit the
