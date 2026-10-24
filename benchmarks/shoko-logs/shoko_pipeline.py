@@ -545,6 +545,21 @@ class Pipeline:
         self.run_dir = ctx.run_dir()
         self.state_dir = ctx.state_dir()
 
+    def _state(self, **fields):
+        """Advance state.json so the run's phase on disk is never stale.
+
+        state.json is the operator's (and the crash record's) view of where a
+        run got to; before this the file still said "prepared, stage 0" after a
+        full three-stage run. Best-effort: a failed state write must never stop
+        a run, the artifacts are still the record."""
+        try:
+            store = S.RunStore(self.state_dir)
+            state = store.read_state() or store.new_state()
+            state.update(fields)
+            store.write_state(state)
+        except Exception:  # noqa: BLE001 - never fail a run over bookkeeping
+            pass
+
     def _is_green(self, harness, gates):
         if harness.get("exit") != 0 or harness.get("timed_out"):
             return False
@@ -626,6 +641,7 @@ class Pipeline:
                 )
             label = "s%d" % stage
             kind = "initial" if stage == 0 else "repair"
+            self._state(phase="running", stage=stage, step="impl")
             say(label, "impl", "start kind=%s attempt=1" % kind)
             t0 = time.monotonic()
             res = ex.impl_turn(
@@ -647,6 +663,7 @@ class Pipeline:
                     elapsed(t0),
                 ),
             )
+            self._state(step="normalize")
             say(label, "normalize", "start")
             norm = ex.normalize(stage=stage)
             nbad = [r for r in norm if r.get("exit") != 0]
@@ -662,6 +679,7 @@ class Pipeline:
                     else " failed=" + ",".join(r["cmd"][-1] for r in nbad),
                 ),
             )
+            self._state(step="gates")
             say(label, "gates", "start")
             gates = ex.gates(stage=stage)
             with open(os.path.join(self.run_dir, "gates-s%d.json" % stage), "w") as fh:
@@ -689,6 +707,7 @@ class Pipeline:
                     "export",
                     "patch-s%d.diff %s" % (stage, stat_line(exp.get("stat"))),
                 )
+            self._state(step="harness")
             say(label, "harness", "start")
             h = ex.harness(stage=stage)
             if h.get("passed") is None:
@@ -722,6 +741,7 @@ class Pipeline:
                     "%d failure(s) not keyed in harness/lines.json: %s"
                     % (len(h["unmapped"]), "; ".join(h["unmapped"])),
                 )
+            self._state(step="judge")
             say(label, "judge", "start")
             judge_prompt = fill(
                 judge_base,
@@ -754,10 +774,15 @@ class Pipeline:
                 with open(os.path.join(self.run_dir, "score.md"), "w") as fh:
                     fh.write(score_txt + "\n\n" + harness_text[:4000])
                 if green:
+                    self._state(phase="done", stage=stage, step="verdict", outcome="converged")
                     say(label, "verdict", "green; score.md written")
                     return S.EXIT_OK
+                self._state(
+                    phase="done", stage=stage, step="verdict", outcome="not converged"
+                )
                 say(label, "verdict", "not converged; score.md written")
                 return S.EXIT_HALTED
+            self._state(step="reviewer")
             say(label, "verdict", "not green; reviewer notes next")
             say(label, "reviewer", "start")
             review_prompt = fill(review_base, run=self.spec.run, stage=stage)
