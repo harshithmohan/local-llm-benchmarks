@@ -26,4 +26,4 @@ The **model is the unit**: each card covers all of a model's quants, and near-id
 
 | Model | Quant | Level | Outcome | Stage 0 A / B | Stage 1 A / B | Stage 2 A / B | Total model time (min) | Notes |
 |---|---|---|---|---|---|---|---|---|
-| — | — | — | — | — | — | — | — | No runs recorded on the current harness |
+| DeepSeek V4.1 Flash | — | high | converged: stage 1 | 99 / 62 | 100 / 71 | — | 19.8 | [card](scorecards/deepseek-v4.1-flash.md) — converged in one round; B 71 held by polish the note never named |

@@ -32,6 +32,8 @@ Model: `<model family>`.
 
 ## <Quant> — <Level> reasoning
 
+<!-- Hosted model with no quant: drop the quant half — `## <Level> reasoning` — never `## — <Level> reasoning`. -->
+
 Parameter set: <paramset + level — stated in full here, since the header row carries only quant and level; repeat only when a later section differs>.
 
 ### Stage 0 — initial run
