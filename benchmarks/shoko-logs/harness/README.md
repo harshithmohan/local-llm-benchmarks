@@ -1,6 +1,6 @@
-# shoko-logs v2 — runtime acceptance harness
+# shoko-logs — runtime acceptance harness
 
-A Playwright-driven acceptance suite for the **shoko-logs v2** coding benchmark. It replaces v1's static *"diff the patch against `reference.diff`"* grading with **runtime assertions**: it boots the candidate's Shoko-WebUI dev server, stubs the Shoko Server API and the SignalR logging hub, drives the real UI, and asserts on **(a) the app's outbound HTTP requests** and **(b) observable DOM/state** — never on component structure or source text.
+A Playwright-driven acceptance suite for the **shoko-logs** coding benchmark. It grades by **runtime assertions**: it boots the candidate's Shoko-WebUI dev server, stubs the Shoko Server API and the SignalR logging hub, drives the real UI, and asserts on **(a) the app's outbound HTTP requests** and **(b) observable DOM/state** — never on component structure or source text.
 
 It covers the Score A lines marked `[R]` in [`../rubric.md`](../rubric.md) — **A1–A13, A17, A18, A19, A20, A21** — plus the two **behavioural** Score B lines (**B2** scroll lock, **B11** search-input discipline). Score A's remaining static lines (A14, A15, A16) and the static Score B lines stay with the static judge.
 
@@ -30,6 +30,7 @@ harness/
 ├── tsconfig.json
 ├── playwright.config.ts       ← boots/stops the dev server via webServer
 ├── run.sh                     ← one-command entry point (wires SHOKO_WEBUI_DIR)
+├── lines.json                 ← authoritative test-title → rubric-line mapping (see below)
 ├── .gitignore
 ├── reporters/
 │   └── sanitized-report.ts    ← sanitized failure report (reviewer input)
@@ -57,10 +58,10 @@ harness/
 
 ## How to run
 
-The harness never hard-codes a checkout path. Point it at any Shoko-WebUI checkout with `SHOKO_WEBUI_DIR` (the same env var the benchmark's `./run.sh` uses):
+The harness never hard-codes a checkout path. Point it at any Shoko-WebUI checkout with `SHOKO_WEBUI_DIR` (the same env var the benchmark runner uses for this step):
 
 ```bash
-# from benchmarks/shoko-logs-v2/harness/
+# from benchmarks/shoko-logs/harness/
 SHOKO_WEBUI_DIR=/path/to/Shoko-WebUI ./run.sh
 
 # a single rubric grouping:
@@ -104,7 +105,7 @@ When tests fail, `## Failures` lists one bullet per failed test — `**<spec> �
 Validated end-to-end against the reference Shoko-WebUI implementation (the branch carrying server-side log search **and** log download):
 
 ```bash
-cd benchmarks/shoko-logs-v2/harness
+cd benchmarks/shoko-logs/harness
 SHOKO_WEBUI_DIR=/path/to/Shoko-WebUI ./run.sh
 ```
 
@@ -139,6 +140,8 @@ Four deliberate consequences:
 ## How each runtime-asserted rubric line maps to an assertion
 
 Every assertion targets outbound requests (`helpers/mock-server.ts` records url + query + body for each `api/v3/**` call) or observable DOM (`helpers/selectors.ts`). Request path names below are asserted **suffix-based** (`.endsWith('Logging/Range/Read')`) so the `/api/v3/` prefix and version do not matter.
+
+[`lines.json`](lines.json) is **authoritative** for the test → rubric-line mapping: it keys every assertion by `<spec file name> > <test title>` and lists the rubric lines that test decides, plus which lines are behavioural. The runner loads it during the harness step and **validates** every failure bullet in the sanitized report against it: the bullet's `<spec> › <test>` is normalized to the file's `<spec file name> > <test title>` key form and looked up in the `tests` map — an unknown key is a hard failure of the report, and the run stops (`harness-report-unmapped`) rather than grading against a report it cannot place. The key is only validated; the rubric lines it lists are not injected into the report or handed on. A green report carries no bullets, so the check is inert on a clean suite. The table below is the human-readable narrative of the same mapping; regenerating `lines.json` keeps the mapping in step when a spec is added or renamed.
 
 The `Points` column mirrors `rubric.md`, which is the **sole source of point weights** — the `[R]` lines sum to 97 of Score A's 100 (the remaining 3 are `[S]`, judged statically).
 

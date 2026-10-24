@@ -1,0 +1,163 @@
+{
+  "behavioural": [
+    "B2",
+    "B11"
+  ],
+  "tests": {
+    "cancellation-failure.a20-a21.spec.ts > A20: a stale in-flight read never renders over the newer filter results": [
+      "A20",
+      "A21"
+    ],
+    "cancellation-failure.a20-a21.spec.ts > A21: a failed read surfaces a visible error state, not a silent empty state": [
+      "A20",
+      "A21"
+    ],
+    "download.a11-a13.spec.ts > a chip routes download to Range/Download and sends level": [
+      "A11",
+      "A12",
+      "A13"
+    ],
+    "download.a11-a13.spec.ts > an active search adds the message param to the ranged download": [
+      "A11",
+      "A12",
+      "A13"
+    ],
+    "download.a11-a13.spec.ts > the download control is busy while in flight and errors surface a toast": [
+      "A11",
+      "A12",
+      "A13"
+    ],
+    "download.a11-a13.spec.ts > unfiltered download hits File/Current/Download": [
+      "A11",
+      "A12",
+      "A13"
+    ],
+    "dsl.a17-a18.spec.ts > a bare `a:b` literal is wrapped as ordinary text": [
+      "A17",
+      "A18"
+    ],
+    "dsl.a17-a18.spec.ts > a literal URL containing a colon is wrapped as ordinary text": [
+      "A17",
+      "A18"
+    ],
+    "dsl.a17-a18.spec.ts > a malformed expression head (`cfoo:bar`) is treated as ordinary text": [
+      "A17",
+      "A18"
+    ],
+    "dsl.a17-a18.spec.ts > a mode + ignore-case flag expression (`c#:\u2026`) is sent unchanged": [
+      "A17",
+      "A18"
+    ],
+    "dsl.a17-a18.spec.ts > a plain term is wrapped as a case-insensitive contains": [
+      "A17",
+      "A18"
+    ],
+    "dsl.a17-a18.spec.ts > a regex expression (`*:\u2026`) is sent unchanged": [
+      "A17",
+      "A18"
+    ],
+    "dsl.a17-a18.spec.ts > a starts-with expression (`^:\u2026`) is sent unchanged": [
+      "A17",
+      "A18"
+    ],
+    "dsl.a17-a18.spec.ts > a whitespace-only search is neither wrapped nor sent": [
+      "A17",
+      "A18"
+    ],
+    "live.a1.spec.ts > connects to the hub, shows backlog, and appends a pushed entry": [
+      "A1"
+    ],
+    "pagination.a6.spec.ts > A7: both fetched pages concatenate in order, with no dropped or duplicated rows": [
+      "A6",
+      "A7"
+    ],
+    "pagination.a6.spec.ts > fetches the next page with offset === previous NextOffset, then stops at null": [
+      "A6",
+      "A7"
+    ],
+    "pagination.a6.spec.ts > stops immediately when the first page reports NextOffset null": [
+      "A6",
+      "A7"
+    ],
+    "reconnect.a19.spec.ts > a log arriving during the reconnect reset/replay window is not dropped": [
+      "A19"
+    ],
+    "reconnect.a19.spec.ts > fresh backlog replaces stale entries and post-reconnect entries still append": [
+      "A19"
+    ],
+    "score-b.b11.spec.ts > rapid keystrokes coalesce into a single read (not one request per keystroke)": [
+      "B11"
+    ],
+    "score-b.b11.spec.ts > the search text is sent trimmed": [
+      "B11"
+    ],
+    "score-b.b11.spec.ts > the value sent is the settled final value (no intermediate keystroke, no superset)": [
+      "B11"
+    ],
+    "score-b.b2.spec.ts > a genuine user wheel-up releases the follow": [
+      "B2"
+    ],
+    "score-b.b2.spec.ts > programmatic scrolling does not re-engage a released follow": [
+      "B2"
+    ],
+    "score-b.b2.spec.ts > stays following through a programmatic scroll (scrollToIndex + measurement)": [
+      "B2"
+    ],
+    "score-b.b2.spec.ts > the lock control stays visible but unusable while a filter is active": [
+      "B2"
+    ],
+    "score-b.b2.spec.ts > the tail follows new entries, keeping the newest at the bottom": [
+      "B2"
+    ],
+    "search-contract.a2-a5.spec.ts > a level chip alone switches to the server-search view": [
+      "A2",
+      "A3",
+      "A4",
+      "A5"
+    ],
+    "search-contract.a2-a5.spec.ts > every read carries a level param while a chip is active": [
+      "A2",
+      "A3",
+      "A4",
+      "A5"
+    ],
+    "search-contract.a2-a5.spec.ts > search text switches to the server-search view; clearing returns to live tail": [
+      "A2",
+      "A3",
+      "A4",
+      "A5"
+    ],
+    "search-contract.a2-a5.spec.ts > uses singular level, message, offset, limit and descending=false; omits empties": [
+      "A2",
+      "A3",
+      "A4",
+      "A5"
+    ],
+    "search-contract.a2-a5.spec.ts > whitespace-only input is not a filter (no read, still live)": [
+      "A2",
+      "A3",
+      "A4",
+      "A5"
+    ],
+    "states.a8-a10.spec.ts > clearing empties the input, deactivates chips and resumes the live tail": [
+      "A8",
+      "A9",
+      "A10"
+    ],
+    "states.a8-a10.spec.ts > lock is unusable with a filter active and usable again once cleared": [
+      "A8",
+      "A9",
+      "A10"
+    ],
+    "states.a8-a10.spec.ts > shows the no-results state and a Clear-filters action for an empty page": [
+      "A8",
+      "A9",
+      "A10"
+    ],
+    "states.a8-a10.spec.ts > shows the searching state while the first fetch is in flight": [
+      "A8",
+      "A9",
+      "A10"
+    ]
+  }
+}

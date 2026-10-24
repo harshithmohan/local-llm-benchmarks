@@ -1,9 +1,9 @@
 {
-  "name": "shoko-logs-v2-harness",
+  "name": "shoko-logs-harness",
   "version": "0.1.0-draft",
   "private": true,
   "type": "module",
-  "description": "Runtime acceptance harness for the shoko-logs v2 benchmark. Asserts the Score A [R] lines of rubric.md against the running Shoko-WebUI app (outbound requests + observable DOM), with the backend API and SignalR hub stubbed by Playwright.",
+  "description": "Runtime acceptance harness for the shoko-logs benchmark. Asserts the Score A [R] lines of rubric.md against the running Shoko-WebUI app (outbound requests + observable DOM), with the backend API and SignalR hub stubbed by Playwright.",
   "packageManager": "pnpm@12.8.1",
   "engines": {
     "node": ">=20"

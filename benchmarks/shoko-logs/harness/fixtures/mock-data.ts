@@ -1,5 +1,5 @@
 /**
- * Canned fixtures for the shoko-logs v2 harness.
+ * Canned fixtures for the shoko-logs harness.
  *
  * Shapes mirror the Shoko Server logging contract:
  *   Range/Read  -> { NextOffset: number | null, Entries: LogEntry[] }

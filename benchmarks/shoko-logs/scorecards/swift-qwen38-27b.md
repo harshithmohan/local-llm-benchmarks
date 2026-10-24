@@ -1,4 +1,4 @@
-# swift-qwen38-27b — scores (v2)
+# swift-qwen38-27b — scores
 
 Model: `swift-qwen38-27b` (Swift-1.5-INT4-fast — a Swift-1.5 fine-tune of Qwen3.8-27B, dense hybrid SSM+attention, served at ctx 176128), run at reasoning level `xhigh`. One trajectory (Stage 0 + two reviewer-driven rounds). One card per model.
 
@@ -6,7 +6,7 @@ Reviewer: `opencode-go/muse-spark-1.3-contributor#xhigh` · Judge: `opencode-go/
 
 | Quant | Param set | Level | Outcome | Final A/B | Total model time (min) | Gates | Notes |
 |---|---|---|---|---|---|---|---|
-| Swift-1.5-INT4-fast | fp8 KV, ctx 176128, 4 MTP drafts, int8 act | xhigh | not converged (34/37) | 84 / 66.5 | 65.8 | ✅ tscheck · ✅ lint · ✅ build | No output-cap nudge and no zero-work stop in any stage; the three residual harness failures are the search-list continuation (A6/A7, one root cause) and the reconnect-window merge (A19) |
+| Swift-1.5-INT4-fast | fp8 KV, ctx 176128, 4 MTP drafts, int8 act | xhigh | not converged (34/37) | 84 / 66.5 | 65.8 | ✅ tscheck · ✅ lint · ✅ build | The three residual harness failures are the search-list continuation (A6/A7, one root cause) and the reconnect-window merge (A19) |
 
 > The first Stage-0 attempt (a ~60-minute run with zero edits) is **not recorded**: the client connection dropped mid-run (`HTTP 499` on the session wait endpoint) and the run ended with the tree untouched. This is a genuine environment failure, not a model result, so the stage was re-run per protocol.
 
@@ -15,11 +15,11 @@ Reviewer: `opencode-go/muse-spark-1.3-contributor#xhigh` · Judge: `opencode-go/
 Parameter set: `swift-qwen38-27b`, reasoning level `xhigh`, served at ctx 176128 (fp8 KV, 4 MTP drafts, INT8 activation), headless provider injected with `limit.context` 176128 and the 32768 output cap, run in an isolated base-commit checkout beside a sibling ShokoServer.
 
 ### Stage 0 — initial run
-- Model time: 40.4 min (no nudge, no zero-work stop)
+- Model time: 40.4 min
 - Gates: ✅ tscheck · ✅ lint · ✅ build
 - Harness: 29/37
 - Score A: 76.5 /100   Score B: 46.5 /100
-- Flags: nudges: none; zero-work stop: no; context: injected 176128 ctx / 32768 out, requests peaked at ~41k tokens in use
+- Flags: context: injected 176128 ctx / 32768 out, requests peaked at ~41k tokens in use
 - Findings: cold, the model built the whole surface in a single `LogsPage` — live tail, server-backed filtered search, paginated infinite scroll, filter-aware download, DSL pass-through, reconnect handling, cancellation and failure states — and scored A 76.5: full on the tail, the search contract (`Range/Read` with singular `level`, `message`/`offset`/`limit`/`descending=false`), the chip filters, the loading/empty/clear states, the scroll-lock, both download endpoints and their busy/toast affordances, DSL passthrough, cancellation and the read-failure state, plus the three static lines except A14. It lost A6 and A7 entirely (the scroll-proximity + 100 ms-debounced `fetchNextPage` never fired a next-page fetch under the harness, so page 2 never loads and its concatenation is unobservable), A14 (the object-URL was revoked synchronously after the click, which can abort the save), half of A18 (the plain-term wrap keyed on `value.includes(':')` rather than a grammar check, so `http://x`, `a:b` and `cfoo:bar` were passed through as expressions instead of wrapped) and half of A19 (the reconnect path replaced the tail wholesale, dropping an entry that arrived in the reset/replay window). Score B 46.5: full for the live-dimension `scrollRect` workaround, export hygiene and the debounced/trimmed input, halved for the order-dependent query key, the throttle-based scroll-lock release, the initial-only empty spinner and the tooltip-less chips, and zero for the phantom loader row, the mode-blind header, the un-extended `IconButton` and the string-typed `Level`.
 
 ### Review round 1 → Stage 1
@@ -36,7 +36,7 @@ Parameter set: `swift-qwen38-27b`, reasoning level `xhigh`, served at ctx 176128
   >
   > 5. A triggered download can be cancelled before the browser saves it. The download button correctly shows busy state and failures surface an error notice, but the temporary download resource is released immediately after the click, so in some browsers the file save is aborted or comes out empty. Expected behaviour is that with no filters the current server log file downloads, with filters the matching range downloads under the same level and search filters as the search view, and every started download reliably completes and saves.
 - Model time: 10.5 min      Gates: ✅ tscheck · ✅ lint · ✅ build      Harness: 33/37      Score A: 78 /100   Score B: 45 /100
-- Flags: nudges: none; zero-work stop: no; context: injected 176128 ctx / 32768 out, requests peaked at ~65k tokens in use
+- Flags: context: injected 176128 ctx / 32768 out, requests peaked at ~65k tokens in use
 - Findings: the round fixed three of the five findings — the scroll-lock release now uses a bottom-distance threshold with programmatic-scroll immunity (B2 full), the download revoke is deferred 1 s so the save completes (A14 full), and the DSL wrap boundary now handles the malformed head (`cfoo:bar` wrapped, A18 full). But it inverted the pass-through regex (flags before the mode character), so every flag-bearing expression (`c#:error` → `c#:c#:error`) is double-wrapped: A17 fell from full to zero and A18 rose to full, a net +1.5 on Score A. Pagination still never fired (A6/A7 zero) and the reconnect merge still dropped the window entry (A19 half), so the harness moved only to 33/37. The round also introduced new unused exports, so B10 fell from full to zero; B1, B4, B5, B6, B7, B8, B9 were unchanged. Score A 78 (A6/A7 zero, A17 zero, A19 half), Score B 45.
 
 ### Review round 2 → Stage 2
@@ -55,7 +55,7 @@ Parameter set: `swift-qwen38-27b`, reasoning level `xhigh`, served at ctx 176128
   >
   > 5. Selecting the same set of level filters in a different toggle order behaves as a different search. Expected: the same active filter set produces the same search regardless of the order in which the filters were toggled.
 - Model time: 15.0 min      Gates: ✅ tscheck · ✅ lint · ✅ build      Harness: 34/37      Score A: 84 /100   Score B: 66.5 /100
-- Flags: nudges: none; zero-work stop: no; context: injected 176128 ctx / 32768 out, requests peaked at ~44k tokens in use
+- Flags: context: injected 176128 ctx / 32768 out, requests peaked at ~44k tokens in use
 - Findings: the round fixed the DSL inversion (the pass-through head regex is now mode-first, `c#:error` verbatim, A17 full back), the toggle-order instability (levels are normalised to declaration order before the query key and the `level` parameter, B1 full), the missing loading-more affordance (a distinct "Loading more…" footer now renders, B5 half) and the reconnect merge (backlog merged with dedupe/sort, but the harness race still drops the window entry, A19 stays half). It also restored export hygiene (B10 full) and widened the type modelling (B9 half, from zero). Pagination still produced zero next-page fetches (A6/A7 zero), so the harness reached only 34/37. Score A 84 (A6/A7 zero, A19 half, every other runtime and static line full), Score B 66.5.
 
 **Outcome:** not converged — gates green but the harness stopped at 34/37 (29 → 33 → 34) after two review rounds. The residual failures are the search-list continuation (A6 zero, A7 zero as its cascade — one root cause) and the reconnect-window merge (A19 half). Score A climbed 76.5 → 78 → 84 and Score B 46.5 → 45 → 66.5.

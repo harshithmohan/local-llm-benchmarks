@@ -52,6 +52,6 @@ There is no fixed free-VRAM number that holds across models and configs. How muc
 
 ## Benchmark suites with their own methodology
 
-The agentic coding benchmark under [benchmarks/shoko-logs-v2/](benchmarks/shoko-logs-v2/) has its own, independent methodology — task, build-gate + rubric scoring, and grading protocol. It is documented in [benchmarks/shoko-logs-v2/README.md](benchmarks/shoko-logs-v2/README.md) and is separate from the inference-timing methodology above.
+The agentic coding benchmark under [benchmarks/shoko-logs/](benchmarks/shoko-logs/) has its own, independent methodology — task, two independent 0–100 scores per stage (ticket conformance vs robustness/reference fidelity, never summed) with the build gates as a precondition, and one trajectory per model per parameter set — documented in [benchmarks/shoko-logs/README.md](benchmarks/shoko-logs/README.md) and separate from the inference-timing methodology above.
 
 The capability benchmark under [benchmarks/crucible/](benchmarks/crucible/) is also independent: [Crucible LLM](https://github.com/MadGoatHaz/crucible-llm) drives a chat route with its own sampling and client-side timing, so its results are not comparable to the model-card timing rows. It is documented in [benchmarks/crucible/README.md](benchmarks/crucible/README.md).

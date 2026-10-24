@@ -34,7 +34,7 @@ The llama.cpp builds support MTP speculative decode; Strata has its own MTP. Tim
 - [models/rig1-3060/](models/rig1-3060/) - Rig 1 model pages (recommended configs per model)
 - [models/rig2-3090/](models/rig2-3090/) - Rig 2 model pages (recommended configs per model)
 - [experiments/](experiments/) - transferability studies of low-level inference knobs (engine/arch-specific tuning evaluated against the recommended stacks)
-- [benchmarks/shoko-logs-v2/](benchmarks/shoko-logs-v2/) - agentic coding benchmark, v2 (reproduce the Shoko-WebUI logs-page rewrite + log download; v1 removed 2026-10-18)
+- [benchmarks/shoko-logs/](benchmarks/shoko-logs/) - agentic coding benchmark (reproduce the Shoko-WebUI logs-page rewrite — server-side search + infinite-scroll pagination, DSL pass-through, reconnect recovery, cancellation/failure handling — and log download, against a backend API the model must discover itself in a sibling ShokoServer checkout)
 - [benchmarks/crucible/](benchmarks/crucible/) - capability benchmark (Crucible LLM: long-context retrieval, reasoning, structured output)
 
 Each model page carries its full experiment log in the matching `archive/<model>.md` alongside it.
@@ -69,12 +69,12 @@ Headline tables list only usable configs (full context, no rejected/OOM setups);
 
 All rows here are measured on the 10k opencode session prompt ([test-prompts.md](test-prompts.md)) on the current engine pins (rig pages).
 
-## Coding benchmark (shoko-logs-v2)
+## Coding benchmark (shoko-logs)
 
-A separate, agentic benchmark under [benchmarks/shoko-logs-v2/](benchmarks/shoko-logs-v2/): from a clean Shoko-WebUI base commit, a model must reproduce the upstream logs-page rewrite (server-side search + infinite-scroll pagination) and log download against a backend API it discovers itself. Scored by build gates (tscheck/lint/build, 5 pts) plus a 95-point behavior rubric vs a reference diff.
+A separate, agentic benchmark under [benchmarks/shoko-logs/](benchmarks/shoko-logs/): from a clean Shoko-WebUI base commit, a model must reproduce the upstream logs-page rewrite (server-side search + infinite-scroll pagination, DSL pass-through, reconnect recovery, cancellation/failure handling) and log download against a backend API it must discover itself in a sibling ShokoServer checkout. It carries two **independent 0–100 scores per stage, never summed**: **Score A** is ticket conformance (only what `prompt.md` explicitly requests, runtime-checked by a Playwright harness for `[R]` lines) and **Score B** is robustness/reference fidelity (the behaviours the ticket deliberately leaves unstated, scored against the reference implementation). The build gates (`pnpm tscheck` / `pnpm lint` / `pnpm build`) are a precondition, not points — a red build carries no Score-A number. Method: one trajectory per model per parameter set — a clean-base implementation run plus up to two reviewer-driven repair rounds in the same session — reported as `converged: stage 0|1|2` or `not converged`, with no repeats and no median.
 
-- Protocol, rubric, and prompts: [benchmarks/shoko-logs-v2/README.md](benchmarks/shoko-logs-v2/README.md)
-- Results: [benchmarks/shoko-logs-v2/scorecard.md](benchmarks/shoko-logs-v2/scorecard.md)
+- Protocol, rubric, and prompts: [benchmarks/shoko-logs/README.md](benchmarks/shoko-logs/README.md)
+- Results: [benchmarks/shoko-logs/scorecard.md](benchmarks/shoko-logs/scorecard.md)
 
 ## Crucible (capability)
 

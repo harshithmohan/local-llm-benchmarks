@@ -1,0 +1,18 @@
+{
+  "base": "a715a49c4feb1b9d32c21b6691f652b298632b14",
+  "server_pin": null,
+  "branch": "bench/shoko-logs",
+  "harness": {
+    "port": 3100,
+    "expected_total": 37,
+    "timeout_s": 1200
+  },
+  "timeouts": {
+    "impl_turn_s": 7200,
+    "pass_s": 1800
+  },
+  "permissions": {
+    "implement": ["edit", "write", "read", "shell", "glob", "grep"],
+    "pass": ["edit", "write", "read", "shell", "glob", "grep"]
+  }
+}

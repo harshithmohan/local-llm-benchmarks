@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
- * Playwright config for the shoko-logs v2 runtime acceptance harness.
+ * Playwright config for the shoko-logs runtime acceptance harness.
  *
  * The candidate checkout is taken from SHOKO_WEBUI_DIR and never hard-coded.
  * Playwright's `webServer` boots the checkout's Vite dev server (via

@@ -1,27 +1,27 @@
-# qwen38-flash-next — scores (v2)
+# qwen38-flash-next — scores
 
-Model: `qwen38-flash-next-iq3xxs-strata` (Qwen3.8-Flash-Next, 512-expert GSQ-RCO `IQ3_XXS`, ~75.8 GB two-shard build with a separate MTP head), self-hosted by Strata at context 204800 and run at reasoning level `xhigh`. One trajectory per quant/level (Stage 0 + up to two reviewer-driven rounds). One card per model — it covers every quant of `qwen38-flash-next`; quants are rows, not separate cards.
+Model: `qwen38-flash-next-iq3xxs-strata` (Qwen3.8-Flash-Next, 512-expert GSQ-RCO `IQ3_XXS`, ~75.8 GB two-shard build with a separate MTP head), self-hosted by Strata at context 200000 and run at reasoning level `xhigh`. One trajectory per quant/level (Stage 0 + up to two reviewer-driven rounds). One card per model — it covers every quant of `qwen38-flash-next`; quants are rows, not separate cards.
 
 Reviewer: `opencode-go/muse-spark-1.3-contributor#xhigh` · Judge: `opencode-go/muse-spark-1.3-contributor#xhigh` — pinned for the whole card; a trajectory is only comparable to another run with the same reviewer.
 
 | Quant | Param set | Level | Outcome | Final A/B | Total model time (min) | Gates | Notes |
 |---|---|---|---|---|---|---|---|
-| IQ3_XXS | Strata int8 KV, ctx 204800, `--expert-cache auto`, `--prefill auto` (lend 95%), MTP `--spec 4` | xhigh | not converged | 96 / 100 | 94.2 | ✅ tscheck · ✅ lint · ✅ build | No output-cap nudge and no zero-work stop in any stage; harness 26/37 → 35/37 → 36/37 |
+| IQ3_XXS | Strata int8 KV, ctx 200000, `--expert-cache auto`, `--prefill auto` (lend 95%), MTP `--spec 4` | xhigh | not converged | 96 / 100 | 94.2 | ✅ tscheck · ✅ lint · ✅ build | Harness 26/37 → 35/37 → 36/37 |
 
 > **Harness revision, 2026-10-14 (maintainer correction):** the suite's page-open gate matched the page title text exactly, so a candidate that renamed the ticket's page title failed all 37 specs at page open — on copy `prompt.md` never states. The gate now anchors on the layout's scrolling root instead, and every figure on this card was measured on the revised harness. An earlier same-day trajectory of this model, graded on the pre-revision harness, is superseded and is not recorded here.
 
-> Level `xhigh` is the model's declared top reasoning-effort variant, selected with `#xhigh`; the effort reaches the served engine on the wire as `reasoning_effort: xhigh`. Context was injected at 204800 (the served ceiling) with a 32768 output cap, matching the benchmark's nudge rule.
+> Level `xhigh` is the model's declared top reasoning-effort variant, selected with `#xhigh`; the effort reaches the served engine on the wire as `reasoning_effort: xhigh`. Context was injected at 200000 (the served ceiling) with a 32768 output cap.
 
 ## IQ3_XXS — xhigh reasoning
 
-Parameter set: Strata, context 204800, int8 KV, `--expert-cache auto`, `--prefill auto` at the 95% lend setting, MTP `--spec 4`, reasoning level `xhigh`. Self-hosted on Rig 1's RTX 3060 (~35 t/s decode), so the stage timings are dominated by engine throughput rather than by the harness's fixtures.
+Parameter set: Strata, context 200000, int8 KV, `--expert-cache auto`, `--prefill auto` at the 95% lend setting, MTP `--spec 4`, reasoning level `xhigh`. Self-hosted on Rig 1's RTX 3060 (~35 t/s decode), so the stage timings are dominated by engine throughput rather than by the harness's fixtures.
 
 ### Stage 0 — initial run
-- Model time: 46.1 min (no nudge, no zero-work stop; the served entry's cold load falls inside this window)
+- Model time: 46.1 min (the served entry's cold load falls inside this window)
 - Gates: ✅ tscheck · ✅ lint · ✅ build
 - Harness: 26/37
 - Score A: 78 /100   Score B: 58.5 /100
-- Flags: nudges: none; zero-work stop: no; context: served and injected 204800, output cap 32768
+- Flags: context: served and injected 200000, output cap 32768
 - Findings: cold, the model built the whole ticket surface in one pass — live tail, server-backed filtered search with paginated infinite scroll, filter-aware downloads, DSL pass-through and plain-term wrapping, reconnect recovery, and cancellation with failure surfacing. Score A 78: full on the tail, the filter switch and its `Range/Read` parameter contract, pagination and page order, the empty/searching/failure states, the download endpoints and busy state, the DSL pass-through lines and the static virtualizer/dead-code lines. It lost A18 outright — any colon in the input was treated as DSL syntax, so ordinary text that merely contained a colon (a URL, `a:b`, a malformed head such as `cfoo:bar`) was sent through verbatim instead of being wrapped as a case-insensitive substring search — half of A19 (the reconnect path had no reset: stale tail entries stayed put and a window entry was lost), and the A14 static line (the download tore its object URL down synchronously, before the click could complete). Score B 58.5: full for query-key stability, live virtualizer dimensions, the phantom loading-more row and export hygiene; halves for the scroll-follow release (throttled direction check, so both behavioural release tests failed) and for the post-reconnect spinner, the chip tooltips and the level typing; zero for the header mode/count, the `IconButton` loading extension and the input discipline (untrimmed, colon-less `c#err` sent).
 
 ### Review round 1 → Stage 1
@@ -34,7 +34,7 @@ Parameter set: Strata, context 204800, int8 KV, `--expert-cache auto`, `--prefil
   > 4. Search requests do not reflect the settled trimmed value. Intermediate keystrokes can be sent and surrounding whitespace is not trimmed before sending, so the server sees something other than the final text the user settled on. We expect only the settled final value to be sent, trimmed of surrounding whitespace, with whitespace-only input treated the same as no search.
   > 5. Downloads can be unreliable in some browsers. The temporary download link is torn down synchronously right after the click, which can cancel the download before it starts. We expect starting a download to consistently deliver the file, with a working indicator while it is in flight and a visible error message if it fails.
 - Model time: 20.9 min      Gates: ✅✅✅      Harness: 35/37      Score A: 92 /100   Score B: 64 /100
-- Flags: nudges: none; zero-work stop: no; context: served 204800, output cap 32768
+- Flags: context: served 200000, output cap 32768
 - Findings: the round fixed all five findings — plain text is now wrapped as `c#:<trimmed>` behind a valid-head expression check (and colon-bearing literals wrap again), the reconnect path gained an `onreconnecting` clear plus a raw-timestamp backlog merge, the scroll release became a 48 px distance check with the lock button always mounted and disabled while filtering, the search key and params take the trimmed settled value, and the download link teardown was deferred. The harness went 26/37 → 35/37: the DSL wrap lines (A18) all pass now, but both A19 reconnect tests still fail — the fresh backlog never renders, and the window entry is dropped. Score A 92 loses only A19's 8 points; Score B 64 gains the behavioural B2 and B11 lines, and halves B4/B6/B9 while keeping B7, B8 and B10 at zero (bare `Logs` header, no `IconButton` extension, one newly-exported unused helper).
 
 ### Review round 2 → Stage 2
@@ -47,7 +47,7 @@ Parameter set: Strata, context 204800, int8 KV, `--expert-cache auto`, `--prefil
   > 4. The small interactive affordances are missing. Right now the level filter buttons only change colour when active, with no hover text explaining what they do, and only the large download button knows how to show it is busy. What we want is for every level button to announce on hover whether it will hide or show that level, and for the small icon button variant to support the same busy visual that the large button already has, so any busy state looks consistent whichever button style is used.
   > 5. A couple of modelling and hygiene gaps. Right now the log entry shape requires details that older servers can omit, so those rows would be treated as malformed, the level field is plain text with no shared set of allowed values and no representation for the unfiltered state, and there is one exported search helper that nothing imports. What we want is for the optional details to actually be optional, for the level to be modelled as the known set plus the unfiltered case, and for any helper that is only used internally to stay private so no unused exports are left behind.
 - Model time: 27.2 min      Gates: ✅✅✅      Harness: 36/37      Score A: 96 /100   Score B: 100 /100
-- Flags: nudges: none; zero-work stop: no; context: served 204800, output cap 32768
+- Flags: context: served 200000, output cap 32768
 - Findings: the round rebuilt reconnect recovery — a self-retrying connection with no custom ladder, a state flag that clears the tail and shows a waiting view the moment the reconnect begins (distinct from both the no-results and failure views), and a backlog merge that keeps entries racing the replay. The first reconnect test now passes (fresh backlog replaces the stale tail, then live appends continue), but the second still fails: the merge compares raw timestamps with a strict "after the backlog cutoff" test, so an entry that arrives with the same timestamp as the replay cutoff is dropped. Score A 96 takes the A19 half the rubric allows (stale tail replaced, window entry lost) and holds every other line, and Score B 100 closes header mode text, chip tooltips, the shared busy visual on the small icon button, the optional entry fields and the level union, and keeps the behavioural B2/B11 lines. The equal-timestamp merge is the only thing between this trajectory and convergence.
 
 **Outcome:** not converged — after two review rounds the harness stands at 36/37, the remaining failure being the reconnect-window entry dropped by the merge's strict same-timestamp comparison. Score A 78 → 92 → 96 and Score B 58.5 → 64 → 100; the trajectory never reached a fully green suite, so it is recorded as run, with no repeat.

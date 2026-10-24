@@ -4,7 +4,7 @@ import path from 'node:path';
 import type { FullResult, Reporter, TestCase, TestResult } from '@playwright/test/reporter';
 
 /**
- * Sanitized failure report for the shoko-logs v2 reviewer.
+ * Sanitized failure report for the shoko-logs reviewer.
  *
  * The reviewer (see ../../README.md, step 6) is handed ONLY this file, never the
  * raw Playwright stdout log: it must see spec/test titles and the observed

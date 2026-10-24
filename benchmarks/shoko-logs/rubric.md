@@ -1,37 +1,27 @@
-<!-- v2 design note: this file replaces v1's single 100-point rubric. It exists because the
-v1 cohort showed the task is NOT saturated (spread 51-75) but the ONE headline number mixed
-two different things: fulfilling the ticket, and replicating the hidden reference. Of v1's 95
-rubric points, ~24 were earned by essentially nobody (DSL passthrough 10, reconnect reset 6,
-scroll-lock 4, dead-code 3, header 1) and ~25 by essentially everybody (read contract, chips,
-debounce, clear, endpoint switch, loading) — leaving only ~46 points of real separation, all in
-scattered half-points. v2 splits the score in two and — since the iterative measurement loop
-(README.md -> "Method") repairs a run only against what the ticket asks — puts every behaviour
-we intend to grade in ONE ticket (prompt.md): the search/download features plus DSL-aware
-search, reconnect recovery and cancellation/failure handling. Those three were a separate
-"stretch" ticket in an earlier draft; they are now ticket requirements graded in Score A, so a
-missing one surfaces in the next review round instead of being ungradeable. The ticket states
-outcomes, not mechanisms: details a human would never say out loud — a debounce interval, a
-trim, a library name, a copy string — are deliberately left out, and the conventions a developer
-is expected to pick up from the codebase are graded in Score B (B11) instead. Every Score A line
-is a behaviour the reference implementation itself exhibits, so the reference scores 100 on both
-scores — a requirement the reference does not meet is not a ticket line (an earlier draft's
-"discoverable syntax affordance" was dropped for exactly that reason: it graded a behaviour with
-no reference exemplar; the cancellation line A20 is likewise scoped to the read path, because the
-reference's download path has no stale-result guard).
+<!-- Two independent scores, never summed: Score A grades only what prompt.md asks for, Score B grades
+reference-level polish a production implementation has anyway. Every Score A line is a behaviour the
+reference implementation itself exhibits, so the reference scores 100 on both. All graded behaviours
+live in ONE ticket (prompt.md) — the search/download features plus DSL-aware search, reconnect
+recovery and cancellation/failure handling — so a missing one surfaces in the next review round
+instead of being ungradeable. The ticket states outcomes, not mechanisms: details a human would
+never say out loud — a debounce interval, a trim, a library name, a copy string — are deliberately
+left out, and the conventions a developer is expected to pick up from the codebase are graded in
+Score B (B11) instead.
 
-Amendment (2026-10-13, A10/B2): the ticket's "off while filters are active" reads as absent, but
-the reference keeps the scroll-to-bottom control on screen while merely disabling it, so that
-visible-but-unusable quality is graded in B2 (removing the control is the wrong answer) while A10
-accepts either state - absent or disabled - and still requires the control to be usable again in
-the live tail once the filters are cleared. -->
+A10/B2: the ticket's "off while filters are active" reads as absent, but the reference keeps the
+scroll-to-bottom control on screen while merely disabling it, so that visible-but-unusable quality
+is graded in B2 (removing the control is the wrong answer) while A10 accepts either state - absent
+or disabled - and still requires the control to be usable again in the live tail once the filters
+are cleared. -->
 
-# Rubric (v2) — shoko-logs
 
-Score every line 0 / half / full. **A half is not a judgement call**: it is available only where the line's own text below states a half criterion — otherwise the line is binary (full or zero). Score A and Score B are **independent 0–100 scores and are never summed** — that sum is exactly the conflation v2 removes. A line's points are listed in the tables below.
+# Rubric — shoko-logs
+
+Score every line 0 / half / full, written in the sheet's Score cell as the token `0`, `0.5` or `1`. **A half is not a judgement call**: it is available only where the line's own text below states a half criterion — otherwise the line is binary (full or zero). Exactly two further cell tokens exist, and both are legal **only on a red build**: `N` and `G` (written together as `N/G`), for a line the red build makes ungradeable — they are never a substitute for a zero. A stage whose `[R]` lines could not be graded because the build is red therefore carries no complete Score-A total: write `N/G` in place of that stage's Score-A number while the `[S]` lines and the static Score-B lines are still graded from the patch (B2 and B11 are the exception — a red build leaves those two ungradeable; see the red-build note under the tables). Score A and Score B are **independent 0–100 scores and are never summed** — that sum is exactly the conflation it removes. A line's points are listed in the tables below.
 
 - **Score A — Ticket conformance.** Only behaviors `prompt.md` explicitly requests. Graded at runtime by the harness (`harness/`) wherever a line is marked **[R]**; otherwise by static inspection of the patch. This is the headline "did the model build the ticket" number.
 - **Score B — Robustness & reference fidelity.** Behaviors the ticket deliberately does **not** state: reference-level polish that a production implementation has anyway. They are in scope, not extra credit — the run's target is the reference, and these are what a competent engineer applies without being told. A low Score B must never depress Score A. This is the "how close to production-grade" number. Most B lines are graded by static inspection of the patch; **B2 and B11 are behavioural** and are asserted at runtime by the harness (see the note under the table).
-- **Build gates are a precondition, not points.** `pnpm tscheck` / `pnpm lint` / `pnpm build` are run **after** the protocol's normalize step (`pnpm dprint:fix && pnpm oxlint:fix`, README → Protocol step 3), so only what the deterministic fixers cannot repair counts. A failing gate never voids the stage: a red `build` blocks the runtime `[R]` lines (the harness cannot exercise the app), but the `[S]` lines and all of Score B are still graded from the patch, and a `lint` failure on its own leaves every line gradeable — it is recorded as a gate `❌` and raised in the next review round. Report gates as `✅/❌` in the score sheet; they carry no weight, because every v1 model passed them (zero separation).
+- **Build gates are a precondition, not points.** `pnpm tscheck` / `pnpm lint` / `pnpm build` are run **after** the protocol's normalize step (`pnpm dprint:fix && pnpm oxlint:fix`, README → Protocol step 3), so only what the deterministic fixers cannot repair counts. A failing gate never voids the stage: a red `build` blocks the runtime `[R]` lines (the harness cannot exercise the app), but the `[S]` lines and the static Score-B lines are still graded from the patch (B2 and B11 are the exception — a red build leaves those two ungradeable; see the red-build note under the tables), and a `lint` failure on its own leaves every line gradeable — it is recorded as a gate `❌` and raised in the next review round. Report gates as `check`/`cross` in the score sheet; they carry no weight — a green build is a precondition for the runtime `[R]` lines, not a scored outcome. The judge reads the runner's recorded `gates.json` for them — the gates are run once, by the runner, and the judge does not re-run them.
 
 Grade against the server contract below and the run's patch. Do **not** let a green build anchor line scores. **Score A** grades the observable outcome, not the reference's structure — a different approach that behaves correctly scores full. **Score B** is explicitly reference fidelity, so a B line may name the reference's mechanism (a specific component extension, a specific workaround); that is what the score is for.
 
@@ -73,7 +63,7 @@ Every line is something `prompt.md` states. `[R]` = asserted by the runtime harn
 
 ## Score B — Robustness & reference fidelity (100)
 
-Unstated in the ticket by design — in scope, not extra credit. These are the behaviors that separated v1's top runs from production grade, graded on their own so they cannot cap Score A.
+Unstated in the ticket by design — in scope, not extra credit. These are the behaviors that separate a production-grade implementation from a merely conformant one, graded on their own so they cannot cap Score A.
 
 | # | Behavior | Pts |
 |---|---|---:|
@@ -92,50 +82,41 @@ Unstated in the ticket by design — in scope, not extra credit. These are the b
 
 B2 and B11 are **behavioural** and are asserted at runtime by the harness; every other B line is graded statically from the patch.
 
+**Red build.** A red `pnpm build` means the harness cannot exercise the app, so the two behavioural B lines cannot be asserted: score B2 and B11 with the red-build token `N/G` — never a zero, which would claim the behaviour was observed to fail — and state the B total over the points that could still be graded, with that denominator shown (e.g. `74 / 82`), so a red-build total is never read as a full-rubric 100. The nine static B lines are unaffected and are graded from the patch as usual.
+
 ## Score sheet
 
-Copy into `runs/<run-name>/score-s<stage>.md` (one sheet per stage) and fill in. Two totals, never summed.
+Write this sheet as `score-s<stage>.md` (one sheet per stage) and fill it in. Two totals, never summed. Each Score cell carries one token — `0`, `0.5` or `1`, or `N/G` on a red build — and every row needs a non-empty note. Gate cells are `check` or `cross`. The first line and the two total lines are matched literally (hyphen, not an em dash), so keep the sheet's shape exactly:
 
 ````markdown
-# Score — <run-name> stage <stage> (v2)
+# Score - <run-name> stage <stage>
 
-| Field | Value |
-|---|---|
-| Run | `<run-name>` |
-| Stage | <0 / 1 / 2> |
 | Model | `<model>` |
-| Date | <date> |
-| Gates | tscheck ✅/❌ · lint ✅/❌ · build ✅/❌ (**precondition**) |
-| **Score A — Ticket conformance** | **<n> / 100** |
-| **Score B — Robustness & fidelity** | **<n> / 100** |
-| Harness | <passed / partial / not run — why> |
-
-<judging method note: judge model + invocation, whether the harness ran, maintainer spot-checks, re-judges>
+| Gates | tscheck <check/cross> lint <check/cross> build <check/cross> |
+| Harness | <passed>/<total> |
 
 ## Score A lines
 
-| # | Score | Notes (cite the harness assertion or patch evidence) |
+| Id | Score | Notes |
 |---|---|---|
-| A1 | | |
+| A1 | <token> | <one or more words> |
 | … | | through A21 |
 
 ## Score B lines
 
-| # | Score | Notes |
+| Id | Score | Notes |
 |---|---|---|
-| B1 | | |
+| B1 | <token> | <one or more words> |
 | … | | through B11 |
 
 ## Reviewer notes
 
-### Architecture
-<approach summary — how the solution differs from the reference>
+<prose>
 
-### Correctness risks
-<numbered list of correctness risks / hackiness, with patch or harness evidence>
+**Bottom line**: <prose>
 
-### Rubric gaps / notables
-<+/~/− items: anything the rubric missed, good or bad>
-
-**Bottom line**: <one-paragraph verdict, quoting both scores>
+**Score A - Ticket conformance** | **<n> / 100**
+**Score B - Robustness & fidelity** | **<n> / 100**
 ````
+
+On a green build both totals are exactly the points earned over 100. On a red build the two totals change shape: the Score A line is exactly `**Score A - Ticket conformance** | **N/G**` (no number, no denominator), and the Score B line is `<n> / <m>` with the reduced denominator (`m` below 100, e.g. `74 / 82`) — see the red-build note above.

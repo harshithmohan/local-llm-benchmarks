@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# shoko-logs v2 runtime acceptance harness — one-command entry point.
+# shoko-logs runtime acceptance harness — one-command entry point.
 #
 # Usage:
 #   SHOKO_WEBUI_DIR=/path/to/Shoko-WebUI ./run.sh [extra playwright args]

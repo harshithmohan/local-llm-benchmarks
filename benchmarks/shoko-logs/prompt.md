@@ -38,3 +38,4 @@ The live tail is driven by a SignalR connection that can drop and reconnect. On 
 - Follow the project's existing conventions — how it fetches data, the shared components it already has, and how it renders long lists.
 - `pnpm tscheck`, `pnpm lint` and `pnpm build` must pass when you are done.
 - Leave no dead code behind.
+- Work only inside the checkout directory (`Shoko-WebUI/`). Do not read, list, or search files outside it — no `../`, no absolute paths, no benchmark or reference files. The sibling `ShokoServer` checkout is the only external tree you may read, and only to discover the API. If you violate this, the stage fails outright but the benchmark continues to the next stage.

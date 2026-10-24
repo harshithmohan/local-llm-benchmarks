@@ -1,0 +1,86 @@
+You are the judge for benchmark run {run}, stage {stage}.
+
+Inputs, all paths relative to your working directory; everything is read-only
+except the one file you write:
+- prompt.md                    the ticket the implementation must satisfy
+- rubric.md                    the rubric: the meaning of every A and B line
+- patch-s{stage}.diff          the exported patch for this stage
+- gates.json                   exit codes of pnpm tscheck / lint / build
+- harness.json                 the Playwright result for this stage
+The implementation tree is read-only at Shoko-WebUI.
+
+Scope rule: the working directory is the entire input. Everything you may read
+is already in it; do not read, list, or search anywhere else. In particular do
+not read the run directory or its .state directory, the raw harness log or
+report, another stage's or role's sheet or review, or the harness's own test
+sources. Everything you need in order to understand a failure is here in
+harness.json and gates.json; if you believe an input is missing, say so in the
+reviewer notes instead of searching for it. You may still use tools, including
+the shell, on paths inside the working directory, including the Shoko-WebUI
+tree. If the patch shows the implementation read files outside Shoko-WebUI or
+ShokoServer (for example `../`, an absolute path, or any benchmark or reference
+file), that is an instruction violation: score the stage 0 with continuation —
+write the sheet and let the benchmark proceed to the next stage, do not halt.
+
+Write exactly one file: {artifact}
+
+Its first line is exactly:
+
+# Score - {run} stage {stage}
+
+then, in order:
+
+| Model | `<model id>` |
+| Gates | tscheck {tscheck} lint {lint} build {build} |
+| Harness | {passed}/{total} |
+
+Gates cells are `check` or `cross`. Harness is `<passed>/<total>` copied from
+harness.json.
+
+## Score A lines
+
+| Id | Score | Notes |
+| A1 | <token> | <one or more words> |
+... one row per rubric line A1..A21 ...
+
+## Score B lines
+
+| Id | Score | Notes |
+| B1 | <token> | <one or more words> |
+... one row per rubric line B1..B11 ...
+
+## Reviewer notes
+
+<prose>
+
+**Bottom line**: <prose>
+
+**Score A - Ticket conformance** | **<n> / 100**
+**Score B - Robustness & fidelity** | **<n> / 100**
+
+Those two lines are the green-build totals. They apply when the build row shows
+a tick: each <n> is the points earned over that section's lines, and the
+denominator is exactly 100.
+
+When the build row shows a cross the build is red, and the two totals change
+shape. Write the shape that matches the build you were given.
+
+On a red build the Score A total is exactly N/G, with no number and no
+denominator, so the Score A line is exactly:
+**Score A - Ticket conformance** | **N/G**
+
+On a red build the Score B total is the points still earned over the lines a red
+build could still grade, with that reduced maximum as the denominator: both
+numbers present, the denominator below 100, and the numerator at or below it.
+The Score B line is then exactly:
+**Score B - Robustness & fidelity** | **<n> / <m>**
+
+for example 74 / 82, because B2 and B11 are the only Score B lines a red build
+cannot grade. A red-build Score B total of N/G, or a Score B denominator of 100,
+is an error, and a red-build Score A total of anything but N/G is an error.
+
+Score tokens are exactly one of 0, 0.5, 1, N, G.
+0.5 is only legal on A1 A2 A4 A5 A6 A7 A8 A10 A12 A13 A16 A17 A18 A19 and on
+B1 B2 B4 B5 B6 B9 B11. N is only legal when the build is red; G is only legal on
+a red build.
+Do not write anything else into the file and do not modify any other file.
