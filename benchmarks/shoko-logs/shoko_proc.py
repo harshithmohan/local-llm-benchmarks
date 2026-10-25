@@ -51,12 +51,21 @@ def provider_json(
     out_cap=None,
     name=None,
     permissions=None,
+    variants=None,
 ):
     doc = {}
     if provider_id:
         model = {}
         if name:
             model["name"] = name
+        if variants:
+            model["variants"] = list(variants)
+        model["modelID"] = model_key
+        model["capabilities"] = {
+            "tools": True,
+            "input": ["text"],
+            "output": ["text"],
+        }
         limit = {}
         if ctx_limit is not None:
             limit["context"] = int(ctx_limit)
@@ -64,11 +73,11 @@ def provider_json(
             limit["output"] = int(out_cap)
         if limit:
             model["limit"] = limit
-        doc["provider"] = {
+        doc["providers"] = {
             provider_id: {
-                "npm": "@ai-sdk/openai-compatible",
+                "package": "@opencode/ai/providers/openai-compatible",
                 "name": "shoko-endpoint",
-                "options": {"baseURL": base_url},
+                "settings": {"baseURL": base_url},
                 "models": {model_key: model},
             }
         }

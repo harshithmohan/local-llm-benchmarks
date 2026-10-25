@@ -288,13 +288,20 @@ class RealExecutor:
     def role_config_content(self, role):
         perms = self.role_permissions(role)
         if role == "implement" and not self.spec.is_host_mode:
+            level = self.spec.model.get("variant")
+            variants = (
+                [{"id": level, "settings": {"reasoningEffort": level}}]
+                if level
+                else None
+            )
             return proc.provider_json(
                 self.spec.provider_id,
-                self.spec.model_id,
+                self.spec.model.get("id"),
                 self.endpoint_base_url(),
                 ctx_limit=self.spec.ctx_limit,
                 out_cap=self.spec.out_cap,
                 permissions=perms,
+                variants=variants,
             )
         return proc.provider_json(None, None, None, permissions=perms)
 
@@ -774,7 +781,9 @@ class Pipeline:
                 with open(os.path.join(self.run_dir, "score.md"), "w") as fh:
                     fh.write(score_txt + "\n\n" + harness_text[:4000])
                 if green:
-                    self._state(phase="done", stage=stage, step="verdict", outcome="converged")
+                    self._state(
+                        phase="done", stage=stage, step="verdict", outcome="converged"
+                    )
                     say(label, "verdict", "green; score.md written")
                     return S.EXIT_OK
                 self._state(
