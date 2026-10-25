@@ -4,11 +4,11 @@ Model: `Qwen3.8-Flash-Next`.
 
 | Quant | Level | Outcome | Final A/B | Total model time (min) | Gates | Notes |
 |---|---|---|---|---|---|---|
-| IQ3_XXS | default | not converged (33/37) | 91 / 87.5 | 252.9 | ✅ tscheck · ✅ lint · ✅ build | Best cold stage recorded (30/37); pagination duplication and the reconnect window survived both repair rounds |
+| IQ3_XXS | xhigh | not converged (33/37) | 91 / 87.5 | 252.9 | ✅ tscheck · ✅ lint · ✅ build | Best cold stage recorded (30/37); pagination duplication and the reconnect window survived both repair rounds |
 
-## IQ3_XXS — default reasoning
+## IQ3_XXS — xhigh reasoning
 
-Parameter set: IQ3_XXS (`qwen38-flash-next-iq3xxs-strata`), default reasoning level.
+Parameter set: IQ3_XXS (`qwen38-flash-next-iq3xxs-strata`), xhigh reasoning level.
 
 ### Stage 0 — initial run
 - Model time: 112.8 min
@@ -69,7 +69,7 @@ Parameter set: IQ3_XXS (`qwen38-flash-next-iq3xxs-strata`), default reasoning le
 
 | Quant | Level | Outcome | Final A /100 | Final B /100 | Total model time (min) | Compress | Decompress | Final context |
 |---|---|---|---|---|---|---|---|---|
-| IQ3_XXS | default | not converged (33/37) | 91 | 87.5 | 252.9 | 11 | 5 | 102,996 / 204,800 (50%) |
+| IQ3_XXS | xhigh | not converged (33/37) | 91 | 87.5 | 252.9 | 11 | 5 | 102,996 / 204,800 (50%) |
 
 | Quant | Stage | Score A /100 | Score B /100 | Harness | Gates | Model time (min) | Compress | Decompress |
 |---|---|---|---|---|---|---|---|---|
