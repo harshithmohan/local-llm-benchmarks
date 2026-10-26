@@ -357,10 +357,8 @@ The ~60K re-run's stock and ik rows (2026-09-27, stock build d834d44 / ik build 
 
 ## Conclusions
 
-- Final verdict at large ctx: IQ4_XS on the GenerelSchwerz moe-cache fork (cache 64 at `-b/-ub 6144`, MTP on) is the fastest config at 262144 - 76 t/s decode, +35% over stock+MTP (54.9); it also takes 512K (52) and is the first engine here to serve YaRN up to
-  843776. Cache 64 is the ceiling at 256k/ub 6144 (80 no longer fits, 96 OOMs); at 32k the same fork reaches 103 t/s (128 slots).
-- The `--spec-draft-ubatch-size` draft cap unblocks `-ub 8192` with MTP (draft ubatch <=
-  4096) but is a net loss vs the shipped `-ub 6144` config, so that stays the headline.
+- Final verdict at large ctx: IQ4_XS on the GenerelSchwerz moe-cache fork (cache 64 at `-b/-ub 6144`, MTP on) is the fastest config at 262144 - 76 t/s decode, +35% over stock+MTP (54.9); it also takes 512K (52) and is the first engine here to serve YaRN up to 843776. Cache 64 is the ceiling at 256k/ub 6144 (80 no longer fits, 96 OOMs); at 32k the same fork reaches 103 t/s (128 slots).
+- The `--spec-draft-ubatch-size` draft cap unblocks `-ub 8192` with MTP (draft ubatch <= 4096) but is a net loss vs the shipped `-ub 6144` config, so that stays the headline.
 - UD-Q6_K is the weakest at large ctx in every measured config; archived from the main surfaces.
 - Q4_K_M's only argument might be quantization quality (bpw 4.4-4.8 vs 4.19) - never tested, treat as an unverified alternative.
 - Context choice: 262144 is the headline. 204800 and 131072 runs exist (204800 is within 6-9% of 262144); 200k only buys 1-2 extra cache slots for 57k tokens of window, so they stay off the main page.
