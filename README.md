@@ -51,6 +51,7 @@ Headline tables list only usable configs (full context, no rejected/OOM setups);
 | Swift-1.5-Qwen3.8-Flash-Next | GSQ-RCO IQ3_XXS + MTP | Strata | 204800 | 1055.3 | **42.3** |
 | KAT-Coder-V2.5-Dev | APEX-I-Compact | moe-cache fork | 262144 | 1770 | **72.2** |
 | Gemma4-26B-A4B | Q4_K_M | moe-cache fork | 32768 | 1252 | **83.5** |
+| Cyber-Tiel-Coder-35B-A3B | UD-IQ4_XS | moe-cache fork | 262144 | 2201 | **64.2** |
 
 All rows here are measured on the 10k opencode session prompt ([test-prompts.md](test-prompts.md)) on the current engine pins (rig pages). The Gemma4 row is a chat-tuned config - not useful for coding on Rig 1.
 
