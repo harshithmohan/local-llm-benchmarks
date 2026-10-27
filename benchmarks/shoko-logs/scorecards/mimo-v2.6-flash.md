@@ -2,15 +2,13 @@
 
 Model: `MiMo-V2.6-Flash`.
 
+Parameter set: no quant (hosted model, `mimo-v2.6-flash`), default reasoning level.
+
 | Quant | Level | Outcome | Final A/B | Total model time (min) | Gates | Notes |
 |---|---|---|---|---|---|---|
 | — | default | not converged (34/37) | 92 / 72.5 | 47.7 | ✅ tscheck · ✅ lint · ✅ build | Cold stage already ticket-solid at A 80; the reconnect reset and the filtered lock control survived both rounds |
 
-## Default reasoning
-
-Parameter set: no quant (hosted model, `mimo-v2.6-flash`), default reasoning level.
-
-### Stage 0 — initial run
+## Stage 0 — initial run
 - Model time: 36.8 min
 - Gates: ✅ tscheck · ✅ lint · ✅ build
 - Harness: 30/37
@@ -24,7 +22,7 @@ Parameter set: no quant (hosted model, `mimo-v2.6-flash`), default reasoning lev
   - **Cache identity and header polish went unbuilt.** B1 zero (query key and level param preserved toggle order instead of a canonical sorted key), B7 zero (header stayed a static `Logs`), B8 zero (the shared icon control gained no loading prop).
   - **Fidelity lines landed at half.** B9 0.5 (`Level` stayed a bare string), B5 0.5 (loading-more affordance in the header, not a phantom row inside the virtualizer), B6 0.5 (chips styled, no tooltips), B4 0.5 (initial empty-tail spinner only, none after a reconnect).
 
-### Review round 1 → Stage 1
+## Review round 1 → Stage 1
 - Review prompt (verbatim — `review-s0.md`):
 
   > 1. Make filtered search pagination reliably fetch the next page as the user scrolls toward the end and join all pages seamlessly oldest to newest without drops or duplicates, stopping only when the server indicates no more data, because filtered results currently stall after the first page.
@@ -45,7 +43,7 @@ Parameter set: no quant (hosted model, `mimo-v2.6-flash`), default reasoning lev
   - **The lock control was removed rather than disabled.** B2 0.5: programmatic scrolling still re-engaged a released follow, and the filtered-mode control never rendered at all.
   - **Cheap round.** 5.2 min against the cold stage's 36.8, patch 4 files +363/−79, all gates green.
 
-### Review round 2 → Stage 2
+## Review round 2 → Stage 2
 - Review prompt (verbatim — `review-s1.md`):
 
   > 1. Make scrolling near the end of filtered results reliably load the next page and join pages oldest to newest with no missing or repeated rows.
@@ -69,15 +67,15 @@ Parameter set: no quant (hosted model, `mimo-v2.6-flash`), default reasoning lev
 
 ## Summary
 
-| Quant | Level | Outcome | Final A /100 | Final B /100 | Total model time (min) | Compress | Decompress | Final context |
-|---|---|---|---|---|---|---|---|---|
-| — | default | not converged (34/37) | 92 | 72.5 | 47.7 | 4 | 0 | 69,959 / 1,048,576 (7%) |
+| Outcome | Final A /100 | Final B /100 | Total model time (min) | Compress | Decompress | Final context |
+|---|---|---|---|---|---|---|
+| not converged (34/37) | 92 | 72.5 | 47.7 | 4 | 0 | 69,959 / 1,048,576 (7%) |
 
-| Quant | Stage | Score A /100 | Score B /100 | Harness | Gates | Model time (min) | Compress | Decompress |
-|---|---|---|---|---|---|---|---|---|
-| — | 0 | 80 | 44.5 | 30/37 | ✅ / ✅ / ✅ | 36.8 | 4 | 0 |
-| — | 1 | 84 | 78.5 | 32/37 | ✅ / ✅ / ✅ | 5.2 | 0 | 0 |
-| — | 2 | 92 | 72.5 | 34/37 | ✅ / ✅ / ✅ | 5.6 | 0 | 0 |
+| Stage | Score A /100 | Score B /100 | Harness | Gates | Model time (min) | Compress | Decompress |
+|---|---|---|---|---|---|---|---|
+| 0 | 80 | 44.5 | 30/37 | ✅ / ✅ / ✅ | 36.8 | 4 | 0 |
+| 1 | 84 | 78.5 | 32/37 | ✅ / ✅ / ✅ | 5.2 | 0 | 0 |
+| 2 | 92 | 72.5 | 34/37 | ✅ / ✅ / ✅ | 5.6 | 0 | 0 |
 
 - **The cold stage was already ticket-solid.** A 80 on the first turn — the misses were the two runtime mechanics the ticket spells out (no second page fetched, no download busy state, a blob URL revoked before the browser claimed it), not the read contract or the DSL handling.
 - **Round 1 was the B round: +34** (44.5 → 78.5) from download state/lifetime and most of the follow behaviour, while pagination did not move at all.

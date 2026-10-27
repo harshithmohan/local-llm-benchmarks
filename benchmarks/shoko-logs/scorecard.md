@@ -9,11 +9,11 @@ Which runs count:
 - **One trajectory per model per parameter set** — a clean-base implementation run (**stage 0**) plus up to two review-driven repair rounds in the **same** session (**stages 1** and **2**). No repeats, no median.
 - **Outcome** is `converged: stage 0|1|2`, or **`not converged`** = still red after two rounds — with the trajectory's **final harness result** in parentheses (`n/37`), so a run one assertion short and a run still in the red read differently at a glance. *Converged* means the gates pass **and** the runtime harness passes in full (37/37 today). "Not converged" is a published result, never re-run or averaged (see README → "Method").
 
-Per-model breakdown in `scorecards/<model>.md` (one card per model, a row per quant, one block per stage); the run directory (under the bench root) is deleted once recorded — the scorecards are the persistent record. The tables below carry each stage's Score A/B, the **final harness result** and the **total model time**; per-stage harness results and per-stage model times live in the card.
+Per-parameter-set breakdown in `scorecards/<model>-<quant>.md` (one card per model + quant; one headline row per reasoning level; one block per stage, nested per level section in a multi-level card); the run directory (under the bench root) is deleted once recorded — the scorecards are the persistent record. The tables below carry each stage's Score A/B, the **final harness result** and the **total model time**; per-stage harness results and per-stage model times live in the card.
 
 Each per-stage cell reads **`<A> / <B>`** — that stage's Score A and Score B. On a **red build** the two sides are written differently, because the Score-B side already contains a slash: a red-build cell is **`N/G · <n> / <m>`** (e.g. `N/G · 74 / 82`), i.e. `N/G` for Score A and a `<n> / <m>` total with the reduced denominator for Score B. A red-build cell is **never `/ 100`** (the B denominator is below 100 — `82` today), and a bare `N/G` is **wrong on the B side**. Green builds are unaffected: their cells stay `<A> / <B>`.
 
-The **model is the unit**: each card covers all of a model's quants, and near-identical quants across rigs are collapsed — bench one and mark the other `— (not run: duplicate of <quant>)` rather than benching both.
+The **parameter set is the unit**: each card covers one quant of one model, and near-identical quants across rigs are collapsed — bench one and give the other no card.
 
 ### Local (self-hosted) models
 
@@ -22,7 +22,8 @@ The **model is the unit**: each card covers all of a model's quants, and near-id
 | Qwen3.6-35B-A3B | UD-IQ4_XS | default | not converged (11/37) | 31.5 / 52.5 | 35 / 43.5 | 29 / 42 | 28.4 | [card](scorecards/qwen36-35b-ud-iq4xs.md) — filter mode never engaged at any stage |
 | Qwen3.8-Flash-Next | IQ3_XXS | xhigh | not converged (33/37) | 79 / 66 | 87 / 89 | 91 / 87.5 | 252.9 | [card](scorecards/qwen38-flash-next-iq3xxs.md) — pagination duplication and the reconnect window survived both repair rounds |
 | Swift-1.5 Qwen3.8-Flash-Next | IQ3_XXS | xhigh | converged: stage 2 | 95 / 66 | 92 / 60 | 100 / 64.5 | 88.1 | [card](scorecards/swift-qwen38-flash-next-iq3xxs.md) — cold stage ticket-complete except the download lifetime; the reconnect race took two rounds |
-| KAT-Coder-V2.5-Dev | APEX-I-Compact | default | not converged (23/37) | 8.5 / 28.5 | 45.5 / 33 | 74.5 / 32 | 22.3 | [card](scorecards/katcoder-v2.5-dev.md) — a cold `hasFilters` gate deadlocked the whole filter UI; the `c#:` wrap colon, the cursor and the reconnect window survived both rounds |
+| KAT-Coder-V2.5-Dev | APEX-I-Compact | default | not converged (23/37) | 8.5 / 28.5 | 45.5 / 33 | 74.5 / 32 | 22.3 | [card](scorecards/katcoder-v2.5-dev-apex-i-compact.md) — a cold `hasFilters` gate deadlocked the whole filter UI; the `c#:` wrap colon, the cursor and the reconnect window survived both rounds |
+| Cyber-Tiel-Coder-35B-A3B | UD-Q4_K_XL | default | not converged (31/37) | 83 / 57.5 | 79 / 49 | 83 / 66 | 33.8 | [card](scorecards/cybertiel-35b-a3b-ud-q4kxl.md) — strongest cold stage of the cohort; round two made no edits at all, so the final A/B re-reads stage-1 code |
 
 ### opencode-go (cloud) models
 

@@ -1,4 +1,4 @@
-# Swift-1.5 Qwen3.8-Flash-Next — scores
+# Swift-1.5 Qwen3.8-Flash-Next · IQ3_XXS — scores
 
 Model: `Swift-1.5-Qwen3.8-Flash-Next` (GSQ-RCO IQ3_XXS, Strata on Rig 1).
 
@@ -55,17 +55,17 @@ Parameter set: IQ3_XXS (`swift-flash-next-iq3xxs-strata`), xhigh reasoning level
 
 **Outcome:** converged: stage 2 — 37/37 with A 100 and B 64.5 after two review rounds.
 
-## Summary
+### Summary
 
-| Quant | Level | Outcome | Final A /100 | Final B /100 | Total model time (min) | Compress | Decompress | Final context |
-|---|---|---|---|---|---|---|---|---|
-| IQ3_XXS | xhigh | converged: stage 2 | 100 | 64.5 | 88.1 | 5 | 0 | 66,699 / 204,800 (33%) |
+| Outcome | Final A /100 | Final B /100 | Total model time (min) | Compress | Decompress | Final context |
+|---|---|---|---|---|---|---|
+| converged: stage 2 | 100 | 64.5 | 88.1 | 5 | 0 | 66,699 / 204,800 (33%) |
 
-| Quant | Stage | Score A /100 | Score B /100 | Harness | Gates | Model time (min) | Compress | Decompress |
-|---|---|---|---|---|---|---|---|---|
-| IQ3_XXS | 0 | 95 | 66 | 33/37 | ✅ / ✅ / ✅ | 64.3 | 2 | 0 |
-| IQ3_XXS | 1 | 92 | 60 | 34/37 | ✅ / ✅ / ✅ | 13.3 | 1 | 0 |
-| IQ3_XXS | 2 | 100 | 64.5 | 37/37 | ✅ / ✅ / ✅ | 10.5 | 2 | 0 |
+| Stage | Score A /100 | Score B /100 | Harness | Gates | Model time (min) | Compress | Decompress |
+|---|---|---|---|---|---|---|---|
+| 0 | 95 | 66 | 33/37 | ✅ / ✅ / ✅ | 64.3 | 2 | 0 |
+| 1 | 92 | 60 | 34/37 | ✅ / ✅ / ✅ | 13.3 | 1 | 0 |
+| 2 | 100 | 64.5 | 37/37 | ✅ / ✅ / ✅ | 10.5 | 2 | 0 |
 
 - **Ticket conformance was never the problem.** A 95 on the cold turn with only the download lifetime and the reconnect race outstanding, and A 100 by stage 2.
 - **The reconnect merge was the only genuinely hard part.** Two rounds and two different failure modes — a dropped racing entry, then a stale entry kept by text equality — closed only once the tail was rebuilt from the snapshot.

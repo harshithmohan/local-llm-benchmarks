@@ -1,16 +1,14 @@
-# KAT-Coder-V2.5-Dev — scores
+# KAT-Coder-V2.5-Dev · APEX-I-Compact — scores
 
 Model: `KAT-Coder-V2.5-Dev` (APEX-I-Compact GGUF, llama-swap entry `katcoder-apex-i-compact` on Rig 2, moe-cache fork).
+
+Parameter set: APEX-I-Compact (`katcoder-apex-i-compact`), default reasoning level, 262144 ctx / 32768 out-cap.
 
 | Quant | Level | Outcome | Final A/B | Total model time (min) | Gates | Notes |
 |---|---|---|---|---|---|---|
 | APEX-I-Compact | default | not converged (23/37) | 74.5 / 32 | 22.3 | ✅ tscheck · ✅ lint · ✅ build | Cold stage deadlocked the filter UI at 5/37; each round repaired real ground, and the DSL wrap colon, the pagination cursor and the reconnect window still failed at stage 2 |
 
-## Default reasoning
-
-Parameter set: APEX-I-Compact (`katcoder-apex-i-compact`), default reasoning level, 262144 ctx / 32768 out-cap.
-
-### Stage 0 — initial run
+## Stage 0 — initial run
 - Model time: 8.9 min
 - Gates: ✅ tscheck · ✅ lint · ✅ build
 - Harness: 5/37
@@ -23,7 +21,7 @@ Parameter set: APEX-I-Compact (`katcoder-apex-i-compact`), default reasoning lev
   - **The opening was wasted on guessed absolute paths.** The first two tool calls (`read ./..`, `glob **/*`) errored and the next few greps named paths that do not exist, before a `pwd && ls -la` put it on the real tree.
   - **Scope held.** The patch touched four `Shoko-WebUI` files (+387/−64) and nothing outside the web client.
 
-### Review round 1 → Stage 1
+## Review round 1 → Stage 1
 - Review prompt (verbatim — `review-s0.md`):
 
   > 1. Always show the search box and all six level selectors even when no filter is active, so the user can start a search from the live view, because hiding them until filters exist makes filtering unreachable and the live view can never switch to search.
@@ -45,7 +43,7 @@ Parameter set: APEX-I-Compact (`katcoder-apex-i-compact`), default reasoning lev
   - **Reconnect went the other way.** `queries.ts` merged by timestamp instead of resetting, keeping stale rows above the fresh window and still losing the racing entry.
   - **B barely moved (+4.5).** Chatty query-key identity, no follow behaviour, no search virtualizer, chips without tooltips and a static header were all untouched by the note.
 
-### Review round 2 → Stage 2
+## Review round 2 → Stage 2
 - Review prompt (verbatim — `review-s1.md`):
 
   > 1. Wrap ordinary text as a case insensitive contains expression using the hash modifier and treat malformed heads with extra letters as ordinary text to be wrapped rather than passing them through as written because plain terms currently use the wrong form and invalid heads leak through.
@@ -67,15 +65,15 @@ Parameter set: APEX-I-Compact (`katcoder-apex-i-compact`), default reasoning lev
 
 ## Summary
 
-| Quant | Level | Outcome | Final A /100 | Final B /100 | Total model time (min) | Compress | Decompress | Final context |
-|---|---|---|---|---|---|---|---|---|
-| APEX-I-Compact | default | not converged (23/37) | 74.5 | 32 | 22.3 | 3 | 0 | 54,581 / 262,144 (21%) |
+| Outcome | Final A /100 | Final B /100 | Total model time (min) | Compress | Decompress | Final context |
+|---|---|---|---|---|---|---|
+| not converged (23/37) | 74.5 | 32 | 22.3 | 3 | 0 | 54,581 / 262,144 (21%) |
 
-| Quant | Stage | Score A /100 | Score B /100 | Harness | Gates | Model time (min) | Compress | Decompress |
-|---|---|---|---|---|---|---|---|---|
-| APEX-I-Compact | 0 | 8.5 | 28.5 | 5/37 | ✅ / ✅ / ✅ | 8.9 | 1 | 0 |
-| APEX-I-Compact | 1 | 45.5 | 33 | 18/37 | ✅ / ✅ / ✅ | 11.2 | 2 | 0 |
-| APEX-I-Compact | 2 | 74.5 | 32 | 23/37 | ✅ / ✅ / ✅ | 2.2 | 0 | 0 |
+| Stage | Score A /100 | Score B /100 | Harness | Gates | Model time (min) | Compress | Decompress |
+|---|---|---|---|---|---|---|---|
+| 0 | 8.5 | 28.5 | 5/37 | ✅ / ✅ / ✅ | 8.9 | 1 | 0 |
+| 1 | 45.5 | 33 | 18/37 | ✅ / ✅ / ✅ | 11.2 | 2 | 0 |
+| 2 | 74.5 | 32 | 23/37 | ✅ / ✅ / ✅ | 2.2 | 0 | 0 |
 
 - **One render-level mistake cost almost the whole ticket.** Stage 0 was not a partial implementation but an unreachable one: gating the controls on `hasFilters` left A2–A12 and A17–A21 with no runtime evidence, so 8.5 is a floor set by a single condition, not a measure of how much code the model wrote.
 - **The repair rounds did what the loop is for.** 5 → 18 → 23 of 37, A 8.5 → 45.5 → 74.5, all three gates green every stage: the reviewer's symptom-only notes walked it back to a mostly correct ticket in 13.4 minutes of model time.

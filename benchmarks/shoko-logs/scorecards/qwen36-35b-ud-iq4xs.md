@@ -1,16 +1,14 @@
-# Qwen3.6-35B-A3B — scores
+# Qwen3.6-35B-A3B · UD-IQ4_XS — scores
 
 Model: `Qwen3.6-35B-A3B`.
+
+Parameter set: UD-IQ4_XS GGUF (`qwen36-35b-ud-iq4xs`), default reasoning level.
 
 | Quant | Level | Outcome | Final A/B | Total model time (min) | Gates | Notes |
 |---|---|---|---|---|---|---|
 | UD-IQ4_XS | default | not converged (11/37) | 29 / 42 | 28.4 | ✅ tscheck · ✅ lint · ✅ build | Filter mode never engaged at any stage; live-tail container had zero height throughout |
 
-## UD-IQ4_XS — default reasoning
-
-Parameter set: UD-IQ4_XS GGUF (`qwen36-35b-ud-iq4xs`), default reasoning level.
-
-### Stage 0 — initial run
+## Stage 0 — initial run
 - Model time: 15.8 min
 - Gates: ✅ tscheck · ✅ lint · ✅ build
 - Harness: 10/37
@@ -24,7 +22,7 @@ Parameter set: UD-IQ4_XS GGUF (`qwen36-35b-ud-iq4xs`), default reasoning level.
   - **Right cold.** DSL heads passed through verbatim (A17 full), text search did switch the view (A2 half), and pagination limits and ordering were correct wherever a request was actually issued.
   - **Discovery held.** No invented endpoint and no reference reading — the sibling server checkout was read correctly.
 
-### Review round 1 → Stage 1
+## Review round 1 → Stage 1
 - Review prompt (verbatim — `review-s0.md`):
 
   > 1. Keep exactly one live connection for the tail and on reconnect replace the stale entries with the fresh backlog without showing anything twice and without dropping entries that arrive around the reconnect, so the live view stays correct and following new entries keeps working.
@@ -44,7 +42,7 @@ Parameter set: UD-IQ4_XS GGUF (`qwen36-35b-ud-iq4xs`), default reasoning level.
   - **Second subscription survived.** A1 and B2 stayed zero on duplicate rendering.
   - **Repair-round damage.** A freshly exported `downloadLogs` was never imported (B10 zero) and the query key carried an insertion-ordered level array (B1 zero).
 
-### Review round 2 → Stage 2
+## Review round 2 → Stage 2
 - Review prompt (verbatim — `review-s1.md`):
 
   > 1. Use server responses directly without unwrapping them a second time, because the shared request helper already returns the payload and an extra unwrap turns every search page and every download into undefined so nothing renders and files come back empty.
@@ -66,15 +64,15 @@ Parameter set: UD-IQ4_XS GGUF (`qwen36-35b-ud-iq4xs`), default reasoning level.
 
 ## Summary
 
-| Quant | Level | Outcome | Final A /100 | Final B /100 | Total model time (min) | Compress | Decompress | Final context |
-|---|---|---|---|---|---|---|---|---|
-| UD-IQ4_XS | default | not converged (11/37) | 29 | 42 | 28.4 | 10 | 2 | 51,167 / 262,144 (20%) |
+| Outcome | Final A /100 | Final B /100 | Total model time (min) | Compress | Decompress | Final context |
+|---|---|---|---|---|---|---|
+| not converged (11/37) | 29 | 42 | 28.4 | 10 | 2 | 51,167 / 262,144 (20%) |
 
-| Quant | Stage | Score A /100 | Score B /100 | Harness | Gates | Model time (min) | Compress | Decompress |
-|---|---|---|---|---|---|---|---|---|
-| UD-IQ4_XS | 0 | 31.5 | 52.5 | 10/37 | ✅ / ✅ / ✅ | 15.8 | 5 | 2 |
-| UD-IQ4_XS | 1 | 35 | 43.5 | 12/37 | ✅ / ✅ / ✅ | 4.9 | 0 | 0 |
-| UD-IQ4_XS | 2 | 29 | 42 | 11/37 | ✅ / ✅ / ✅ | 7.7 | 5 | 0 |
+| Stage | Score A /100 | Score B /100 | Harness | Gates | Model time (min) | Compress | Decompress |
+|---|---|---|---|---|---|---|---|
+| 0 | 31.5 | 52.5 | 10/37 | ✅ / ✅ / ✅ | 15.8 | 5 | 2 |
+| 1 | 35 | 43.5 | 12/37 | ✅ / ✅ / ✅ | 4.9 | 0 | 0 |
+| 2 | 29 | 42 | 11/37 | ✅ / ✅ / ✅ | 7.7 | 5 | 0 |
 
 - **Discovery was solved cold.** Stage 0 found the real `Logging` controller and hub in the sibling server checkout and built the read parameters, the pagination cursor and the DSL pass-through from source — no invented endpoint, no reference-copying.
 - **Stage 0 failed on its own side of the wire, from one cause.** It subscribed the tail twice and unwrapped an already-unwrapped payload; that single double-unwrap sits behind eleven zeros, and the download never fired because it gated on `isSuccess`.

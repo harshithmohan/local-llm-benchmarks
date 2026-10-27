@@ -1,4 +1,4 @@
-# Qwen3.8-Flash-Next — scores
+# Qwen3.8-Flash-Next · IQ3_XXS — scores
 
 Model: `Qwen3.8-Flash-Next`.
 
@@ -6,7 +6,7 @@ Model: `Qwen3.8-Flash-Next`.
 |---|---|---|---|---|---|---|
 | IQ3_XXS | xhigh | not converged (33/37) | 91 / 87.5 | 252.9 | ✅ tscheck · ✅ lint · ✅ build | Best cold stage recorded (30/37); pagination duplication and the reconnect window survived both repair rounds |
 
-## IQ3_XXS — xhigh reasoning
+## xhigh reasoning
 
 Parameter set: IQ3_XXS (`qwen38-flash-next-iq3xxs-strata`), xhigh reasoning level.
 
@@ -65,17 +65,17 @@ Parameter set: IQ3_XXS (`qwen38-flash-next-iq3xxs-strata`), xhigh reasoning leve
 
 **Outcome:** not converged — 33/37 after two repair rounds, with the trajectory's strongest stage still the cold one on the B side; the four remaining failures are behavioural (page boundary duplication, reconnect equality, follow re-engagement, lock visibility), not environmental.
 
-## Summary
+### Summary
 
-| Quant | Level | Outcome | Final A /100 | Final B /100 | Total model time (min) | Compress | Decompress | Final context |
-|---|---|---|---|---|---|---|---|---|
-| IQ3_XXS | xhigh | not converged (33/37) | 91 | 87.5 | 252.9 | 11 | 5 | 102,996 / 204,800 (50%) |
+| Outcome | Final A /100 | Final B /100 | Total model time (min) | Compress | Decompress | Final context |
+|---|---|---|---|---|---|---|
+| not converged (33/37) | 91 | 87.5 | 252.9 | 11 | 5 | 102,996 / 204,800 (50%) |
 
-| Quant | Stage | Score A /100 | Score B /100 | Harness | Gates | Model time (min) | Compress | Decompress |
-|---|---|---|---|---|---|---|---|---|
-| IQ3_XXS | 0 | 79 | 66 | 30/37 | ✅ / ✅ / ✅ | 112.8 | 5 | 3 |
-| IQ3_XXS | 1 | 87 | 89 | 31/37 | ✅ / ✅ / ✅ | 29.7 | 1 | 0 |
-| IQ3_XXS | 2 | 91 | 87.5 | 33/37 | ✅ / ✅ / ✅ | 110.5 | 5 | 2 |
+| Stage | Score A /100 | Score B /100 | Harness | Gates | Model time (min) | Compress | Decompress |
+|---|---|---|---|---|---|---|---|
+| 0 | 79 | 66 | 30/37 | ✅ / ✅ / ✅ | 112.8 | 5 | 3 |
+| 1 | 87 | 89 | 31/37 | ✅ / ✅ / ✅ | 29.7 | 1 | 0 |
+| 2 | 91 | 87.5 | 33/37 | ✅ / ✅ / ✅ | 110.5 | 5 | 2 |
 
 - **The cold stage is the result.** 30/37 on the first turn — the ticket core, the states, the download routes, the DSL pass-through and the cancellation all correct without coaching — with only pagination, reconnect and the follow/lock control missing.
 - **Repair rounds bought A, not B.** A climbed 79 → 87 → 91 and the harness 30 → 31 → 33, while B peaked in the middle round at 89 and ended below it.

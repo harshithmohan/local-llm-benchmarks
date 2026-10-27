@@ -6,7 +6,7 @@ Model: `DeepSeek V4.1 Flash`.
 |---|---|---|---|---|---|---|
 | — | high | converged: stage 1 | 100 / 71 | 19.8 | ✅ tscheck · ✅ lint · ✅ build | Converged in one round; the cold stage was already ticket-complete at A 99 |
 
-## High reasoning
+## high reasoning
 
 Parameter set: no quant (hosted model, `deepseek-v4.1-flash`), high reasoning level.
 
@@ -39,17 +39,17 @@ Parameter set: no quant (hosted model, `deepseek-v4.1-flash`), high reasoning le
 
 **Outcome:** converged: stage 1 — 37/37 with A 100 and B 71 after a single review round.
 
-## Summary
+### Summary
 
-| Quant | Level | Outcome | Final A /100 | Final B /100 | Total model time (min) | Compress | Decompress | Final context |
-|---|---|---|---|---|---|---|---|---|
-| — | high | converged: stage 1 | 100 | 71 | 19.8 | 4 | 1 | 54,377 / 1,000,000 (5%) |
+| Outcome | Final A /100 | Final B /100 | Total model time (min) | Compress | Decompress | Final context |
+|---|---|---|---|---|---|---|
+| converged: stage 1 | 100 | 71 | 19.8 | 4 | 1 | 54,377 / 1,000,000 (5%) |
 
-| Quant | Stage | Score A /100 | Score B /100 | Harness | Gates | Model time (min) | Compress | Decompress |
-|---|---|---|---|---|---|---|---|---|
-| — | 0 | 99 | 62 | 33/37 | ✅ / ✅ / ✅ | 16.5 | 4 | 1 |
-| — | 1 | 100 | 71 | 37/37 | ✅ / ✅ / ✅ | 3.3 | 0 | 0 |
-| — | 2 | — | — | — | — | — | — | — |
+| Stage | Score A /100 | Score B /100 | Harness | Gates | Model time (min) | Compress | Decompress |
+|---|---|---|---|---|---|---|---|
+| 0 | 99 | 62 | 33/37 | ✅ / ✅ / ✅ | 16.5 | 4 | 1 |
+| 1 | 100 | 71 | 37/37 | ✅ / ✅ / ✅ | 3.3 | 0 | 0 |
+| 2 | — | — | — | — | — | — | — |
 
 - **The cold stage was already ticket-complete.** A 99 on the first turn, with the single miss being a download URL released before the browser claimed the file.
 - **The unstated behaviours were the whole gap.** Debounce coalescing and the follow release/re-engage accounted for every harness failure at stage 0, and both closed from one note each.
