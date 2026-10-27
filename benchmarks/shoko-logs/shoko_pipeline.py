@@ -46,6 +46,25 @@ def size(text):
     return "%.1fK" % (n / 1024.0)
 
 
+# The sanitized harness report is failure-only and already per-bullet bounded
+# (300 chars per symptom), so a full-red stage lands around 14K chars. This
+# ceiling only guards against a runaway report, and it says so in the text: a
+# silent cut would leave the judge grading a truncated failure list as if it
+# were complete.
+REPORT_LIMIT = 64 * 1024
+
+
+def report_text(text):
+    text = text or ""
+    if len(text) <= REPORT_LIMIT:
+        return text
+    elided = len(text) - REPORT_LIMIT
+    return "%s\n\n... %d chars elided from this report ...\n" % (
+        text[:REPORT_LIMIT],
+        elided,
+    )
+
+
 def stat_line(path):
     try:
         with open(path, "r", encoding="utf-8", errors="replace") as fh:
@@ -734,7 +753,7 @@ class Pipeline:
                         "exit": h["exit"],
                         "passed": h.get("passed"),
                         "total": h.get("total"),
-                        "text": h["text"][:4000],
+                        "text": report_text(h["text"]),
                     },
                     fh,
                 )
@@ -779,7 +798,7 @@ class Pipeline:
             if green or stage == 2:
                 harness_text = h["text"] or ""
                 with open(os.path.join(self.run_dir, "score.md"), "w") as fh:
-                    fh.write(score_txt + "\n\n" + harness_text[:4000])
+                    fh.write(score_txt + "\n\n" + report_text(harness_text))
                 if green:
                     self._state(
                         phase="done", stage=stage, step="verdict", outcome="converged"
