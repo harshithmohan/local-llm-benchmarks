@@ -20,7 +20,8 @@ The **model is the unit**: each card covers all of a model's quants, and near-id
 | Model | Quant | Level | Outcome | Stage 0 A / B | Stage 1 A / B | Stage 2 A / B | Total model time (min) | Notes |
 |---|---|---|---|---|---|---|---|---|
 | Qwen3.6-35B-A3B | UD-IQ4_XS | default | not converged (11/37) | 31.5 / 52.5 | 35 / 43.5 | 29 / 42 | 28.4 | [card](scorecards/qwen36-35b-ud-iq4xs.md) — filter mode never engaged at any stage |
-| Qwen3.8-Flash-Next | IQ3_XXS | default | not converged (33/37) | 79 / 66 | 87 / 89 | 91 / 87.5 | 252.9 | [card](scorecards/qwen38-flash-next-iq3xxs.md) — pagination duplication and the reconnect window survived both repair rounds |
+| Qwen3.8-Flash-Next | IQ3_XXS | xhigh | not converged (33/37) | 79 / 66 | 87 / 89 | 91 / 87.5 | 252.9 | [card](scorecards/qwen38-flash-next-iq3xxs.md) — pagination duplication and the reconnect window survived both repair rounds |
+| Swift-1.5 Qwen3.8-Flash-Next | IQ3_XXS | xhigh | converged: stage 2 | 95 / 66 | 92 / 60 | 100 / 64.5 | 88.1 | [card](scorecards/swift-qwen38-flash-next-iq3xxs.md) — cold stage ticket-complete except the download lifetime; the reconnect race took two rounds |
 
 ### opencode-go (cloud) models
 
