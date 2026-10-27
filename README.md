@@ -68,6 +68,7 @@ Headline tables list only usable configs (full context, no rejected/OOM setups);
 | Qwen3.8-27B | W4A16-AutoRound-fast | vLLM | 262144 | 2403 | **101.8** |
 | Swift-1.5-Qwen3.8-27B | Swift-1.5-INT4-fast | vLLM | 176128 | 2433 | **107.7** |
 | Swift-1.5-Qwen3.8-27B | Swift-1.5-INT4-fast | vLLM | 262144 | 2374 | **97.6** |
+| Cyber-Tiel-Coder-35B-A3B | UD-Q4_K_XL | moe-cache fork | 262144 | 3766 | **148.9** |
 
 All rows here are measured on the 10k opencode session prompt ([test-prompts.md](test-prompts.md)) on the current engine pins (rig pages).
 
