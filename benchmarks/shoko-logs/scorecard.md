@@ -25,6 +25,7 @@ The **parameter set is the unit**: each card covers one quant of one model, and 
 | KAT-Coder-V2.5-Dev | APEX-I-Compact | default | not converged (23/37) | 8.5 / 28.5 | 45.5 / 33 | 74.5 / 32 | 22.3 | [card](scorecards/katcoder-v2.5-dev-apex-i-compact.md) — a cold `hasFilters` gate deadlocked the whole filter UI; the `c#:` wrap colon, the cursor and the reconnect window survived both rounds |
 | Cyber-Tiel-Coder-35B-A3B | UD-Q4_K_XL | default | not converged (31/37) | 83 / 57.5 | 79 / 49 | 83 / 66 | 33.8 | [card](scorecards/cybertiel-35b-a3b-ud-q4kxl.md) — strongest cold stage of the cohort; round two made no edits at all, so the final A/B re-reads stage-1 code |
 | Cyber-Tiel-Coder-35B-A3B | UD-IQ4_XS | default | not converged (31/37) | 68.5 / 51.5 | 71 / 54.5 | 84 / 60 | 161.6 | [card](scorecards/cybertiel-35b-a3b-ud-iq4xs.md) — pagination was repaired in round two; the reconnect window and the scroll lock survived both rounds |
+| Swift-1.5 Qwen3.8-27B | INT4 | default | not converged (36/37) | N/G · 43 / 82 | 79 / 59.5 | 96 / 66.5 | 97.3 | [card](scorecards/swift-qwen38-27b-int4.md) — one assertion short on the reconnect window entry; the missing `c#:` colon cost seven tests across the first two stages |
 
 ### opencode-go (cloud) models
 
