@@ -12,6 +12,9 @@ Updated: 2026-10-24 · [methodology](../../methodology.md) · base model: [qwen3
 
 ## Configs
 
+Rows above were measured on engine **0.1.45**. The Swift pack itself is engine-version-agnostic (layout v3/v4 still loads on 0.2.7, no repack needed) but the entries have not been re-benched on 0.2.7. On the base model 0.2.7 gave +26% decode at the ~10k prompt and −5.4% prefill ([qwen38-flash-next.md](qwen38-flash-next.md)).
+
+
 ### GSQ-RCO IQ3_XXS + MTP - Strata pack engine, 204800
 
     {
