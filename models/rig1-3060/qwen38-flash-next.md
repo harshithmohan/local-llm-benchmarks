@@ -76,6 +76,27 @@ The as-deployed 0.1.56 figures for the last two arms are 922.0 / 43.3 at 60k and
 
 **Prefill - the cache reservation and the small-expert path.** Engine 0.1.56 reserves `700 MiB reserved (+75 MiB for the draft head, +256 MiB for what is allocated after the cache)` where 0.1.52 reserved only `+73 MiB for the draft head`, so the auto cache lands 1626 slots / 2.68 GiB instead of 1784 / 2.93 GiB, the prompt path borrows 1481 instead of 1654 slots, and the auto chunk drops 5632 -> 4864 tokens. Below 8192 tokens the engine switches to the new small expert cache prompt path (unfused experts, layer-major walk from two chunks) and prints `strata serve: small expert cache: ...`; `STRATA_PF_SMALL=0` suppresses it and is worth 864.7 -> 984.7 prefill at 10k.
 
-**The chunk returns at 1848 slots.** It only goes back to 5632 once the cache holds >=1848 slots: at `--max-context 180000` the load reports `4.05 GiB free ... -> 1400 slots` -> 1848 slots / 3.04 GiB, borrow 1712, chunk 5632, and that arm meets or beats the 0.2.7 rows (1082.7 prefill / 57.5 decode at 10k vs 1077.4 / 54.4). The served config keeps ctx 204800 and takes the smaller chunk.
+**The ctx-180000 arm, and why the chunk hypothesis was wrong.** At `--max-context 180000` the load reports `4.05 GiB free ... -> 1400 slots` -> 1848 slots / 3.04 GiB, borrow 1712, chunk 5632, and that arm meets or beats the 0.2.7 rows (1082.7 prefill / 57.5 decode at 10k vs 1077.4 / 54.4). It was read at the time as "1848 slots restores the 5632 chunk", and that reading did not survive the DFlash2 test: at ctx 204800 the auto chunk is **6144** and at 1895 slots it stays 6144 (see the drafter section below). The small-cache trigger in 0.1.56 is a fixed `under 8192` test on whatever chunk the window produces, so `STRATA_PF_SMALL=0` is needed at every shape we measured; the ctx-180000 arm only helps through the larger cache, not through clearing the warning.
 
-**Unchanged on 0.1.56.** The sm_86 nine-switch default table, `strata mtp: draft layer loaded, 1035 MiB of VRAM` (MTP, not DFlash2), 679 MiB of free VRAM with everything loaded (was 457 MiB on 0.1.52 - the extra reservation is where the difference goes), and the CPU vision encoder (`strata-vision: model files loaded in 1.0 s`; an image request reports prompt_n 1087 against the 1024-token floor).
+### Drafter: DFlash2 against MTP (2026-11-03)
+
+0.2.10 makes DFlash2 the default drafter for Qwen3.8 on sm_86. Ours engages only on the base entry, and only because the config asks for it: `--draft dflash2 --draft-model /etc/strata/dflash2/qwen3.8-flash-next-dflash2.q4_0-selq4.pack --draft-fallback none` (no `--mtp DIR`; `--mtp-draft-vocab` is still required). Same protocol config and env as the rows above; only the drafter differs.
+
+| arm | 10k | 60k | 120k |
+| --- | --- | --- | --- |
+| MTP (1035 MiB layer, 1626 slots) | 986.9 / 54.3 | 1021.7 / 51.8 | 994.7 / 52.4 |
+| DFlash2, Q4_0 matrices + Q4_0 selector (478 MiB, 1895 slots), run 1 / run 2 | 1081.8 / 55.0 · 1079.3 / 53.9 | 1075.5 / 53.9 · 1072.3 / 52.0 | 1032.7 / 53.4 · 1031.4 / 56.3 |
+| DFlash2, Q8_0 matrices + Q4_0 selector (705 MiB, 1761 slots) | 1085.2 / 56.6 | 1041.9 / 50.4 | 1010.2 / 49.9 |
+| DFlash2 Q4_0, `STRATA_PF_SMALL=0` removed | 1084.2 / 58.1 | 967.5 / 49.4 | 934.5 / 57.9 |
+
+**Prefill is the finding; decode is not.** Prefill repeats to ±5 t/s across every DFlash2 load, and the Q4_0-matrices pack is +9% at 10k, +5% at 60k, +4% at 120k over MTP - the mechanism is the VRAM: DFlash2 is 478 MiB where the MTP layer is 1035 MiB, so `--expert-cache auto` takes 1895 slots / 3.12 GiB instead of 1626 / 2.68 GiB and the prompt path borrows 1767 slots rather than 1481. Decode moves 1-3 t/s between runs of the *same* arm (120k: 53.4 vs 56.3 on Q4_0, 49.9 vs 56.8 on Q8_0), which is the same size as any drafter-to-drafter difference, so no decode claim is made in either direction. Draft proposals rise (DFlash2 offers 330-435 per 512 tokens against MTP's 303-354) without a matching rise in acceptance.
+
+The engine states its own view at load: `--draft dflash2: on a 12 GB NVIDIA card the MTP drafter was faster in most measurements (code prompts at a window of 6 gained 3%); continuing as asked`. Upstream's one-card acceptance table has no sm_86 row (sm_120 +6.23% short / +1.38% at 2K sampled, Arc -2.6%).
+
+**Two packing facts that decide whether drafting runs at all.** `tools/dflash2_pack.py --q4_0-selector` quantizes the *matrices* as well as the selector (the flag sets `q4` in the CLI), so Q8_0 matrices need a two-step: pack plain, then `--convert-selector`. And the serve layer only treats the drafter as downloaded when `dflash2/qwen3.8-flash-next-dflash2.q4_0.pack` (522,458,112 B, `PACK_SHA256`) exists - a pack under any other name is ignored and drafting silently switches off.
+
+**The swift entry stays on MTP.** `terminal/serve/drafting.py` restricts DFlash2 to `SUPPORTED_FAMILIES = ("qwen","gyro","unsloth")` - not Swift fine-tunes - and strips hand-set flags, so asking for it there leaves the entry with no speculative decoding at all rather than falling back.
+
+**`STRATA_PF_SMALL=0` is still required on both entries.** With DFlash2 at 1895 slots the auto chunk is 6144, still under the engine's 8192 test: removing the switch cost -9.8% prefill at 60k (1079.5 -> 967.5) and -9.4% at 120k, decode flat.
+
+**Unchanged on 0.1.56.** The sm_86 nine-switch default table, the CPU vision encoder (`strata-vision: model files loaded in 1.0 s`; an image request reports prompt_n 1091 against the 1024-token floor), and 679-775 MiB of free VRAM with everything loaded depending on the drafter.
