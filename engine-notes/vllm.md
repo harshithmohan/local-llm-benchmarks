@@ -1,6 +1,6 @@
 # vLLM
 
-[syv-ai/HyperQwen](https://github.com/syv-ai/HyperQwen) container stack, Rig 2. Used for the Qwen3.8-27B W4A16-AutoRound quant and the Swift-1.5-INT4 fine-tune quant; the notes below hold for vLLM 0.31.0 (current pin: [rig2-3090.md](../rig2-3090.md)).
+[syv-ai/HyperQwen](https://github.com/syv-ai/HyperQwen) container stack, Rig 2. Used for the Qwen3.8-27B W4A16-AutoRound quant and the Swift-1.5-INT4 fine-tune quant; the notes below hold for vLLM 0.32.0 (current pin: [rig2-3090.md](../rig2-3090.md)).
 
 ## Flags
 
@@ -22,6 +22,7 @@
 
 ### Engine flags
 
+- `PTH_FA=1` (int8 KV read by the vendored pth-flash-attn kernel, `SPEC=mtp`/`dflash2` + `CTX=long` only) writes three settings at once: `--attention-backend CUSTOM`, `--kv-cache-dtype int8_per_token_head`, and `"attention_backend":"CUSTOM"` inside `--speculative-config` - a drafter takes its backend from there, not from the engine flag. On an 8.6 GPU it is the *default* only for the measured setup (no `VISION=1`, `DRAFT_TOKENS` unset or 3, no KV tier, none of those three flags in `EXTRA_ARGS`); the vision entries here set it explicitly. Measured on this rig's 3090 at k=4 + vision: +3% decode at 10k, +10% at ~60K, +14% at ~120K over fp8 on FlashInfer, pool ~1.9% smaller - it also costs KV capacity against the 176128 window (see [qwen38-27b.md](../models/rig2-3090/qwen38-27b.md)).
 - `KVARN_FP16_DEQUANT=1` runs the three fused KVarN decode kernels' dequant in fp16 (the dots still accumulate in fp32). Halving the working tiles halves their register pressure, which is what lifts the long-context split-K decode, at no cost to prefill or VRAM. It is part of vLLM's torch.compile cache key, so the first boot after enabling it recompiles; the compile cache persists, so that is paid once per cache volume rather than on every boot. With it on, the split-K stage1 and verify autotune narrows to tile shapes that spill few registers - a heavily spilling shape is 2.5-24x slower at long context, so the win is worth confirming per config rather than assumed.
 - `EMBED_UVA=1` keeps the quantized token embedding in pinned host RAM behind a CUDA UVA view and gives the freed VRAM to the KV pool (~15% more pool tokens for ~2.1 GiB of host RAM and ~20 s of boot). A pool-size knob, not a speed one; skipped for tied embeddings and unmeasured at TP>1.
 - `INT8_ACT=int8` is the W4A8 path - int4 weights with int8 activations through the Marlin prefill, worth roughly 25-30% more prefill in the prefill-bound regime. `PREFILL_ATTN=int8` is its optional prefill-attention companion and adds nothing measurable here; `INT8_LAYERS` defaults to the full layer set, `mlp` is the smaller middle point, and `mlp|linear_attn` crashes on an inductor codegen bug.

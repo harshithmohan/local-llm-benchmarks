@@ -11,7 +11,7 @@ Rig 1 was first benchmarked 2026-09-10; the engines used on each rig are listed 
 
 ## Inference engines
 
-- **vLLM** ([syv-ai/HyperQwen](https://github.com/syv-ai/HyperQwen)) - a vLLM container stack running MTP with two KV modes, fp8 and KVarN 4/2-bit, both with pinned pools (Rig 2). Flags: [engine-notes/vllm.md](engine-notes/vllm.md).
+- **vLLM** ([syv-ai/HyperQwen](https://github.com/syv-ai/HyperQwen)) - a vLLM container stack running MTP with three KV modes: int8 read by the pth-flash-attn kernel (`PTH_FA=1`), fp8 on FlashInfer, and KVarN 4/2-bit, all with pinned pools (Rig 2). Flags: [engine-notes/vllm.md](engine-notes/vllm.md).
 - **llama.cpp** ([ggml-org/llama.cpp](https://github.com/ggml-org/llama.cpp)) - upstream stock builds (Rig 1, Rig 2). Flags/defaults: [engine-notes/upstream-stock.md](engine-notes/upstream-stock.md).
 - **ik-llama.cpp** ([ikawrakow/ik_llama.cpp](https://github.com/ikawrakow/ik_llama.cpp), Rig 1) - Ilya Kawrakow's performance fork of llama.cpp. Flag syntax: [engine-notes/ik-llama.md](engine-notes/ik-llama.md).
 - **llama.cpp (moe-cache fork)** ([GenerelSchwerz/llama.cpp](https://github.com/GenerelSchwerz/llama.cpp), branch `moe-cache`, both rigs) - a llama.cpp fork adding a dynamic CUDA expert cache (`--moe-expert-cache-size`; no profile/trace step needed) and an opt-in generic hybrid CPU/GPU executor (`--moe-hybrid`) with model-bound expert profiles; while the cache is enabled it overrides `-ncmoe` placement. Flags and the `--experimental-logs` validation recipe: [engine-notes/moe-cache-fork.md](engine-notes/moe-cache-fork.md).
@@ -64,8 +64,10 @@ Headline tables list only usable configs (full context, no rejected/OOM setups);
 | Qwen3.6-35B-A3B | UD-IQ4_XS | moe-cache fork | 262144 | 5258 | **189** |
 | Qwen3.6-35B-A3B | UD-IQ4_XS | moe-cache fork | 524288 (YaRN 2x) | 4553 | **152.6** |
 | KAT-Coder-V2.5-Dev | APEX-I-Compact | moe-cache fork | 262144 | 5254 | **155.6** |
+| Qwen3.8-27B | W4A16-AutoRound-fast | vLLM | 167936 | 2604 | **120.4** |
 | Qwen3.8-27B | W4A16-AutoRound-fast | vLLM | 176128 | 2465 | **120.6** |
 | Qwen3.8-27B | W4A16-AutoRound-fast | vLLM | 262144 | 2403 | **101.8** |
+| Swift-1.5-Qwen3.8-27B | Swift-1.5-INT4-fast | vLLM | 167936 | 2494 | **118.8** |
 | Swift-1.5-Qwen3.8-27B | Swift-1.5-INT4-fast | vLLM | 176128 | 2433 | **107.7** |
 | Swift-1.5-Qwen3.8-27B | Swift-1.5-INT4-fast | vLLM | 262144 | 2374 | **97.6** |
 | Cyber-Tiel-Coder-35B-A3B | UD-Q4_K_XL | moe-cache fork | 262144 | 3766 | **148.9** |

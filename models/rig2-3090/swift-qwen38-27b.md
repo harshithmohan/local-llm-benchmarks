@@ -1,21 +1,34 @@
 # Swift-1.5-Qwen3.8-27B (Rig 2) - recommended configs
 
-Updated: 2026-10-23 · [full experiment log](archive/swift-qwen38-27b.md) · [methodology](../../methodology.md)
+Updated: 2026-11-05 · [full experiment log](archive/swift-qwen38-27b.md) · [methodology](../../methodology.md)
 
-`Swift-1.5-INT4`, the Swift-1.5 fine-tune of Qwen3.8-27B (`qwen35` dense hybrid SSM + attention - only every 4th layer carries full attention, `full_attention_interval=4` - native ctx 262144, embedded MTP head). Dense, not a MoE, so no expert split applies. Served on the same [syv-ai/HyperQwen](https://github.com/syv-ai/HyperQwen) vLLM container (vLLM 0.31.0) as the base model. The served build is `Swift-1.5-INT4-fast`: the port's int8 heads requantized to the same int4-GPTQ `lm_head` and draft head the base build runs, which brings the profile inside the rig's VRAM budget (the step the port skipped - experiment 6 of the port study). Model card: [ukisai/Swift-1.5-Qwen3.8-27b-INT4](https://huggingface.co/ukisai/Swift-1.5-Qwen3.8-27b-INT4). The base `W4A16-AutoRound-fast` quant is a separate model: [qwen38-27b.md](qwen38-27b.md).
+`Swift-1.5-INT4`, the Swift-1.5 fine-tune of Qwen3.8-27B (`qwen35` dense hybrid SSM + attention - only every 4th layer carries full attention, `full_attention_interval=4` - native ctx 262144, embedded MTP head). Dense, not a MoE, so no expert split applies. Served on the same [syv-ai/HyperQwen](https://github.com/syv-ai/HyperQwen) vLLM container (vLLM 0.32.0) as the base model. The served build is `Swift-1.5-INT4-fast`: the port's int8 heads requantized to the same int4-GPTQ `lm_head` and draft head the base build runs, which brings the profile inside the rig's VRAM budget (the step the port skipped - experiment 6 of the port study). Model card: [ukisai/Swift-1.5-Qwen3.8-27b-INT4](https://huggingface.co/ukisai/Swift-1.5-Qwen3.8-27b-INT4). The base `W4A16-AutoRound-fast` quant is a separate model: [qwen38-27b.md](qwen38-27b.md).
 
 Fine-tune port study (checkpoint preparation, not engine tuning): [../../experiments/qwen38-27b-swift-1.5-int4.md](../../experiments/qwen38-27b-swift-1.5-int4.md). Rig and setup: [../../rig2-3090.md](../../rig2-3090.md).
 
 ## Recommended configs
 
-Two contexts: fp8 KV at 176128 (4 chained MTP drafts) for the fastest decode, and KVarN 4/2-bit KV at the native 262144 (3 chained drafts) for long requests.
+Two contexts: int8 KV at 167936 read by the pth-flash-attn kernel (4 chained MTP drafts, `PTH_FA=1`) for the fastest decode - the deployed profile since 2026-11-05, measured on this checkpoint below - and KVarN 4/2-bit KV at the native 262144 (3 chained drafts) for long requests. The 176128 fp8 row below is the previous 0.31.0-image profile. Speeds on that profile are measured on this checkpoint, not borrowed from the base quant ([qwen38-27b.md](qwen38-27b.md)).
 
 | Config | ctx | engine | MTP | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| Swift-1.5-INT4-fast | 167936 | vLLM | on | 2494 | **118.8** | 20674 MiB | `PTH_FA=1` int8 KV; 4 drafts, `MAX_SEQS=4`; pool pinned 6.8 GB (173,207 tokens); `EMBED_UVA=1`; accept 52.9% - measured on this checkpoint 2026-11-05 |
 | Swift-1.5-INT4-fast | 176128 | vLLM | on | 2433 | **107.7** | 22028 MiB | fp8 KV; 4 drafts, `MAX_SEQS=4`; pool pinned 6.8 GB; `EMBED_UVA=1`; accept 54.2% |
 | Swift-1.5-INT4-fast | 262144 | vLLM | on | 2374 | **97.6** | 21856 MiB | KVarN k4v2 KV, 3 drafts; pool pinned 5.3 GB; `KVARN_FP16_DEQUANT=1`; `EMBED_UVA=1`; accept 58.9% |
 
 All rows are served with `INT8_ACT=int8`.
+
+### PTH_FA profile on this checkpoint (2026-11-05, 0.32.0 image)
+
+Same protocol as the base model's A/B: image `7592fbbb4e17`, 370 W, one cold boot at `MAX_LEN=167936`, two passes per prompt with the second recorded, prefix caching off (`--no-enable-prefix-caching`, `cached_tokens` 0 on every row). Load 261 s, VRAM 20674 MiB.
+
+| prompt | prefill t/s | decode t/s | accept |
+| --- | --- | --- | --- |
+| 10k | 2494 | **118.8** | 52.9% |
+| ~60K | 1821 | **119.2** | 65.7% |
+| ~120K | 1328 | **91.9** | 59.8% |
+
+Against the base quant on the same profile and pinned pool (`2604` / `120.4`, `1912` / `132.0`, `1424` / `106.6`; that boot ran at 176128, before the window was cut - the pool is pinned by bytes, so the KV allocation is the same): prefill −4.2% / −4.8% / −6.8% and decode −1.3% / −9.7% / −13.8%. The gap widens with context and tracks the checkpoint's own drafter: at long context its acceptance (65.7% at ~60K, 59.8% at ~120K) sits below the base model's (68.1%, 66.9%), and long-context decode follows acceptance; at 10k the two are within run noise. The borrowed numbers this row carried before overstated it; they are replaced.
 
 ## Configs
 
@@ -63,6 +76,8 @@ The real-task long-context refactor prompts ([test-prompts.md](../../test-prompt
 
 | Config | ctx | engine | MTP | prompt | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Swift-1.5-INT4-fast | 167936 | vLLM | on | ~60K | 1821 | **119.2** | 20674 MiB | `PTH_FA=1` int8 KV; accept 65.7% |
+| Swift-1.5-INT4-fast | 167936 | vLLM | on | ~120K | 1328 | **91.9** | 20674 MiB | `PTH_FA=1` int8 KV; accept 59.8% |
 | Swift-1.5-INT4-fast | 176128 | vLLM | on | ~60K | 1756 | **99.9** | 22030 MiB | fp8 KV; accept 58.5% |
 | Swift-1.5-INT4-fast | 176128 | vLLM | on | ~120K | 1293 | **95.9** | 22030 MiB | fp8 KV; accept 68.9% |
 | Swift-1.5-INT4-fast | 262144 | vLLM | on | ~60K | 1821 | **67.8** | 21856 MiB | KVarN k4v2 KV; accept 56.0% |

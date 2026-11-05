@@ -1,6 +1,8 @@
 # Unlocking the GA102 FP/BF16 issue rate: gpu-unlock and long-context prefill on an RTX 3090
 
 > **Scope note:** every post-change number on this page was measured on 2026-10-23 with the unlock active from boot. The pre-change numbers are the published rows on the model cards, measured on the same rig, same prompts, same configs, with the module absent. The module changes GPU issue-rate state, not the model or the engine, so the comparison is config-matched rather than a re-tune.
+>
+> **Status note (added 2026-11-05):** this page is a one-time study, not a config knob — the unlock is always on (see [rig2-3090.md](../rig2-3090.md)), so every number on the model cards and in [README](../README.md) is already measured with it. The rows here were taken on the 0.31.0 image at fp8 KV / 176128; the deployed profile moved to `PTH_FA=1` int8 KV at 167936, and the current numbers for that profile are on the model cards. The ratios below are not applied to them.
 
 [gpu-unlock](https://github.com/Zagitta/gpu-unlock) is an early-load Linux kernel module that raises the hidden FP/BF16 FMA issue rate on GA102/GA103/GA104/GA106 before the NVIDIA driver binds. It is not a driver patch and does not change clocks, power limits or memory bandwidth. This page answers one question: **does the unlocked issue rate show up in the inference workloads measured here, and where?**
 
