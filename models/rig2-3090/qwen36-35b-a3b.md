@@ -6,7 +6,7 @@ Updated: 2026-10-20 · [full experiment log](archive/qwen36-35b-a3b.md) · [meth
 
 ## Recommended configs
 
-| Config | ctx | engine | MTP | prefill t/s | decode t/s | VRAM | Notes |
+| Config | ctx | engine | drafter | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | UD-IQ4_XS | 262144 | moe-cache fork | on | 5258 | **189** | 21894 MiB | cache 0 + `--phase-aware-workspace`, `-b/-ub 4096` |
 | UD-IQ4_XS | 524288 | moe-cache fork | on | 4553 | **152.6** | 22616 MiB | YaRN 2x; cache 200 + `--phase-aware-workspace`, `-b/-ub 8192` |
@@ -58,7 +58,7 @@ The native 262144 window runs on GPU, q8_0 KV, no expert cache (with `--phase-aw
 
 Real-task timing test of a long-context code-refactor task ([test-prompts.md](../../test-prompts.md)): a fixed refactor instruction wraps a deterministically generated (seed 42) Python file of near-identical legacy templates - 79 repeats for the ~60K prompt, 157 for the ~120K one. Same protocol as the recommended configs ([methodology.md](../../methodology.md) §Measurement methods): q8_0 KV, cold load.
 
-| Config | ctx | engine | MTP | prompt | prefill t/s | decode t/s | VRAM | Notes |
+| Config | ctx | engine | drafter | prompt | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | UD-IQ4_XS | 262144 | moe-cache fork | on | ~60K | 4247 | **146.8** | 21894 MiB | cache 0 + `--phase-aware-workspace`, `-b/-ub 4096` |
 | UD-IQ4_XS | 262144 | moe-cache fork | on | ~120K | 3292 | **115.2** | 21894 MiB | 119293-token prompt; cache 0 + `--phase-aware-workspace`, `-b/-ub 4096` |

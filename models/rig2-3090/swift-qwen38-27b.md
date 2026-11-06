@@ -10,7 +10,7 @@ Fine-tune port study (checkpoint preparation, not engine tuning): [../../experim
 
 Two contexts: int8 KV at 167936 read by the pth-flash-attn kernel (4 chained MTP drafts, `PTH_FA=1`) for the fastest decode - the deployed profile since 2026-11-05, measured on this checkpoint below - and KVarN 4/2-bit KV at the native 262144 (3 chained drafts) for long requests. The 176128 fp8 row below is the previous 0.31.0-image profile. Speeds on that profile are measured on this checkpoint, not borrowed from the base quant ([qwen38-27b.md](qwen38-27b.md)).
 
-| Config | ctx | engine | MTP | prefill t/s | decode t/s | VRAM | Notes |
+| Config | ctx | engine | drafter | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Swift-1.5-INT4-fast | 167936 | vLLM | on | 2494 | **118.8** | 20674 MiB | `PTH_FA=1` int8 KV; 4 drafts, `MAX_SEQS=4`; pool pinned 6.8 GB (173,207 tokens); `EMBED_UVA=1`; accept 52.9% - measured on this checkpoint 2026-11-05 |
 | Swift-1.5-INT4-fast | 176128 | vLLM | on | 2433 | **107.7** | 22028 MiB | fp8 KV; 4 drafts, `MAX_SEQS=4`; pool pinned 6.8 GB; `EMBED_UVA=1`; accept 54.2% |
@@ -74,7 +74,7 @@ Against the base quant on the same profile and pinned pool (`2604` / `120.4`, `1
 
 The real-task long-context refactor prompts ([test-prompts.md](../../test-prompts.md)) - 79 repeats for the ~60K prompt, 157 for the ~120K one - same protocol as the recommended configs.
 
-| Config | ctx | engine | MTP | prompt | prefill t/s | decode t/s | VRAM | Notes |
+| Config | ctx | engine | drafter | prompt | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Swift-1.5-INT4-fast | 167936 | vLLM | on | ~60K | 1821 | **119.2** | 20674 MiB | `PTH_FA=1` int8 KV; accept 65.7% |
 | Swift-1.5-INT4-fast | 167936 | vLLM | on | ~120K | 1328 | **91.9** | 20674 MiB | `PTH_FA=1` int8 KV; accept 59.8% |

@@ -14,9 +14,9 @@ Updated: <YYYY-MM-DD> · [full experiment log](archive/<model>.md) · [methodolo
 
 <!-- One row per recommended, usable config - the headline answer. "Config" is the quant/quant+ctx; fold cache size and -b/-ub into Notes (they are not universal). Anything not recommended lives on the model page or in the archive. -->
 
-| Config | ctx | engine | MTP | prefill t/s | decode t/s | VRAM | Notes |
+| Config | ctx | engine | drafter | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| <quant> | <ctx> | <engine> | <on or off> | <prefill> | **<decode>** | <VRAM> MiB | <cache N, `-b/-ub N`> |
+| <quant> | <ctx> | <engine> | <MTP / DFlash2 / off> | <prefill> | **<decode>** | <VRAM> MiB | <cache N, `-b/-ub N`> |
 
 ## Configs
 
@@ -30,7 +30,7 @@ Updated: <YYYY-MM-DD> · [full experiment log](archive/<model>.md) · [methodolo
       <cache / engine flags> \
       --cache-type-k q8_0 --cache-type-v q8_0 --flash-attn on \
       --load-mode none --no-mmproj-offload --threads <n> --parallel 1 \
-      <MTP flags; omit the line when MTP is off> \
+      <drafter flags; omit the line when there is no drafter> \
       -b <b> -ub <ub> \
       --temp <t> --top-p <p> --top-k <k> --min-p <m> --presence-penalty <pp> --repeat-penalty <rp>
 
@@ -46,7 +46,7 @@ Updated: <YYYY-MM-DD> · [full experiment log](archive/<model>.md) · [methodolo
 
 <one-line task description + link to test-prompts.md; state "same protocol as the recommended configs" rather than restating flags.>
 
-| Config | ctx | engine | MTP | prompt | prefill t/s | decode t/s | VRAM | Notes |
+| Config | ctx | engine | drafter | prompt | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| <quant> | <ctx> | <engine> | <on or off> | ~60K | <prefill> | **<decode>** | <VRAM> MiB | <cache N> |
-| <quant> | <ctx> | <engine> | <on or off> | ~120K | <prefill> | **<decode>** | <VRAM> MiB | <cache N> |
+| <quant> | <ctx> | <engine> | <MTP / DFlash2 / off> | ~60K | <prefill> | **<decode>** | <VRAM> MiB | <cache N> |
+| <quant> | <ctx> | <engine> | <MTP / DFlash2 / off> | ~120K | <prefill> | **<decode>** | <VRAM> MiB | <cache N> |

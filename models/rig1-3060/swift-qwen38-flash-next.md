@@ -6,9 +6,9 @@ Updated: 2026-11-06 · [full experiment log](archive/swift-qwen38-flash-next.md)
 
 ## Recommended configs
 
-| Config | ctx | engine | MTP | prefill t/s | decode t/s | VRAM | Notes |
+| Config | ctx | engine | drafter | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| GSQ-RCO IQ3_XXS | 204800 | Strata 0.2.10 | on (base head) | 1094.0 | **63.6** | 11393 MiB | `--kv int8`, CPU vision encoder, 1639 slots / 2.70 GiB cache |
+| GSQ-RCO IQ3_XXS | 204800 | Strata 0.2.10 | MTP | 1094.0 | **63.6** | 11393 MiB | `--kv int8`, CPU vision encoder, 1639 slots / 2.70 GiB cache |
 
 ## Configs
 
@@ -50,9 +50,9 @@ Entry env: `STRATA_PREFILL_LEND_PCT=95`, `STRATA_KEEP_EMPTY_TURNS=1`, `STRATA_EX
 
 Real-task timing test of a long-context code-refactor task ([test-prompts.md](../../test-prompts.md)): a fixed refactor instruction wraps a deterministically generated Python file of near-identical legacy templates - 79 repeats for the ~60K prompt, 157 for the ~120K one. Same protocol as the recommended configs ([methodology.md](../../methodology.md) §Measurement methods), against a derived config carrying `--prompt-cache 0`: `/v1/chat/completions` passes, no request overrides, cold load per prompt, two passes with the second recorded.
 
-| Config | ctx | engine | MTP | prompt | prefill t/s | decode t/s | VRAM | Notes |
+| Config | ctx | engine | drafter | prompt | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| GSQ-RCO IQ3_XXS | 204800 | Strata 0.2.10 | on (base head) | ~60K | 1134.3 | **53.6** | 11393 MiB | 59802-token prompt, draft 183/352 |
-| GSQ-RCO IQ3_XXS | 204800 | Strata 0.2.10 | on (base head) | ~120K | 1110.2 | **52.7** | 11393 MiB | 119344-token prompt, draft 185/320 |
+| GSQ-RCO IQ3_XXS | 204800 | Strata 0.2.10 | MTP | ~60K | 1134.3 | **53.6** | 11393 MiB | 59802-token prompt, draft 183/352 |
+| GSQ-RCO IQ3_XXS | 204800 | Strata 0.2.10 | MTP | ~120K | 1110.2 | **52.7** | 11393 MiB | 119344-token prompt, draft 185/320 |
 
 Every recorded pass reported `cache_n` 0 and `predicted_n` 512 and finished on `length`. Decode moves with the base head's acceptance run to run, not depth.

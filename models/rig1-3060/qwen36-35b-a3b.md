@@ -6,7 +6,7 @@ Updated: 2026-10-20 · [full experiment log](archive/qwen36-35b-a3b.md) · [meth
 
 ## Recommended configs
 
-| Config | ctx | engine | MTP | prefill t/s | decode t/s | VRAM | Notes |
+| Config | ctx | engine | drafter | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | IQ4_XS | 262144 | moe-cache fork | on | 2047 | **83.5** | 11526 MiB | cache 80 + `--phase-aware-workspace`, `-b/-ub 6144` |
 | IQ4_XS | 524288 (YaRN 2x) | moe-cache fork | off | 2318 | **59.6** | 11736 MiB | cache 48, `-b/-ub 6144` |
@@ -49,7 +49,7 @@ YaRN 2x - `--rope-scale` must equal ctx/262144 exactly (the command above uses 2
 
 Real-task timing test of a long-context code-refactor task ([test-prompts.md](../../test-prompts.md)): a fixed refactor instruction wraps a deterministically generated (seed 42) Python file of near-identical legacy templates - 79 repeats for the ~60K prompt, 157 for the ~120K one. Same protocol as the recommended configs ([methodology.md](../../methodology.md) §Measurement methods): q8_0 KV, cold load.
 
-| Config | ctx | engine | MTP | prompt | prefill t/s | decode t/s | VRAM | Notes |
+| Config | ctx | engine | drafter | prompt | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | IQ4_XS | 262144 | moe-cache fork | on | ~60K | 1680 | **63.1** | 11530 MiB | cache 80 + phase-aware |
 | IQ4_XS | 262144 | moe-cache fork | on | ~120K | 1314 | **48.1** | 11530 MiB | 119293-token prompt, cache 80 + phase-aware |

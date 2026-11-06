@@ -6,7 +6,7 @@ Updated: 2026-10-27 · [full experiment log](archive/cybertiel-35b-a3b.md) · [m
 
 ## Recommended configs
 
-| Config | ctx | engine | MTP | prefill t/s | decode t/s | VRAM | Notes |
+| Config | ctx | engine | drafter | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | UD-Q4_K_XL | 262144 | moe-cache fork | on | 3766 | **148.9** | 21260 MiB | cache 192 + `--phase-aware-workspace`, `-b/-ub 4096` |
 
@@ -32,7 +32,7 @@ Updated: 2026-10-27 · [full experiment log](archive/cybertiel-35b-a3b.md) · [m
 
 Real-task timing test of a long-context code-refactor task ([test-prompts.md](../../test-prompts.md)): a fixed refactor instruction wraps a deterministically generated (seed 42) Python file of near-identical legacy templates - 79 repeats for the ~60K prompt, 157 for the ~120K one. Same protocol as the recommended configs ([methodology.md](../../methodology.md) §Measurement methods): q8_0 KV, cold load per prompt.
 
-| Config | ctx | engine | MTP | prompt | prefill t/s | decode t/s | VRAM | Notes |
+| Config | ctx | engine | drafter | prompt | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | UD-Q4_K_XL | 262144 | moe-cache fork | on | ~60K | 3600 | **121.6** | 21254 MiB | 59751-token prompt, cache 192 + phase-aware |
 | UD-Q4_K_XL | 262144 | moe-cache fork | on | ~120K | 2964 | **96.3** | 21254 MiB | 119293-token prompt, cache 192 + phase-aware |

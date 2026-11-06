@@ -6,7 +6,7 @@ Updated: 2026-10-20 · [full experiment log](archive/katcoder-v2.5-dev.md) · [m
 
 ## Recommended configs
 
-| Config | ctx | engine | MTP | prefill t/s | decode t/s | VRAM | Notes |
+| Config | ctx | engine | drafter | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | APEX-I-Compact | 262144 | moe-cache fork | on | 5254 | **155.6** | 22324 MiB | cache 200 (max fit), `-b/-ub 12288` (~200 MiB headroom) |
 
@@ -36,7 +36,7 @@ Updated: 2026-10-20 · [full experiment log](archive/katcoder-v2.5-dev.md) · [m
 
 Real-task timing test of a long-context code-refactor task ([test-prompts.md](../../test-prompts.md)): a fixed refactor instruction wraps a deterministically generated (seed 42) Python file of near-identical legacy templates - 79 repeats for the ~60K prompt, 157 for the ~120K one. Same protocol as the recommended configs ([methodology.md](../../methodology.md) §Measurement methods): q8_0 KV, cold load.
 
-| Config | ctx | engine | MTP | prompt | prefill t/s | decode t/s | VRAM | Notes |
+| Config | ctx | engine | drafter | prompt | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | APEX-I-Compact | 262144 | moe-cache fork | on | ~60K | 4140 | **121** | 22324 MiB | cache 200, `-b/-ub 12288` |
 | APEX-I-Compact | 262144 | moe-cache fork | on | ~120K | 3193 | **90.2** | 22362 MiB | 119293-token prompt, cache 200, `-b/-ub 12288` |

@@ -8,7 +8,7 @@ Updated: 2026-10-20 · [full experiment log](archive/gemma4-26b-a4b.md) · [meth
 
 ## Recommended configs
 
-| Config | ctx | engine | MTP | prefill t/s | decode t/s | VRAM | Notes |
+| Config | ctx | engine | drafter | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Q4_K_M | 32768 | moe-cache fork | on | 1252 | **83.5** | 11370 MiB | chatting (not coding), cache 72, `-b/-ub 1024` |
 

@@ -10,7 +10,7 @@ Low-level knob transferability study: [../../experiments/qwen38-27b-da3dsoul-arc
 
 Three contexts: int8 KV at 167936 read by the pth-flash-attn kernel (4 chained MTP drafts) for the fastest decode - the deployed profile since 2026-11-05 - fp8 KV at 176128 (the same profile on the previous 0.31.0 image), and KVarN 4/2-bit KV at the native 262144 (3 chained drafts) for long requests.
 
-| Config | ctx | engine | MTP | prefill t/s | decode t/s | VRAM | Notes |
+| Config | ctx | engine | drafter | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | W4A16-AutoRound-fast | 167936 | vLLM | on | 2604 | **120.4** | 20580 MiB | `PTH_FA=1` int8 KV on the pth-flash-attn kernel; 4 drafts, `MAX_SEQS=4`; pool pinned 6.8 GB (173,207 tokens); `EMBED_UVA=1`; accept 47.7% - speed rows measured at 176128, 370 W, cold, 2026-11-05 |
 | W4A16-AutoRound-fast | 176128 | vLLM | on | 2465 | **120.6** | 21870 MiB | fp8 KV; 4 drafts, `MAX_SEQS=4`; pool pinned 6.8 GB; `EMBED_UVA=1`; accept 61.9% |
@@ -78,7 +78,7 @@ Deployment note: the profile is deployed at **167936**, not 176128. With `PTH_FA
 
 The real-task long-context refactor prompts ([test-prompts.md](../../test-prompts.md)) - 79 repeats for the ~60K prompt, 157 for the ~120K one - same protocol as the recommended configs.
 
-| Config | ctx | engine | MTP | prompt | prefill t/s | decode t/s | VRAM | Notes |
+| Config | ctx | engine | drafter | prompt | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | W4A16-AutoRound-fast | 176128 | vLLM | on | ~60K | 1828 | **86.7** | 21870 MiB | fp8 KV; accept 46.6% |
 | W4A16-AutoRound-fast | 176128 | vLLM | on | ~120K | 1311 | **91.3** | 21870 MiB | fp8 KV; accept 63.1% |

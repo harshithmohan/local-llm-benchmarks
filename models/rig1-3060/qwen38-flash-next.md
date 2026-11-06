@@ -6,7 +6,7 @@ Updated: 2026-11-06 · [full experiment log](archive/qwen38-flash-next.md) · [m
 
 ## Recommended configs
 
-| Config | ctx | engine | MTP | prefill t/s | decode t/s | VRAM | Notes |
+| Config | ctx | engine | drafter | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | GSQ-RCO IQ3_XXS | 204800 | Strata 0.2.10 | DFlash2 | 1210.1 | **59.1** | 11261 MiB | `--kv int8`, CPU vision encoder, 1910 slots / 3.14 GiB cache |
 
@@ -49,7 +49,7 @@ Entry env: `STRATA_PREFILL_LEND_PCT=95`, `STRATA_KEEP_EMPTY_TURNS=1`, `STRATA_EX
 
 Real-task timing test of a long-context code-refactor task ([test-prompts.md](../../test-prompts.md)): a fixed refactor instruction wraps a deterministically generated Python file of near-identical legacy templates - 79 repeats for the ~60K prompt, 157 for the ~120K one. Same protocol as the recommended configs ([methodology.md](../../methodology.md) §Measurement methods), against a derived config carrying `--prompt-cache 0`: `/v1/chat/completions` passes, no request overrides, cold load per prompt, two passes with the second recorded.
 
-| Config | ctx | engine | MTP | prompt | prefill t/s | decode t/s | VRAM | Notes |
+| Config | ctx | engine | drafter | prompt | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | GSQ-RCO IQ3_XXS | 204800 | Strata 0.2.10 | DFlash2 | ~60K | 1200.4 | **59.4** | 11261 MiB | 59802-token prompt, draft 227/349 |
 | GSQ-RCO IQ3_XXS | 204800 | Strata 0.2.10 | DFlash2 | ~120K | 1155.1 | **52.5** | 11261 MiB | 119344-token prompt, draft 180/305 |
