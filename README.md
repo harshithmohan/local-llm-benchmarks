@@ -50,7 +50,7 @@ Headline tables list only usable configs (full context, no rejected/OOM setups);
 | Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | moe-cache fork | 524288 (YaRN 2x) | 2318 | **59.6** |
 | Qwen3.8-Flash-Next | GSQ-RCO IQ3_XXS + DFlash2 | Strata | 204800 | 1210.1 | **59.1** |
 | Qwen3.8-Flash-Next | GSQ-RCO IQ3_XXS + MTP | Speedy | 204800 | 1241.2 | **83.7** |
-| Qwen3.8-Flash-Next | UD-IQ4_XS + MTP | Speedy | 204800 | 1024.4 | 66.7 |
+| Qwen3.8-Flash-Next | UD-IQ4_XS + MTP | Speedy | 262144 | 1024.5 | 48.8 |
 | Swift-1.5-Qwen3.8-Flash-Next | GSQ-RCO IQ3_XXS + MTP | Strata | 204800 | 1094.0 | **63.6** |
 | Swift-1.5-Qwen3.8-Flash-Next | GSQ-RCO IQ3_XXS + MTP | Speedy | 204800 | 1248.2 | **73.3** |
 | KAT-Coder-V2.5-Dev | APEX-I-Compact | moe-cache fork | 262144 | 1770 | **72.2** |

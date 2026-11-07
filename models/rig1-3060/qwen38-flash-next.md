@@ -1,6 +1,6 @@
 # Qwen3.8-Flash-Next (Rig 1) - recommended configs
 
-Updated: 2026-11-07 · [full experiment log](archive/qwen38-flash-next.md) · [methodology](../../methodology.md)
+Updated: 2026-11-08 · [full experiment log](archive/qwen38-flash-next.md) · [methodology](../../methodology.md)
 
 Two pack-engine builds are recommended: Strata 0.2.10 with DFlash2 and Speedy 0.3.1 with MTP. A 4-bit UD-IQ4_XS variant is measured as a slower alternative.
 
@@ -12,7 +12,7 @@ Two pack-engine builds are recommended: Strata 0.2.10 with DFlash2 and Speedy 0.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | GSQ-RCO IQ3_XXS | 204800 | Strata 0.2.10 | DFlash2 | 1210.1 | **59.1** | 11261 MiB | `--kv int8`, CPU vision encoder, 1910 slots / 3.14 GiB cache |
 | GSQ-RCO IQ3_XXS + MTP | 204800 | Speedy 0.3.1 | MTP | 1241.2 | **83.7** | 11339 MiB | `--kv int8`, CPU vision encoder, 3276 slots / 5.35 GiB cache (bench shape) |
-| UD-IQ4_XS + MTP | 204800 | Speedy 0.3.1 | MTP | 1024.4 | **66.7** | 11459 MiB | `--kv int8`, CPU vision encoder, 2005 experts / 4.62 GiB cache (bench shape) |
+| UD-IQ4_XS + MTP | 262144 | Speedy 0.3.1 | MTP | 1024.5 | **48.8** | 11314 MiB | `--kv int8`, CPU vision encoder, 1963 slots / 4.52 GiB cache (bench shape) |
 
 ## Configs
 
@@ -77,7 +77,7 @@ Entry env: `STRATA_KEEP_EMPTY_TURNS=1`. Config JSON `env`: `STRATA_PREFILL_LEND_
 
 Entry env: `STRATA_KEEP_EMPTY_TURNS=1`. Config JSON `env`: `STRATA_ROUTE_TAIL_SKIP=0`, `STRATA_PREFILL_CPU_SHARE=auto`, `STRATA_PIN_BY_NEED=1`, `STRATA_EXPDEC=1`, `STRATA_EXCHANGE_ROTATE=1`, `STRATA_ATTN_DAILY=1`, `STRATA_VERIFY_DEFER_CPU=1`, `STRATA_VERIFY_DEFER_CPU_BELOW=0.1`, `STRATA_PROMPT_ATTN_IMMA=1`, `STRATA_KV_PREFETCH=1`, `STRATA_PF_GROUP_SCRATCH=1`, `STRATA_PF_HC_REGION=1`, `STRATA_HC_Q8=1`.
 
-### UD-IQ4_XS + MTP - Speedy 0.3.1, 204800
+### UD-IQ4_XS + MTP - Speedy 0.3.1, 262144
 
     {
       "exe": "<speedy>/build/strata",
@@ -86,7 +86,7 @@ Entry env: `STRATA_KEEP_EMPTY_TURNS=1`. Config JSON `env`: `STRATA_ROUTE_TAIL_SK
                "--expert-profile", "<speedy>/data/expert-profile.bin", "--expert-cache", "auto",
                "--prefill", "auto", "--spec", "4", "--spec-min-p", "0.5",
                "--mtp", "<mtp>/rt",
-               "--max-context", "204800", "--kv", "int8",
+               "--max-context", "262144", "--kv", "int8",
                "--kv-resident", "20480", "--vram-reserve-mib", "700",
                "--conversation-cache-mib", "8192", "--adapt-async", "1",
                "--adapt-swaps", "80", "--pool-affinity", "measure",
@@ -121,7 +121,7 @@ Real-task timing test of a long-context code-refactor task ([test-prompts.md](..
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | GSQ-RCO IQ3_XXS | 204800 | Strata 0.2.10 | DFlash2 | ~60K | 1200.4 | **59.4** | 11261 MiB | 59802-token prompt, draft 227/349 |
 | GSQ-RCO IQ3_XXS + MTP | 204800 | Speedy 0.3.1 | MTP | ~60K | 1288.0 | **67.2** | 11339 MiB | 59762-token prompt, draft ~65-69% |
-| UD-IQ4_XS + MTP | 204800 | Speedy 0.3.1 | MTP | ~60K | 1131.3 | **51.5** | 11459 MiB | 59762-token prompt, draft 309/463 |
+| UD-IQ4_XS + MTP | 262144 | Speedy 0.3.1 | MTP | ~60K | 1134.7 | **56.8** | 11332 MiB | 59762-token prompt, draft 341/430 |
 | GSQ-RCO IQ3_XXS | 204800 | Strata 0.2.10 | DFlash2 | ~120K | 1155.1 | **52.5** | 11261 MiB | 119344-token prompt, draft 180/305 |
 | GSQ-RCO IQ3_XXS + MTP | 204800 | Speedy 0.3.1 | MTP | ~120K | 1252.5 | **67.8** | 11339 MiB | 119304-token prompt, draft 70-77% |
-| UD-IQ4_XS + MTP | 204800 | Speedy 0.3.1 | MTP | ~120K | 1122.6 | **51.0** | 11459 MiB | 119304-token prompt, draft 310/461 |
+| UD-IQ4_XS + MTP | 262144 | Speedy 0.3.1 | MTP | ~120K | 1123.9 | **54.3** | 11330 MiB | 119304-token prompt, draft 328/450 |
