@@ -365,7 +365,14 @@ class RunStore:
 
     def new_state(self):
         """A fresh state record for a new run."""
-        return {"schema": 1, "phase": "prepared", "stage": 0, "step": "impl"}
+        return {
+            "schema": 2,
+            "phase": "prepared",
+            "stage": 0,
+            "step": "impl",
+            "done": [],
+            "history": [],
+        }
 
 
 # ---------------------------------------------------------------------------
@@ -1569,6 +1576,37 @@ def build_parser():
         "calls) to this run's output while a role turn is in flight",
     )
 
+    r = sub.add_parser("resume")
+    r.add_argument("run")
+    r.add_argument(
+        "--no-trace",
+        dest="trace_streams",
+        action="store_false",
+        default=True,
+        help="do not print the agent's phase trace (reasoning / text / tool "
+        "calls) to this run's output while a role turn is in flight",
+    )
+    r.add_argument(
+        "--force",
+        action="store_true",
+        help="override the pin/HEAD/later-artifact guards (later artifacts are "
+        "moved into the state dir's quarantine-<timestamp>/ first)",
+    )
+    r.add_argument(
+        "--continue-session",
+        dest="continue_session",
+        action="store_true",
+        help="resume an interrupted implementation turn in its saved session "
+        "instead of restoring the stage's starting tree and starting a new one",
+    )
+    r.add_argument(
+        "--dry-run",
+        dest="dry_run",
+        action="store_true",
+        help="print the resume plan (cursor, artifacts, guards, stale processes) "
+        "without touching state, the tree or any artifact",
+    )
+
     return ap
 
 
@@ -1579,6 +1617,10 @@ def dispatch(ctx, args):
         import shoko_pipeline as pipeline
 
         return pipeline.run_pipeline(ctx)
+    if args.cmd == "resume":
+        import shoko_pipeline as pipeline
+
+        return pipeline.run_pipeline(ctx, resume=True)
     return EXIT_USAGE
 
 
