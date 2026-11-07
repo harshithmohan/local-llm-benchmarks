@@ -582,6 +582,22 @@ The engine states its own view at load: `--draft dflash2: on a 12 GB NVIDIA card
 
 **Unchanged on 0.1.56.** The sm_86 nine-switch default table, the CPU vision encoder (`strata-vision: model files loaded in 1.0 s`; an image request reports prompt_n 1091 against the 1024-token floor), and 679-775 MiB of free VRAM with everything loaded depending on the drafter.
 
+## Speedy 0.3.1 + MTP (2026-11-07)
+
+Speedy is a measured fork of Strata v0.2.7.1; the release is engine-only and pairs with the source tree's Python serve layer. The comparison is in-window: same `GSQ-RCO IQ3_XXS` pack, MTP head, tokenizer and 204800 context as the Strata rows, with Strata 0.2.10 + DFlash2 against Speedy 0.3.1 + MTP. Speedy runs `--mtp <mtp>/rt`, `--kv int8`, `--kv-resident 20480`, `--conversation-cache-mib 8192`, `--adapt-async 1`, `--adapt-swaps 80`, `--pool-affinity measure`; the A/B rows carry `--prompt-cache 0` and no vision. Protocol unchanged: `/v1/chat/completions`, two passes per prompt, second recorded, `cache_n` 0 and `predicted_n` 512 throughout.
+
+| prompt | prompt tokens | prefill t/s | decode t/s | draft accepted |
+| --- | --- | --- | --- | --- |
+| 10k | 10514 | 1241.2 | **83.7** | 74-80% |
+| 60k | 59762 | 1288.0 | **67.2** | ~65-69% |
+| 120k | 119304 | 1252.5 | **67.8** | 70-77% |
+
+Against Strata 0.2.10 + DFlash2 on the same prompts (10k 1213.1 / 57.7; 60k 1200.8 / 57.1; 120k 1157.1 / 53.9): prefill +2.3% / +7.3% / +8.2%, decode +45.0% / +17.6% / +26.0%. The worst Speedy decode sample beat the best Strata sample at each size (+38% / +12% / +17%). Speedy's prompt token count is 40 lower (10514 / 59762 / 119304 vs 10554 / 59802 / 119344), consistent with a 40-token server-level prefix.
+
+Speedy's two recorded decode samples were 10k 81.7 / 85.6, 60k 69.8 / 64.5, 120k 70.8 / 64.9; Strata's were 10k 59.1 / 56.3, 60k 57.4 / 56.8, 120k 55.5 / 52.2. Decode moves with MTP acceptance, not depth.
+
+**Env parity.** `STRATA_KEEP_EMPTY_TURNS=1` is part of the recommended env. `STRATA_QSA_SPLIT_ATTN=1` was A/B'd on top of it at 10k and 120k in a separate pair of cold loads: KEEP-only baseline 1238.7 / 73.6 at 10k and 1256.5 / 70.8 at 120k; KEEP + QSA 1248.9 / 75.0 and 1254.4 / 69.6. That is +0.8% / -0.2% prefill and +1.9% / -1.7% decode, with lower draft acceptance at both sizes (10k 71.6% vs 72.5%; 120k 70.7% vs 75.5%). No gain; the recommended config omits it. The 10k baseline decode in this env test is lower than the main A/B mean, so treat absolute decode as noisy; the paired QSA comparison is the controlled part.
+
 ## Conclusions
 
 - The expert cache is the dominant lever on this model: it turns the ~13 t/s `-ncmoe` baseline into 20-22 t/s decode, with `--moe-expert-cache-size 48` + `-b/-ub 1024` the best prefill/decode balance at 80k.

@@ -11,5 +11,6 @@ The request protocol common to the llama.cpp engines (endpoint, request flags, t
 | [ik-llama.cpp](ik-llama.md) | [ikawrakow/ik_llama.cpp](https://github.com/ikawrakow/ik_llama.cpp) | 1 | Ilya Kawrakow's fork; different flag syntax |
 | [vLLM](vllm.md) | [syv-ai/HyperQwen](https://github.com/syv-ai/HyperQwen) | 2 | container stack for the Qwen3.8-27B quants |
 | [Strata](strata.md) | [Niko1221/Strata](https://github.com/Niko1221/Strata) | 1 | pack-based Flash-Next engine behind its own Python API server |
+| [Speedy](speedy.md) | [DevDock-AI/Speedy](https://github.com/DevDock-AI/Speedy) | 1 | tuned Strata fork (v0.2.7.1 base); MTP, production defaults |
 
 Flags, features, and quirks for each engine live in its own file above. `llama-bench` is not used anywhere - see [methodology.md](../methodology.md) for why.
