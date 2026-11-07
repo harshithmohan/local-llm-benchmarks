@@ -1,6 +1,6 @@
 # Speedy
 
-Measured, tuned fork of [Strata](strata.md) by [DevDock-AI/Speedy](https://github.com/DevDock-AI/Speedy), MIT. Base is upstream Strata **v0.2.7.1**; the deployed engine is Speedy **0.3.1** (engine build **0.1.53**), a prebuilt sm_86 CUDA release. The release archive contains the engine binary only; the OpenAI/Anthropic API layer comes from the source tree's `serve/` and `strata_control/` Python packages and runs on the Strata terminal's bundled CPython. Same pack format, tokenizer and API surface as Strata; it reuses the Strata IQ3_XXS pack, the base model's MTP pack and the `strata-vision` reader.
+Measured, tuned fork of [Strata](strata.md) by [DevDock-AI/Speedy](https://github.com/DevDock-AI/Speedy), MIT. Base is upstream Strata **v0.2.7.1**; the deployed engine is Speedy **0.3.1** (engine build **0.1.53**), a prebuilt sm_86 CUDA release. The release archive contains the engine binary only; the OpenAI/Anthropic API layer comes from the source tree's `serve/` and `strata_control/` Python packages and runs on the Strata terminal's bundled CPython. Same pack format, tokenizer and API surface as Strata; it uses a pack per quant, the base model's MTP head and the `strata-vision` reader.
 
 ## What changes against Strata
 

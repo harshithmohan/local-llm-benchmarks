@@ -10,6 +10,7 @@ Quants:
 - `GSQ-RCO Q2_0` (66.4 GB, 2 shards: 37.6 GB weights + 28.8 GB n-gram table)
 - `GSQ-RCO Coder IQ1_M` (58.4 GB, 2 shards: 29.6 GB pruned weights + 28.8 GB n-gram table)
 - `GSQ-RCO IQ3_XXS` (75.8 GB, 2 shards: 47.0 GB weights + 28.8 GB n-gram table)
+- `UD-IQ4_XS` (93.7 GB, 4 shards, Unsloth `main` revision `084c631a`)
 
 ## Setup
 
@@ -597,6 +598,20 @@ Against Strata 0.2.10 + DFlash2 on the same prompts (10k 1213.1 / 57.7; 60k 1200
 Speedy's two recorded decode samples were 10k 81.7 / 85.6, 60k 69.8 / 64.5, 120k 70.8 / 64.9; Strata's were 10k 59.1 / 56.3, 60k 57.4 / 56.8, 120k 55.5 / 52.2. Decode moves with MTP acceptance, not depth.
 
 **Env parity.** `STRATA_KEEP_EMPTY_TURNS=1` is part of the recommended env. `STRATA_QSA_SPLIT_ATTN=1` was A/B'd on top of it at 10k and 120k in a separate pair of cold loads: KEEP-only baseline 1238.7 / 73.6 at 10k and 1256.5 / 70.8 at 120k; KEEP + QSA 1248.9 / 75.0 and 1254.4 / 69.6. That is +0.8% / -0.2% prefill and +1.9% / -1.7% decode, with lower draft acceptance at both sizes (10k 71.6% vs 72.5%; 120k 70.7% vs 75.5%). No gain; the recommended config omits it. The 10k baseline decode in this env test is lower than the main A/B mean, so treat absolute decode as noisy; the paired QSA comparison is the controlled part.
+
+## UD-IQ4_XS 4-shard (2026-11-07)
+
+The 4-shard `UD-IQ4_XS` build from the Unsloth `main` revision (`084c631a`, 93.7 GB) runs on Speedy 0.3.1. The pack is built from shard 1 with `tools/iq_pack.py --compat-bf16` (1.4 GB; `native_experts.txt` v4, because layer 35 splits gate/up/down across shards), and the deployed 0.1.53 engine accepts it. The MTP head and vision reader are reused; the tokenizer is written into the pack. Context 204800, `--kv int8`, `--resident-budget-gib 80`; the A/B rows carry `--prompt-cache 0`. Protocol unchanged: `/v1/chat/completions`, two passes per prompt, second recorded, `cache_n` 0 and `predicted_n` 512 throughout.
+
+| prompt | prompt tokens | prefill t/s | decode t/s | draft accepted |
+| --- | --- | --- | --- | --- |
+| 10k | 10514 | 1024.4 | **66.7** | 343/449 |
+| 60k | 59762 | 1131.3 | **51.5** | 309/463 |
+| 120k | 119304 | 1122.6 | **51.0** | 310/461 |
+
+These rows have vision enabled (CPU encoder); an earlier no-vision pass recorded 1014.4 / 59.4, 1133.7 / 48.8 and 1123.6 / 48.5, so the vision encoder costs nothing measurable on the text path. A 128x128 red square returned `Red` with `prompt_tokens` 1049 and 402.9 t/s prefill. VRAM is 11459 MiB with 2005 experts / 4.62 GiB of cache; the 80 GiB resident budget is tight on the 128 GB host but loads.
+
+Against `GSQ-RCO IQ3_XXS + MTP` on the same Speedy build (1241.2 / 83.7, 1288.0 / 67.2, 1252.5 / 67.8): UD-IQ4_XS is 17.5% / 12.2% / 10.4% lower on prefill and 20.3% / 23.4% / 24.8% lower on decode. It is a smaller-file alternative, not a speed win.
 
 ## Conclusions
 
