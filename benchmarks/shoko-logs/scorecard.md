@@ -19,13 +19,14 @@ The **parameter set is the unit**: each card covers one quant of one model, and 
 
 | Model | Quant | Level | Outcome | Stage 0 A / B | Stage 1 A / B | Stage 2 A / B | Total model time (min) | Notes |
 |---|---|---|---|---|---|---|---|---|
+| Cyber-Tiel-Coder-35B-A3B | UD-IQ4_XS | default | not converged (31/37) | 68.5 / 51.5 | 71 / 54.5 | 84 / 60 | 161.6 | [card](scorecards/cybertiel-35b-a3b-ud-iq4xs.md) — pagination was repaired in round two; the reconnect window and the scroll lock survived both rounds |
+| Cyber-Tiel-Coder-35B-A3B | UD-Q4_K_XL | default | not converged (31/37) | 83 / 57.5 | 79 / 49 | 83 / 66 | 33.8 | [card](scorecards/cybertiel-35b-a3b-ud-q4kxl.md) — strongest cold stage of the cohort; round two made no edits at all, so the final A/B re-reads stage-1 code |
+| KAT-Coder-V2.5-Dev | APEX-I-Compact | default | not converged (23/37) | 8.5 / 28.5 | 45.5 / 33 | 74.5 / 32 | 22.3 | [card](scorecards/katcoder-v2.5-dev-apex-i-compact.md) — a cold `hasFilters` gate deadlocked the whole filter UI; the `c#:` wrap colon, the cursor and the reconnect window survived both rounds |
 | Qwen3.6-35B-A3B | UD-IQ4_XS | default | not converged (11/37) | 31.5 / 52.5 | 35 / 43.5 | 29 / 42 | 28.4 | [card](scorecards/qwen36-35b-ud-iq4xs.md) — filter mode never engaged at any stage |
 | Qwen3.8-Flash-Next | IQ3_XXS | xhigh | not converged (33/37) | 79 / 66 | 87 / 89 | 91 / 87.5 | 252.9 | [card](scorecards/qwen38-flash-next-iq3xxs.md) — pagination duplication and the reconnect window survived both repair rounds |
-| Swift-1.5 Qwen3.8-Flash-Next | IQ3_XXS | xhigh | converged: stage 2 | 95 / 66 | 92 / 60 | 100 / 64.5 | 88.1 | [card](scorecards/swift-qwen38-flash-next-iq3xxs.md) — cold stage ticket-complete except the download lifetime; the reconnect race took two rounds |
-| KAT-Coder-V2.5-Dev | APEX-I-Compact | default | not converged (23/37) | 8.5 / 28.5 | 45.5 / 33 | 74.5 / 32 | 22.3 | [card](scorecards/katcoder-v2.5-dev-apex-i-compact.md) — a cold `hasFilters` gate deadlocked the whole filter UI; the `c#:` wrap colon, the cursor and the reconnect window survived both rounds |
-| Cyber-Tiel-Coder-35B-A3B | UD-Q4_K_XL | default | not converged (31/37) | 83 / 57.5 | 79 / 49 | 83 / 66 | 33.8 | [card](scorecards/cybertiel-35b-a3b-ud-q4kxl.md) — strongest cold stage of the cohort; round two made no edits at all, so the final A/B re-reads stage-1 code |
-| Cyber-Tiel-Coder-35B-A3B | UD-IQ4_XS | default | not converged (31/37) | 68.5 / 51.5 | 71 / 54.5 | 84 / 60 | 161.6 | [card](scorecards/cybertiel-35b-a3b-ud-iq4xs.md) — pagination was repaired in round two; the reconnect window and the scroll lock survived both rounds |
+| Qwen3.8-Flash-Next | UD-IQ4_XS | xhigh | not converged (34/37) | 77 / 61.5 | 80 / 56 | 84 / 56 | 43.2 | [card](scorecards/qwen38-flash-next-ud-iq4xs.md) — pagination never requested page two and the reconnect-window arrival survived both repair rounds; A rose 77 → 84 while B ended below its cold stage |
 | Swift-1.5 Qwen3.8-27B | INT4 | default | not converged (36/37) | N/G · 43 / 82 | 79 / 59.5 | 96 / 66.5 | 97.3 | [card](scorecards/swift-qwen38-27b-int4.md) — one assertion short on the reconnect window entry; the missing `c#:` colon cost seven tests across the first two stages |
+| Swift-1.5 Qwen3.8-Flash-Next | IQ3_XXS | xhigh | converged: stage 2 | 95 / 66 | 92 / 60 | 100 / 64.5 | 88.1 | [card](scorecards/swift-qwen38-flash-next-iq3xxs.md) — cold stage ticket-complete except the download lifetime; the reconnect race took two rounds |
 
 ### opencode-go (cloud) models
 
