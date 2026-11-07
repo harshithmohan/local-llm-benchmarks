@@ -6,12 +6,12 @@ Measured, tuned fork of [Strata](strata.md) by [DevDock-AI/Speedy](https://githu
 
 - **Production defaults.** The engine applies 12 built-in production defaults at startup; `STRATA_UPSTREAM_DEFAULTS=1` turns them off. Do not set that switch on a served entry.
 - **MTP.** The 1x preset recommends MTP on this 12 GB card (`--mtp <mtp>/rt`); DFlash2 is compiled in but is not the recommended drafter here.
-- **Runtime flags.** `--kv-resident`, `--conversation-cache-mib`, `--adapt-async`, `--adapt-swaps` and `--pool-affinity` are Speedy-specific; the preset's `env` block carries the rest. Add `STRATA_KEEP_EMPTY_TURNS=1` for parity with the Strata entry.
+- **Runtime flags.** `--kv-resident`, `--conversation-cache-mib`, `--adapt-async`, `--adapt-swaps` and `--pool-affinity` are Speedy-specific; the preset's `env` block carries the rest. Put `STRATA_KEEP_EMPTY_TURNS=1` in the llama-swap entry `env:`, not the config JSON; `serve/frontend.py` reads it from the server process before the engine is spawned.
 - **Vision.** The engine accepts `--vision`, but the release does not ship the separate `strata-vision` reader. Place a CLI/protocol-compatible reader at the engine-folder root (not `build/`) and add the `vision` block.
 - **API.** Same as Strata: no raw `/v1/completions`; benchmark through `/v1/chat/completions` with the chat template applied.
 
 ## Measurement
 
-Rows are on the [Qwen3.8-Flash-Next model page](../models/rig1-3060/qwen38-flash-next.md), measured under the Strata protocol with a derived `--prompt-cache 0` config: two passes, second recorded, `cache_n` 0 and `predicted_n` 512. No request overrides; served sampling is the config's.
+Rows are on the [Qwen3.8-Flash-Next](../models/rig1-3060/qwen38-flash-next.md) and [Swift-1.5-Qwen3.8-Flash-Next](../models/rig1-3060/swift-qwen38-flash-next.md) model pages, measured under the Strata protocol with a derived `--prompt-cache 0` config: two passes, second recorded, `cache_n` 0 and `predicted_n` 512. No request overrides; served sampling is the config's.
 
-Config: [Qwen3.8-Flash-Next + Speedy](../models/rig1-3060/qwen38-flash-next.md).
+Configs: [Qwen3.8-Flash-Next + Speedy](../models/rig1-3060/qwen38-flash-next.md) and [Swift-1.5-Qwen3.8-Flash-Next + Speedy](../models/rig1-3060/swift-qwen38-flash-next.md).
