@@ -16,7 +16,7 @@ Rig 1 was first benchmarked 2026-09-10; the engines used on each rig are listed 
 - **ik-llama.cpp** ([ikawrakow/ik_llama.cpp](https://github.com/ikawrakow/ik_llama.cpp), Rig 1) - Ilya Kawrakow's performance fork of llama.cpp. Flag syntax: [engine-notes/ik-llama.md](engine-notes/ik-llama.md).
 - **llama.cpp (moe-cache fork)** ([GenerelSchwerz/llama.cpp](https://github.com/GenerelSchwerz/llama.cpp), branch `moe-cache`, both rigs) - a llama.cpp fork adding a dynamic CUDA expert cache (`--moe-expert-cache-size`; no profile/trace step needed) and an opt-in generic hybrid CPU/GPU executor (`--moe-hybrid`) with model-bound expert profiles; while the cache is enabled it overrides `-ncmoe` placement. Flags and the `--experimental-logs` validation recipe: [engine-notes/moe-cache-fork.md](engine-notes/moe-cache-fork.md).
 - **Strata** ([Niko1221/Strata](https://github.com/Niko1221/Strata), Rig 1) - a llama.cpp-derived engine that runs Qwen3.8-Flash-Next from a *pack* (expert rows indexed on the SSD, all experts pinned in host RAM, an adaptive VRAM expert cache) behind its own OpenAI/Anthropic API server. Not a `llama-server` build: its rows are measured through Strata's own `/v1/chat/completions` route with a chat template always applied, so they are not directly comparable with the llama.cpp rows above. Flags, the KV modes and the llama.cpp flag mapping: [engine-notes/strata.md](engine-notes/strata.md).
-- **Speedy** ([DevDock-AI/Speedy](https://github.com/DevDock-AI/Speedy), Rig 1) - a measured fork of Strata (base v0.2.7.1) with built-in production defaults, an MTP drafter and the same pack/API surface. Flags and quirks: [engine-notes/speedy.md](engine-notes/speedy.md); recommended config and rows: [models/rig1-3060/qwen38-flash-next.md](models/rig1-3060/qwen38-flash-next.md).
+- **Speedy** ([DevDock-AI/Speedy](https://github.com/DevDock-AI/Speedy), Rig 1) - a measured fork of Strata with built-in production defaults, an MTP drafter and the same pack/API surface. Flags and quirks: [engine-notes/speedy.md](engine-notes/speedy.md); recommended config and rows: [models/rig1-3060/qwen38-flash-next.md](models/rig1-3060/qwen38-flash-next.md).
 
 Current per-rig engine pins (build ids with dates) live on the rig pages: [rig1-3060.md](rig1-3060.md), [rig2-3090.md](rig2-3090.md).
 
@@ -100,7 +100,7 @@ External repositories referenced on these pages.
 - [GenerelSchwerz/llama.cpp](https://github.com/GenerelSchwerz/llama.cpp) - moe-cache fork (dynamic CUDA expert cache), branch `moe-cache`
 - [ikawrakow/ik_llama.cpp](https://github.com/ikawrakow/ik_llama.cpp) - ik-llama.cpp performance fork
 - [Niko1221/Strata](https://github.com/Niko1221/Strata) - pack-based Qwen3.8-Flash-Next engine with its own API server (Rig 1)
-- [DevDock-AI/Speedy](https://github.com/DevDock-AI/Speedy) - tuned Strata fork (base v0.2.7.1) with MTP and production defaults (Rig 1)
+- [DevDock-AI/Speedy](https://github.com/DevDock-AI/Speedy) - tuned Strata fork with MTP and production defaults (Rig 1)
 - [syv-ai/HyperQwen](https://github.com/syv-ai/HyperQwen) - vLLM container stack (Rig 2 Qwen3.8-27B W4A16 and Swift-1.5-INT4)
 - [da3dsoul/Qwen3.8-vLLM-KVarN-MTP-Arc-Experiments](https://github.com/da3dsoul/Qwen3.8-vLLM-KVarN-MTP-Arc-Experiments) - source of the long-context refactor prompt and of the tuning experiments tested in [experiments/](experiments/)
 - [Zagitta/gpu-unlock](https://github.com/Zagitta/gpu-unlock) - GA102/GA103/GA104/GA106 FP/BF16 issue-rate unlock, used on both rigs
