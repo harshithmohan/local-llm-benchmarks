@@ -9,7 +9,7 @@ Updated: 2026-11-07 · [full experiment log](archive/swift-qwen38-flash-next.md)
 | Config | ctx | engine | drafter | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | GSQ-RCO IQ3_XXS | 204800 | Strata | MTP | 1094.0 | **63.6** | 11393 MiB | `--kv int8`, CPU vision encoder, 1639 slots / 2.70 GiB cache |
-| GSQ-RCO IQ3_XXS + MTP | 204800 | Speedy 0.3.1 | MTP | 1248.2 | **73.3** | 11325 MiB | `--kv int8`, CPU vision encoder, 3274 slots / 5.35 GiB cache (bench shape) |
+| GSQ-RCO IQ3_XXS + MTP | 204800 | Speedy | MTP | 1248.2 | **73.3** | 11325 MiB | `--kv int8`, CPU vision encoder, 3274 slots / 5.35 GiB cache (bench shape) |
 
 ## Configs
 
@@ -38,7 +38,7 @@ Updated: 2026-11-07 · [full experiment log](archive/swift-qwen38-flash-next.md)
 
 Entry env: `STRATA_KEEP_EMPTY_TURNS=1`. Config JSON `env`: `STRATA_PREFILL_LEND_PCT=95`, `STRATA_EXPDEC=1`, `STRATA_QSA_SPLIT_ATTN=1`, `STRATA_ROUTE_PRIOR=1.5`, `STRATA_PF_SMALL=0`.
 
-### GSQ-RCO IQ3_XXS + MTP - Speedy 0.3.1, 204800
+### GSQ-RCO IQ3_XXS + MTP - Speedy pack engine, 204800
 
     {
       "exe": "<speedy>/build/strata",
@@ -79,6 +79,6 @@ Real-task timing test of a long-context code-refactor task ([test-prompts.md](..
 | Config | ctx | engine | drafter | prompt | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | GSQ-RCO IQ3_XXS | 204800 | Strata | MTP | ~60K | 1134.3 | **53.6** | 11393 MiB | 59802-token prompt, draft 183/352 |
-| GSQ-RCO IQ3_XXS + MTP | 204800 | Speedy 0.3.1 | MTP | ~60K | 1291.1 | **73.6** | 11325 MiB | 59762-token prompt, draft 328/432 |
+| GSQ-RCO IQ3_XXS + MTP | 204800 | Speedy | MTP | ~60K | 1291.1 | **73.6** | 11325 MiB | 59762-token prompt, draft 328/432 |
 | GSQ-RCO IQ3_XXS | 204800 | Strata | MTP | ~120K | 1110.2 | **52.7** | 11393 MiB | 119344-token prompt, draft 185/320 |
-| GSQ-RCO IQ3_XXS + MTP | 204800 | Speedy 0.3.1 | MTP | ~120K | 1253.6 | **73.7** | 11325 MiB | 119304-token prompt, draft 334/443 |
+| GSQ-RCO IQ3_XXS + MTP | 204800 | Speedy | MTP | ~120K | 1253.6 | **73.7** | 11325 MiB | 119304-token prompt, draft 334/443 |

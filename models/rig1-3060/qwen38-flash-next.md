@@ -11,8 +11,8 @@ Two pack-engine builds are recommended: Strata 0.2.13 with DFlash2 and Speedy 0.
 | Config | ctx | engine | drafter | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | GSQ-RCO IQ3_XXS | 204800 | Strata | DFlash2 | 1210.1 | **59.1** | 11261 MiB | `--kv int8`, CPU vision encoder, 1910 slots / 3.14 GiB cache |
-| GSQ-RCO IQ3_XXS + MTP | 204800 | Speedy 0.3.1 | MTP | 1241.2 | **83.7** | 11339 MiB | `--kv int8`, CPU vision encoder, 3276 slots / 5.35 GiB cache (bench shape) |
-| UD-IQ4_XS + MTP | 262144 | Speedy 0.3.1 | MTP | 1024.5 | **48.8** | 11314 MiB | `--kv int8`, CPU vision encoder, 1963 slots / 4.52 GiB cache (bench shape) |
+| GSQ-RCO IQ3_XXS + MTP | 204800 | Speedy | MTP | 1241.2 | **83.7** | 11339 MiB | `--kv int8`, CPU vision encoder, 3276 slots / 5.35 GiB cache (bench shape) |
+| UD-IQ4_XS + MTP | 262144 | Speedy | MTP | 1024.5 | **48.8** | 11314 MiB | `--kv int8`, CPU vision encoder, 1963 slots / 4.52 GiB cache (bench shape) |
 
 ## Configs
 
@@ -43,7 +43,7 @@ Two pack-engine builds are recommended: Strata 0.2.13 with DFlash2 and Speedy 0.
 
 Entry env: `STRATA_KEEP_EMPTY_TURNS=1`. Config JSON `env`: `STRATA_PREFILL_LEND_PCT=95`, `STRATA_EXPDEC=1`, `STRATA_QSA_SPLIT_ATTN=1`, `STRATA_ROUTE_PRIOR=1.5`, `STRATA_PF_SMALL=0`.
 
-### GSQ-RCO IQ3_XXS + MTP - Speedy 0.3.1, 204800
+### GSQ-RCO IQ3_XXS + MTP - Speedy pack engine, 204800
 
     {
       "exe": "<speedy>/build/strata",
@@ -77,7 +77,7 @@ Entry env: `STRATA_KEEP_EMPTY_TURNS=1`. Config JSON `env`: `STRATA_PREFILL_LEND_
 
 Entry env: `STRATA_KEEP_EMPTY_TURNS=1`. Config JSON `env`: `STRATA_ROUTE_TAIL_SKIP=0`, `STRATA_PREFILL_CPU_SHARE=auto`, `STRATA_PIN_BY_NEED=1`, `STRATA_EXPDEC=1`, `STRATA_EXCHANGE_ROTATE=1`, `STRATA_ATTN_DAILY=1`, `STRATA_VERIFY_DEFER_CPU=1`, `STRATA_VERIFY_DEFER_CPU_BELOW=0.1`, `STRATA_PROMPT_ATTN_IMMA=1`, `STRATA_KV_PREFETCH=1`, `STRATA_PF_GROUP_SCRATCH=1`, `STRATA_PF_HC_REGION=1`, `STRATA_HC_Q8=1`.
 
-### UD-IQ4_XS + MTP - Speedy 0.3.1, 262144
+### UD-IQ4_XS + MTP - Speedy pack engine, 262144
 
     {
       "exe": "<speedy>/build/strata",
@@ -120,8 +120,8 @@ Real-task timing test of a long-context code-refactor task ([test-prompts.md](..
 | Config | ctx | engine | drafter | prompt | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | GSQ-RCO IQ3_XXS | 204800 | Strata | DFlash2 | ~60K | 1200.4 | **59.4** | 11261 MiB | 59802-token prompt, draft 227/349 |
-| GSQ-RCO IQ3_XXS + MTP | 204800 | Speedy 0.3.1 | MTP | ~60K | 1288.0 | **67.2** | 11339 MiB | 59762-token prompt, draft ~65-69% |
-| UD-IQ4_XS + MTP | 262144 | Speedy 0.3.1 | MTP | ~60K | 1134.7 | **56.8** | 11332 MiB | 59762-token prompt, draft 341/430 |
+| GSQ-RCO IQ3_XXS + MTP | 204800 | Speedy | MTP | ~60K | 1288.0 | **67.2** | 11339 MiB | 59762-token prompt, draft ~65-69% |
+| UD-IQ4_XS + MTP | 262144 | Speedy | MTP | ~60K | 1134.7 | **56.8** | 11332 MiB | 59762-token prompt, draft 341/430 |
 | GSQ-RCO IQ3_XXS | 204800 | Strata | DFlash2 | ~120K | 1155.1 | **52.5** | 11261 MiB | 119344-token prompt, draft 180/305 |
-| GSQ-RCO IQ3_XXS + MTP | 204800 | Speedy 0.3.1 | MTP | ~120K | 1252.5 | **67.8** | 11339 MiB | 119304-token prompt, draft 70-77% |
-| UD-IQ4_XS + MTP | 262144 | Speedy 0.3.1 | MTP | ~120K | 1123.9 | **54.3** | 11330 MiB | 119304-token prompt, draft 328/450 |
+| GSQ-RCO IQ3_XXS + MTP | 204800 | Speedy | MTP | ~120K | 1252.5 | **67.8** | 11339 MiB | 119304-token prompt, draft 70-77% |
+| UD-IQ4_XS + MTP | 262144 | Speedy | MTP | ~120K | 1123.9 | **54.3** | 11330 MiB | 119304-token prompt, draft 328/450 |
