@@ -34,3 +34,5 @@ The **parameter set is the unit**: each card covers one quant of one model, and 
 |---|---|---|---|---|---|---|---|---|
 | DeepSeek V4.1 Flash | — | high | converged: stage 1 | 99 / 62 | 100 / 71 | — | 19.8 | [card](scorecards/deepseek-v4.1-flash.md) — converged in one round; B 71 held by polish the note never named |
 | MiMo-V2.6-Flash | — | default | not converged (34/37) | 80 / 44.5 | 84 / 78.5 | 92 / 72.5 | 47.7 | [card](scorecards/mimo-v2.6-flash.md) — the reconnect reset and the filtered lock control survived both rounds |
+| Qwen3.8 Flash | — | xhigh | not converged (35/37) | 91 / 60.5 | 92 / 65.5 | 92 / 71.5 | 33.2 | [card](scorecards/qwen3.8-flash.md) — cold stage already ticket-solid at A 91; both reconnect specs survived both repair rounds |
+| Claude Haiku 5.5 | — | xhigh | converged: stage 1 | 99 / 58 | 100 / 79.5 | — | 21.6 | [card](scorecards/claude-haiku-5-5.md) — converged in one round; B 79.5 held by four static polish gaps |
