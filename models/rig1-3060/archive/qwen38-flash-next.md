@@ -613,6 +613,33 @@ These rows have vision enabled (CPU encoder); an earlier no-vision pass recorded
 
 Against `GSQ-RCO IQ3_XXS + MTP` on the same Speedy build (1241.2 / 83.7, 1288.0 / 67.2, 1252.5 / 67.8): UD-IQ4_XS is 17.5% / 12.2% / 10.4% lower on prefill and 20.3% / 23.4% / 24.8% lower on decode. It is a smaller-file alternative, not a speed win.
 
+## Strata 0.2.19 / engine 0.1.65 (2026-11-22)
+
+Retired the 0.2.13 rows. Same protocol as the card: `--prompt-cache 0`, `cache_n` 0, `predicted_n` 512, cold load per prompt, second pass recorded. The 0.2.13 card's `--prefill auto` resolved to 6144 on the base entry; 0.2.19's `auto` undersizes the cache to 1804 slots and a 3584 chunk, so the served config pins `--prefill 6144`.
+
+### 10K (retired)
+
+| engine | chunk | prefill t/s | decode t/s | VRAM | Notes |
+| --- | --- | --- | --- | --- | --- |
+| Strata 0.2.13 | auto (6144) | 1210.1 | **59.1** | 11261 MiB | 10554-token prompt |
+| Strata 0.2.19 | 6144 | 1330.2 | **54.9** | 11011 MiB | 10554-token prompt, draft 179/316; pass 1 1334.1 / 54.5 |
+
+### 0.2.13 long-context baseline (retired)
+
+| Config | ctx | engine | drafter | prompt | prefill t/s | decode t/s | VRAM | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| GSQ-RCO IQ3_XXS | 204800 | Strata 0.2.13 | DFlash2 | ~60K | 1200.4 | **59.4** | 11261 MiB | 59802-token prompt, draft 227/349 |
+| GSQ-RCO IQ3_XXS | 204800 | Strata 0.2.13 | DFlash2 | ~120K | 1155.1 | **52.5** | 11261 MiB | 119344-token prompt, draft 180/305 |
+
+### 0.2.19: auto vs pinned
+
+| chunk | expert cache | prompt chunk | ~60K | ~120K | VRAM | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| `auto` | 1804 slots / 2.97 GiB | 3584 / 512-slot ring | 1241.4 / **51.4** | 1190.0 / **55.4** | 11003 MiB | draft 212/335, 235/333 |
+| `6144` | 3147 slots / 5.14 GiB | 6144 | 1280.2 / **56.8** | 1222.2 / **58.8** | 11011 MiB | draft 206/337, 231/333; 920 MiB free |
+
+`STRATA_NV_CHUNK=0` did not change the auto result (still 3584/512, 1804 slots). The 0.2.19 auto chunk undersizes the expert cache; the explicit pin is the fix. Decode tracks draft acceptance, not prefill.
+
 ## Conclusions
 
 - The expert cache is the dominant lever on this model: it turns the ~13 t/s `-ncmoe` baseline into 20-22 t/s decode, with `--moe-expert-cache-size 48` + `-b/-ub 1024` the best prefill/decode balance at 80k.

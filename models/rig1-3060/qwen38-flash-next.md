@@ -1,8 +1,8 @@
 # Qwen3.8-Flash-Next (Rig 1) - recommended configs
 
-Updated: 2026-11-08 · [full experiment log](archive/qwen38-flash-next.md) · [methodology](../../methodology.md)
+Updated: 2026-11-22 · [full experiment log](archive/qwen38-flash-next.md) · [methodology](../../methodology.md)
 
-Two pack-engine builds are recommended: Strata 0.2.13 with DFlash2 and Speedy 0.3.1 with MTP. A 4-bit UD-IQ4_XS variant is measured as a slower alternative.
+Two pack-engine builds are recommended: Strata 0.2.19 with DFlash2 and Speedy 0.3.1 with MTP. A 4-bit UD-IQ4_XS variant is measured as a slower alternative.
 
 `GSQ-RCO` quant `IQ3_XXS` (the served quant: a 75.8 GB 2-shard build of these weights) (`qwen4exp`, native ctx 262144, 512 experts, a separate MTP head from the ggml-org repo - the GSQ-RCO release ships none). 177B total = 125B compute + 51B n-gram embedding table + 4B MTP; 48 layers = 12 x (3 x Gated DeltaNet -> MoE + 1 x Qwen Sparse Attention -> MoE), 10 routed + 1 shared expert per token. Model card: [ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF](https://huggingface.co/ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF) (`GSQ-RCO` quants); MTP head: [ggml-org/Qwen3.8-Flash-Next-GGUF](https://huggingface.co/ggml-org/Qwen3.8-Flash-Next-GGUF).
 
@@ -10,7 +10,7 @@ Two pack-engine builds are recommended: Strata 0.2.13 with DFlash2 and Speedy 0.
 
 | Config | ctx | engine | drafter | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| GSQ-RCO IQ3_XXS | 204800 | Strata | DFlash2 | 1210.1 | **59.1** | 11261 MiB | `--kv int8`, CPU vision encoder, 1910 slots / 3.14 GiB cache |
+| GSQ-RCO IQ3_XXS | 204800 | Strata | DFlash2 | 1330.2 | **54.9** | 11011 MiB | `--kv int8`, CPU vision encoder, 3147 slots / 5.14 GiB cache |
 | GSQ-RCO IQ3_XXS + MTP | 204800 | Speedy | MTP | 1241.2 | **83.7** | 11339 MiB | `--kv int8`, CPU vision encoder, 3276 slots / 5.35 GiB cache (bench shape) |
 | UD-IQ4_XS + MTP | 262144 | Speedy | MTP | 1024.5 | **48.8** | 11314 MiB | `--kv int8`, CPU vision encoder, 1963 slots / 4.52 GiB cache (bench shape) |
 
@@ -24,7 +24,7 @@ Two pack-engine builds are recommended: Strata 0.2.13 with DFlash2 and Speedy 0.
                "--native", "<models>/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf",
                "--ple-gguf", "<models>/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00002-of-00002.gguf",
                "--expert-profile", "<engine>/data/expert-profile.bin", "--expert-cache", "auto",
-               "--prefill", "auto", "--spec", "4", "--spec-min-p", "0.5",
+               "--prefill", "6144", "--spec", "4", "--spec-min-p", "0.5",
                "--draft", "dflash2", "--draft-model", "<dflash2>/qwen38-dflash2-q4s.pack",
                "--draft-fallback", "none", "--mtp-draft-vocab", "<engine>/data/draft_vocab_en.bin",
                "--max-context", "204800", "--kv", "int8", "--vision", "--prompt-cache-every", "5632"],
@@ -119,9 +119,9 @@ Real-task timing test of a long-context code-refactor task ([test-prompts.md](..
 
 | Config | ctx | engine | drafter | prompt | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| GSQ-RCO IQ3_XXS | 204800 | Strata | DFlash2 | ~60K | 1200.4 | **59.4** | 11261 MiB | 59802-token prompt, draft 227/349 |
+| GSQ-RCO IQ3_XXS | 204800 | Strata | DFlash2 | ~60K | 1280.2 | **56.8** | 11011 MiB | 59802-token prompt, draft 193/337 |
 | GSQ-RCO IQ3_XXS + MTP | 204800 | Speedy | MTP | ~60K | 1288.0 | **67.2** | 11339 MiB | 59762-token prompt, draft ~65-69% |
 | UD-IQ4_XS + MTP | 262144 | Speedy | MTP | ~60K | 1134.7 | **56.8** | 11332 MiB | 59762-token prompt, draft 341/430 |
-| GSQ-RCO IQ3_XXS | 204800 | Strata | DFlash2 | ~120K | 1155.1 | **52.5** | 11261 MiB | 119344-token prompt, draft 180/305 |
+| GSQ-RCO IQ3_XXS | 204800 | Strata | DFlash2 | ~120K | 1222.2 | **58.8** | 11011 MiB | 119344-token prompt, draft 231/333 |
 | GSQ-RCO IQ3_XXS + MTP | 204800 | Speedy | MTP | ~120K | 1252.5 | **67.8** | 11339 MiB | 119304-token prompt, draft 70-77% |
 | UD-IQ4_XS + MTP | 262144 | Speedy | MTP | ~120K | 1123.9 | **54.3** | 11330 MiB | 119304-token prompt, draft 328/450 |

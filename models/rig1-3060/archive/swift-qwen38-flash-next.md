@@ -47,3 +47,30 @@ Every pass finished on `length` with `cache_n` 0 after one cold load; two measur
 ### Load shape on 0.1.52
 
 `expert cache auto` reports 1352 slots from free VRAM (+73 MiB for the 40,525-token draft head), then the profile ranks up to 1784 slots (2.93 GiB, PROFILE policy, no eviction), and `--prefill auto` reports `prompt chunk auto: 5632 tokens, a 227-slot ring`. The engine warns `only 460 MiB of VRAM free at the start of this request (below 512 MiB)` and suggests `--vram-reserve-mib 768`; the flag is deliberately not set - the base model's config at the same window runs in the same 322-462 MiB band and warns identically, so this is the served shape, not a config defect. Adding it would cost cache slots.
+
+## Strata 0.2.19 / engine 0.1.65 (2026-11-22)
+
+Retired the 0.2.13 rows. Same protocol as the card: `--prompt-cache 0`, `cache_n` 0, `predicted_n` 512, cold load per prompt, second pass recorded. The 0.2.13 card's `--prefill auto` resolved to 4864 on the Swift entry; 0.2.19's `auto` undersizes the cache to 1536 slots and a 2304-token chunk, so the served config pins `--prefill 4864`.
+
+### 10K (retired)
+
+| engine | chunk | prefill t/s | decode t/s | VRAM | Notes |
+| --- | --- | --- | --- | --- | --- |
+| Strata 0.2.13 | auto (4864) | 1094.0 | **63.6** | 11393 MiB | 10554-token prompt |
+| Strata 0.2.19 | 4864 | 1272.8 | **59.1** | 11101 MiB | 10554-token prompt, draft 214/378; pass 1 1280.5 / 59.4 |
+
+### 0.2.13 long-context baseline (retired)
+
+| Config | ctx | engine | drafter | prompt | prefill t/s | decode t/s | VRAM | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| GSQ-RCO IQ3_XXS | 204800 | Strata 0.2.13 | MTP | ~60K | 1134.3 | **53.6** | 11393 MiB | 59802-token prompt, draft 183/352 |
+| GSQ-RCO IQ3_XXS | 204800 | Strata 0.2.13 | MTP | ~120K | 1110.2 | **52.7** | 11393 MiB | 119344-token prompt, draft 185/320 |
+
+### 0.2.19: auto vs pinned
+
+| chunk | expert cache | prompt chunk | ~60K | ~120K | VRAM | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| `auto` | 1536 slots / 2.53 GiB | 2304 / 8-slot ring | 916.1 / **51.7** | 887.7 / **51.1** | 11097 MiB | MTP layer 1035 MiB; draft 224/383, 227/380 |
+| `4864` | 2990 slots / 4.89 GiB | 4864 | 1252.9 / **59.7** | 1196.6 / **57.5** | 11101 MiB | MTP layer 837 MiB; draft 225/346, 231/389; 830 MiB free |
+
+The 0.2.19 auto chunk undersizes the expert cache and costs ~20% prefill at both depths; the explicit pin restores the 0.2.13 chunk and removes the regression. Decode tracks draft acceptance, not prefill.
