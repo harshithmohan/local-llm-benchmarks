@@ -74,3 +74,17 @@ Retired the 0.2.13 rows. Same protocol as the card: `--prompt-cache 0`, `cache_n
 | `4864` | 2990 slots / 4.89 GiB | 4864 | 1252.9 / **59.7** | 1196.6 / **57.5** | 11101 MiB | MTP layer 837 MiB; draft 225/346, 231/389; 830 MiB free |
 
 The 0.2.19 auto chunk undersizes the expert cache and costs ~20% prefill at both depths; the explicit pin restores the 0.2.13 chunk and removes the regression. Decode tracks draft acceptance, not prefill.
+
+## Speedy 0.5.5 + MTP (2026-11-26)
+
+Same Swift pack and base-model MTP head; `--prompt-cache 0` bench config, cold load per prompt, two passes, second recorded, `cache_n` 0 and `predicted_n` 512.
+
+| prompt | prompt tokens | prefill t/s | decode t/s | draft accepted |
+| --- | --- | --- | --- | --- |
+| 10k | 10514 | 1247.8 | **80.1** | 339/433 |
+| 60k | 59762 | 1289.2 | **74.1** | 328/437 |
+| 120k | 119304 | 1249.8 | **66.9** | 312/427 |
+
+Loads 35-41 s; VRAM 11215 MiB. The 10K pass 1 stopped at 53 tokens; pass 2 was valid.
+
+Against 0.4.7 on the same prompts (10K 1241.3 / 86.7, 60K 1289.9 / 67.6, 120K 1250.8 / 65.3): prefill unchanged, 60K decode +9.6%, 120K +2.5%. The 10K decode sits inside this model's session band and is treated as noisy. llama-swap cold load on the Swift entry was 38.7 s and returned `SWIFT-READY`; the startup log showed `session is up` and only the harmless CPU `strata-vision` CUDA-init line.

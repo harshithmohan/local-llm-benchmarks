@@ -1,8 +1,8 @@
 # Qwen3.8-Flash-Next (Rig 1) - recommended configs
 
-Updated: 2026-11-22 · [full experiment log](archive/qwen38-flash-next.md) · [methodology](../../methodology.md)
+Updated: 2026-11-26 · [full experiment log](archive/qwen38-flash-next.md) · [methodology](../../methodology.md)
 
-Two pack-engine builds are recommended: Strata 0.2.19 with DFlash2 and Speedy 0.3.1 with MTP. A 4-bit UD-IQ4_XS variant is measured as a slower alternative.
+Two pack-engine builds are recommended: Strata 0.2.19 with DFlash2 and Speedy 0.5.5 with MTP. A 4-bit UD-IQ4_XS variant is measured as a slower alternative.
 
 `GSQ-RCO` quant `IQ3_XXS` (the served quant: a 75.8 GB 2-shard build of these weights) (`qwen4exp`, native ctx 262144, 512 experts, a separate MTP head from the ggml-org repo - the GSQ-RCO release ships none). 177B total = 125B compute + 51B n-gram embedding table + 4B MTP; 48 layers = 12 x (3 x Gated DeltaNet -> MoE + 1 x Qwen Sparse Attention -> MoE), 10 routed + 1 shared expert per token. Model card: [ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF](https://huggingface.co/ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF) (`GSQ-RCO` quants); MTP head: [ggml-org/Qwen3.8-Flash-Next-GGUF](https://huggingface.co/ggml-org/Qwen3.8-Flash-Next-GGUF).
 
@@ -11,8 +11,8 @@ Two pack-engine builds are recommended: Strata 0.2.19 with DFlash2 and Speedy 0.
 | Config | ctx | engine | drafter | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | GSQ-RCO IQ3_XXS | 204800 | Strata | DFlash2 | 1330.2 | **54.9** | 11011 MiB | `--kv int8`, CPU vision encoder, 3147 slots / 5.14 GiB cache |
-| GSQ-RCO IQ3_XXS + MTP | 204800 | Speedy | MTP | 1241.2 | **83.7** | 11339 MiB | `--kv int8`, CPU vision encoder, 3276 slots / 5.35 GiB cache (bench shape) |
-| UD-IQ4_XS + MTP | 262144 | Speedy | MTP | 1024.5 | **48.8** | 11314 MiB | `--kv int8`, CPU vision encoder, 1963 slots / 4.52 GiB cache (bench shape) |
+| GSQ-RCO IQ3_XXS | 262144 | Speedy | MTP | 1252.5 | **74.9** | 11219 MiB | `--kv int8`, CPU vision encoder |
+| UD-IQ4_XS | 262144 | Speedy | MTP | 1025.0 | **65.5** | 11339 MiB | `--kv int8`, CPU vision encoder |
 
 ## Configs
 
@@ -43,7 +43,7 @@ Two pack-engine builds are recommended: Strata 0.2.19 with DFlash2 and Speedy 0.
 
 Entry env: `STRATA_KEEP_EMPTY_TURNS=1`. Config JSON `env`: `STRATA_PREFILL_LEND_PCT=95`, `STRATA_EXPDEC=1`, `STRATA_QSA_SPLIT_ATTN=1`, `STRATA_ROUTE_PRIOR=1.5`, `STRATA_PF_SMALL=0`.
 
-### GSQ-RCO IQ3_XXS + MTP - Speedy pack engine, 204800
+### GSQ-RCO IQ3_XXS - Speedy pack engine, 262144
 
     {
       "exe": "<speedy>/build/strata",
@@ -53,7 +53,7 @@ Entry env: `STRATA_KEEP_EMPTY_TURNS=1`. Config JSON `env`: `STRATA_PREFILL_LEND_
                "--expert-profile", "<speedy>/data/expert-profile.bin", "--expert-cache", "auto",
                "--prefill", "auto", "--spec", "4", "--spec-min-p", "0.5",
                "--mtp", "<mtp>/rt",
-               "--max-context", "204800", "--kv", "int8",
+               "--max-context", "262144", "--kv", "int8",
                "--kv-resident", "20480", "--vram-reserve-mib", "700",
                "--conversation-cache-mib", "8192", "--adapt-async", "1",
                "--adapt-swaps", "80", "--pool-affinity", "measure", "--vision"],
@@ -64,7 +64,8 @@ Entry env: `STRATA_KEEP_EMPTY_TURNS=1`. Config JSON `env`: `STRATA_PREFILL_LEND_
       "answer_room": false,
       "fit_max_tokens": true,
       "repeat_stop_tokens": 0,
-      "reasoning_effort": "none",
+      "reasoning_effort": "high",
+      "reasoning_effort_floor": "off",
       "reasoning_budget_tokens": 0,
       "reasoning_close_retry": false,
       "vision": {"exe": "<speedy>/strata-vision",
@@ -77,7 +78,7 @@ Entry env: `STRATA_KEEP_EMPTY_TURNS=1`. Config JSON `env`: `STRATA_PREFILL_LEND_
 
 Entry env: `STRATA_KEEP_EMPTY_TURNS=1`. Config JSON `env`: `STRATA_ROUTE_TAIL_SKIP=0`, `STRATA_PREFILL_CPU_SHARE=auto`, `STRATA_PIN_BY_NEED=1`, `STRATA_EXPDEC=1`, `STRATA_EXCHANGE_ROTATE=1`, `STRATA_ATTN_DAILY=1`, `STRATA_VERIFY_DEFER_CPU=1`, `STRATA_VERIFY_DEFER_CPU_BELOW=0.1`, `STRATA_PROMPT_ATTN_IMMA=1`, `STRATA_KV_PREFETCH=1`, `STRATA_PF_GROUP_SCRATCH=1`, `STRATA_PF_HC_REGION=1`, `STRATA_HC_Q8=1`.
 
-### UD-IQ4_XS + MTP - Speedy pack engine, 262144
+### UD-IQ4_XS - Speedy pack engine, 262144
 
     {
       "exe": "<speedy>/build/strata",
@@ -98,7 +99,8 @@ Entry env: `STRATA_KEEP_EMPTY_TURNS=1`. Config JSON `env`: `STRATA_ROUTE_TAIL_SK
       "answer_room": false,
       "fit_max_tokens": true,
       "repeat_stop_tokens": 0,
-      "reasoning_effort": "none",
+      "reasoning_effort": "high",
+      "reasoning_effort_floor": "off",
       "reasoning_budget_tokens": 0,
       "reasoning_close_retry": false,
       "vision": {"exe": "<speedy>/strata-vision",
@@ -120,8 +122,8 @@ Real-task timing test of a long-context code-refactor task ([test-prompts.md](..
 | Config | ctx | engine | drafter | prompt | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | GSQ-RCO IQ3_XXS | 204800 | Strata | DFlash2 | ~60K | 1280.2 | **56.8** | 11011 MiB | 59802-token prompt, draft 193/337 |
-| GSQ-RCO IQ3_XXS + MTP | 204800 | Speedy | MTP | ~60K | 1288.0 | **67.2** | 11339 MiB | 59762-token prompt, draft ~65-69% |
-| UD-IQ4_XS + MTP | 262144 | Speedy | MTP | ~60K | 1134.7 | **56.8** | 11332 MiB | 59762-token prompt, draft 341/430 |
+| GSQ-RCO IQ3_XXS | 262144 | Speedy | MTP | ~60K | 1293.0 | **80.8** | 11219 MiB | 59762-token prompt, draft 347/405 |
+| UD-IQ4_XS | 262144 | Speedy | MTP | ~60K | 1128.1 | **47.8** | 11339 MiB | 59762-token prompt, draft 291/476 |
 | GSQ-RCO IQ3_XXS | 204800 | Strata | DFlash2 | ~120K | 1222.2 | **58.8** | 11011 MiB | 119344-token prompt, draft 231/333 |
-| GSQ-RCO IQ3_XXS + MTP | 204800 | Speedy | MTP | ~120K | 1252.5 | **67.8** | 11339 MiB | 119304-token prompt, draft 70-77% |
-| UD-IQ4_XS + MTP | 262144 | Speedy | MTP | ~120K | 1123.9 | **54.3** | 11330 MiB | 119304-token prompt, draft 328/450 |
+| GSQ-RCO IQ3_XXS | 262144 | Speedy | MTP | ~120K | 1252.7 | **64.1** | 11215 MiB | 119304-token prompt, draft 306/469 |
+| UD-IQ4_XS | 262144 | Speedy | MTP | ~120K | 1120.7 | **46.9** | 11339 MiB | 119304-token prompt, draft ~58% |

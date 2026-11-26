@@ -640,6 +640,24 @@ Retired the 0.2.13 rows. Same protocol as the card: `--prompt-cache 0`, `cache_n
 
 `STRATA_NV_CHUNK=0` did not change the auto result (still 3584/512, 1804 slots). The 0.2.19 auto chunk undersizes the expert cache; the explicit pin is the fix. Decode tracks draft acceptance, not prefill.
 
+## Speedy 0.5.5 + MTP (2026-11-26)
+
+Upgraded the deployed Speedy tree from 0.4.7 to 0.5.5 (tag `1f172963`; release `strata-linux-x64-rtx30.zip`, 53,414,695 B, sha256 `d9553aed601b3eb6eede222d95edebadb8f56c77cff0c341f3e70838cfab4e04`; engine build string remains `0.1.53`). At upgrade time the three production configs added one line, `"reasoning_effort_floor": "off"`, to preserve the pre-0.5.5 thinking-off behavior; no other config change. The A/B rows use the derived `--prompt-cache 0` configs, cold load per prompt, two passes, second recorded, `cache_n` 0 and `predicted_n` 512. The served default was later changed from `reasoning_effort:"none"` to `"high"` (the Qwen template's xhigh level) with the same zero budget; the floor pin remains.
+
+| prompt | prompt tokens | base IQ3_XXS prefill / decode | base draft | UD-IQ4_XS prefill / decode | UD draft |
+| --- | --- | --- | --- | --- | --- |
+| 10k | 10514 | 1247.0 / **83.0** | 346/441 | 1025.0 / **65.5** | 333/454 |
+| 60k | 59762 | 1292.3 / **75.1** | 334/421 | 1128.1 / **47.8** | 291/476 |
+| 120k | 119304 | 1254.0 / **73.9** | 334/441 | 1120.7 / **46.9** | ~282/483 |
+
+Base loads were 30-41 s; UD loads 61-133 s. VRAM 11215 MiB (base) and 11339 MiB (UD). The first UD 120K pass read 1121.5 / 44.6; the rerun above is used. The base 10K pass 1 (19 tokens) and the UD 10K first pass 2 were discarded and re-run; every recorded row ended with 512 predicted tokens and `cache_n` 0.
+
+**Against 0.4.7 (same rig, same prompts):** base 10K 1240.5 / 77.0, 60K 1289.1 / 71.4, 120K 1253.1 / 64.1; UD 1023.3 / 68.4, 1129.7 / 50.7, 1122.1 / 51.8. Base decode gains +7.8% / +5.2% / +15.3% with prefill unchanged. UD prefill is unchanged but decode is -4.2% / -5.7% / -9.5%. A same-thermal-state 0.4.7 A/B on the 120K prompt (backup tree + its bench config) read 1126.2 / **51.3** (draft 323/457), and `STRATA_SUFFIX_NGRAM8=0` on 0.5.5 read 1120.6 / 48.1, so the UD drop is an engine-version regression rather than a config or suffix-ngram effect; it is accepted as a modest band and production tuning was not changed.
+
+**200K UD check:** the generated 263-repeat prompt tokenized to 200636 tokens and returned 512 tokens at 1096.5 t/s prefill / 45.8 t/s decode (wall 195 s), cold load 86.5 s, `cache_n` 0.
+
+**Serve/engine checks:** the deployed serve suite ran 1757 tests in 475.9 s with one failure and one error, both the known non-product results (`serve.test_update_check.Updater.test_git_update_and_rollback` needs `git`; `serve.test_server.IncrementalPrompts.test_turns` at `serve/test_server.py:2071`). llama-swap cold load on the base entry was 38.7 s (`READY`); a tool call returned `get_weather({"city":"Paris"})` with `finish_reason=tool_calls`; a 64x64 red PNG returned `Red` (usage 1048/2). The startup INFO line includes `tool_name_constraint`, and the CPU `strata-vision` helper still prints the harmless `ggml_cuda_init: failed to initialize CUDA` line.
+
 ## Conclusions
 
 - The expert cache is the dominant lever on this model: it turns the ~13 t/s `-ncmoe` baseline into 20-22 t/s decode, with `--moe-expert-cache-size 48` + `-b/-ub 1024` the best prefill/decode balance at 80k.
