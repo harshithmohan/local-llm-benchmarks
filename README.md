@@ -7,7 +7,7 @@ Benchmark reports for running local LLMs on two consumer GPUs, using three build
 - **Rig 1:** RTX 3060 12GB + i7-12700, 128 GB RAM; gpu-unlock [loaded at boot](https://github.com/Zagitta/gpu-unlock) since 2026-11-06 - hardware and build info in [rig1-3060.md](rig1-3060.md)
 - **Rig 2:** RTX 3090 24GB + Ryzen 7 5700X, 32 GB RAM; GA102 FP/BF16 issue rate unlocked at boot with [gpu-unlock](https://github.com/Zagitta/gpu-unlock) - hardware and build info in [rig2-3090.md](rig2-3090.md)
 
-Rig 1 was first benchmarked 2026-09-10; the engines used on each rig are listed below. Measurement methodology: [methodology.md](methodology.md); per-engine flags: [engine-notes/](engine-notes/). Known issues and gotchas: [issues.md](issues.md).
+Rig 1 was first benchmarked 2026-09-10; the engines used on each rig are listed below. Measurement methodology: [methodology.md](methodology.md); per-engine flags: [engine-notes/](engine-notes/). Known issues and gotchas: [issues.md](issues.md). Timing rows add `temperature: 0` only; quality suites keep their recommended/config sampling. Rows currently in these tables predate 2026-11-27 and were measured at served sampling - do not compare them directly with new temp-0 rows.
 
 ## Inference engines
 
@@ -57,7 +57,7 @@ Headline tables list only usable configs (full context, no rejected/OOM setups);
 | Gemma4-26B-A4B | Q4_K_M | moe-cache fork | 32768 | 1252 | **83.5** |
 | Cyber-Tiel-Coder-35B-A3B | UD-IQ4_XS | moe-cache fork | 262144 | 2201 | **64.2** |
 
-All rows here are measured on the 10k opencode session prompt ([test-prompts.md](test-prompts.md)) on the current engine pins (rig pages). The Gemma4 row is a chat-tuned config - not useful for coding on Rig 1.
+All rows here are measured on the 10k opencode session prompt ([test-prompts.md](test-prompts.md)) on the current engine pins (rig pages). These rows predate the 2026-11-27 temp-0 speed protocol. The Gemma4 row is a chat-tuned config - not useful for coding on Rig 1.
 
 ## Rig 2 results
 
@@ -69,14 +69,12 @@ Headline tables list only usable configs (full context, no rejected/OOM setups);
 | Qwen3.6-35B-A3B | UD-IQ4_XS | moe-cache fork | 524288 (YaRN 2x) | 4553 | **152.6** |
 | KAT-Coder-V2.5-Dev | APEX-I-Compact | moe-cache fork | 262144 | 5254 | **155.6** |
 | Qwen3.8-27B | W4A16-AutoRound-fast | vLLM | 167936 | 2604 | **120.4** |
-| Qwen3.8-27B | W4A16-AutoRound-fast | vLLM | 176128 | 2465 | **120.6** |
 | Qwen3.8-27B | W4A16-AutoRound-fast | vLLM | 262144 | 2403 | **101.8** |
 | Swift-1.5-Qwen3.8-27B | Swift-1.5-INT4-fast | vLLM | 167936 | 2494 | **118.8** |
-| Swift-1.5-Qwen3.8-27B | Swift-1.5-INT4-fast | vLLM | 176128 | 2433 | **107.7** |
 | Swift-1.5-Qwen3.8-27B | Swift-1.5-INT4-fast | vLLM | 262144 | 2374 | **97.6** |
 | Cyber-Tiel-Coder-35B-A3B | UD-Q4_K_XL | moe-cache fork | 262144 | 3766 | **148.9** |
 
-All rows here are measured on the 10k opencode session prompt ([test-prompts.md](test-prompts.md)) on the current engine pins (rig pages).
+All rows here are measured on the 10k opencode session prompt ([test-prompts.md](test-prompts.md)) on the current engine pins (rig pages). These rows predate the 2026-11-27 temp-0 speed protocol.
 
 ## Coding benchmark (shoko-logs)
 

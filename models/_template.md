@@ -2,6 +2,8 @@
 
 Audience: someone who wants to pick a config and replicate it in one glance. Rule of thumb - a fact belongs here only if it is specific to THIS model/config. Global protocol -> methodology.md §Measurement methods. Prompt history, retired engines, failed quants -> archive/<model>.md. Prompt texts -> test-prompts.md.
 
+Timing rows add `temperature: 0` only; reasoning effort and the rest of sampling stay at the served/config value. Rows recorded before 2026-11-27 used served sampling and are not directly comparable with new temp-0 rows.
+
 Public file: no host / ssh / docker / absolute-path ops info. Use <models>/ style placeholders. Name engines explicitly ("moe-cache fork", "stock"), never "both". -->
 
 # <Model> (Rig N) - recommended configs

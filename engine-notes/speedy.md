@@ -25,6 +25,6 @@ Measured, tuned fork of [Strata](strata.md) by [DevDock-AI/Speedy](https://githu
 
 ## Measurement
 
-Rows are on the [Qwen3.8-Flash-Next](../models/rig1-3060/qwen38-flash-next.md) and [Swift-1.5-Qwen3.8-Flash-Next](../models/rig1-3060/swift-qwen38-flash-next.md) model pages, measured under the Strata protocol with a derived `--prompt-cache 0` config: two passes, second recorded, `cache_n` 0 and `predicted_n` 512. No request overrides; the benchmark rows used the bench config's `reasoning_effort:"none"`; the served default is `high`/xhigh.
+Rows are on the [Qwen3.8-Flash-Next](../models/rig1-3060/qwen38-flash-next.md) and [Swift-1.5-Qwen3.8-Flash-Next](../models/rig1-3060/swift-qwen38-flash-next.md) model pages, measured under the Strata protocol with a derived `--prompt-cache 0` config: two passes, second recorded, `cache_n` 0 and `predicted_n` 512. New speed rows add `temperature: 0` only; reasoning effort and the rest of sampling stay at the served/config value. The rows currently on the model pages predate the 2026-11-27 temp-0 protocol and used the bench config's `reasoning_effort:"none"`; the served default is `high`/xhigh.
 
 Configs: [Qwen3.8-Flash-Next + Speedy](../models/rig1-3060/qwen38-flash-next.md) and [Swift-1.5-Qwen3.8-Flash-Next + Speedy](../models/rig1-3060/swift-qwen38-flash-next.md).

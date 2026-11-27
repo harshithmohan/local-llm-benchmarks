@@ -2,11 +2,11 @@
 
 How the recommended configs on the model pages were arrived at: which knobs to sweep, in what order, and the rules that decide a winner. This is the tuning layer between two other pages - measurement protocol (request shape, two-pass rule, VRAM, stability check) is in [methodology.md](methodology.md), and the per-engine flag vocabularies are in [engine-notes/](engine-notes/).
 
-Scope: both rigs, every engine. Engine labels are per-row and results are not interchangeable across engines. Representative sweeps live in the model pages and their `archive/<model>.md` logs; this page only states the procedure and the rules.
+Scope: both rigs, every engine. Engine labels are per-row and results are not interchangeable across engines. Representative sweeps live in the model pages and their `archive/<model>.md` logs; this page only states the procedure and the rules. Timing sweeps add `temperature: 0` only; reasoning effort and the rest of sampling stay at the server config. Sweeps recorded before 2026-11-27 used served sampling and are not directly comparable with new temp-0 sweeps.
 
 ## Sweep order
 
-Some settings are fixed starting points, not knobs: q8_0 KV (q4_0 only if VRAM absolutely forces it - see [KV cache type](#kv-cache-type)), full offload (`-ngl all`), `--threads` (12 on Rig 1, 8 on Rig 2), and the model card's server-side sampling. Start there, then sweep - each step constrains the next, and doing them out of order wastes cold loads:
+Some settings are fixed starting points, not knobs: q8_0 KV (q4_0 only if VRAM absolutely forces it - see [KV cache type](#kv-cache-type)), full offload (`-ngl all`), `--threads` (12 on Rig 1, 8 on Rig 2), and the model card's server-side sampling (timing sweeps override just `temperature` to 0; quality checks keep the full block). Start there, then sweep - each step constrains the next, and doing them out of order wastes cold loads:
 
 1. **`-b`/`-ub`** - the prefill lever; find the largest ubatch that loads and serves.
 2. **Expert-cache size** - the decode lever; raise it to the VRAM ceiling once `-ub` is fixed.

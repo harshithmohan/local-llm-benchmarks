@@ -101,6 +101,8 @@ That is the model's decision, not the runner's: nothing folds the conversation f
 
 Judging is blind; what the run keeps fixed is the sampling:
 
+- **Sampling is the served/recommended sampling**, not the timing protocol's `temperature: 0`. This is a quality/capability run; its scores are not comparable to a temp-0 timing row.
+
 - **One trajectory, no repeats.** See "Method" above. The reported numbers are the trajectory's own stage scores, not a median of independent runs.
 - **"Not converged" stands.** A trajectory still red after two repair rounds is recorded `not converged`. It is not re-run to look for a better sample, and it is never averaged with a converged one.
 

@@ -1,6 +1,6 @@
 # Test prompts
 
-Prompts used for benchmarking. The server test prompts below drive the prefill/decode timing runs. The 10k opencode session-context prompt is deliberately non-repetitive - repeated text can crash llama-server on the qwen4exp arch (see issues.md, PLE n-gram path). The long-context refactor prompts (60K and 120K) are near-repetitive on purpose: they are long-context stability + throughput tests, timed under the same protocol.
+Prompts used for benchmarking. The server test prompts below drive the prefill/decode timing runs. The 10k opencode session-context prompt is deliberately non-repetitive - repeated text can crash llama-server on the qwen4exp arch (see issues.md, PLE n-gram path). The long-context refactor prompts (60K and 120K) are near-repetitive on purpose: they are long-context stability + throughput tests, timed under the same protocol. Speed runs add `temperature: 0` only; reasoning effort and every other sampling field stay at the served/config value. These are not quality evals.
 
 ## Server test prompts (prefill/decode timing)
 
@@ -32,7 +32,7 @@ Unlike the prompts above, this one is deliberately near-repetitive - that is wha
 
 Notes for this prompt (request protocol is shared with the 10k prompt and defined in [methodology.md](methodology.md) §Measurement methods):
 
-- Send the generated `full_prompt.txt` text; only speed is measured - no output-quality passes.
+- Send the generated `full_prompt.txt` text; only speed is measured - no output-quality passes. Add `temperature: 0`; leave reasoning effort and the rest of sampling at the served/config value.
 - `ignore_eos: true` matters here: some engines emit EOS as the very first token on this prompt over the raw endpoint (stop_type eos, 1 predicted token, empty output) - Flash-Next (qwen4exp) does so even after the trailing closed fence is neutralized with a nonce, and the 35B moe-cache fork does so rarely (issues.md §5). The unified protocol sets it, so every pass decodes the full `n_predict` with real output and normal acceptance.
 - All pre-2026-09-29 long-context numbers used a single-pass, `/v1/chat/completions` protocol and are archived per model page; the conventions are not directly comparable.
 
@@ -42,7 +42,7 @@ The same generator and text at `--repeats 157`: `full_prompt.txt` is ~412 KB, ~1
 
 Purpose: the same realistic large-prompt stability check as the ~60K prompt, at the size a large window actually serves - a config serving a window above 140k is checked on this one, because the ~60K prompt does not reach that window's prompt-side regime. It is also the prompt for long-context speed rows at those windows. The recorded `prompt_n` identifies which prompt produced a row (~60K rows sit near 59.8K, ~120K rows near 119.3K).
 
-Not a replacement for the ~10k opencode session-context timing prompt above, and not an output-quality eval: only speed is measured.
+Not a replacement for the ~10k opencode session-context timing prompt above, and not an output-quality eval: only speed is measured. Add `temperature: 0`; leave reasoning effort and the rest of sampling at the served/config value.
 
 ## Notes
 

@@ -17,10 +17,11 @@ Flags:
   --repeats N     entity-template repeats (default 79 ~ 60K tokens; 157 ~ 120K tokens)
   --out-dir DIR   output directory (default <tmp>/llm-bench-prompts, a scratch dir)
 
-Payloads carry the prompt + request shape only (n_predict 512, cache_prompt false,
-ignore_eos true - the unified timing protocol, see methodology.md/test-prompts.md) -
-no sampling parameters: the served config decides sampling. Only speed is measured
-with this prompt - no output-quality evaluation passes.
+Payloads carry the prompt + request shape (n_predict 512, cache_prompt false,
+ignore_eos true, temperature 0 - the unified speed protocol, see
+methodology.md/test-prompts.md). Temperature 0 is the only sampling override;
+reasoning effort and the rest of sampling come from the served config. Only speed
+is measured with this prompt - no output-quality evaluation passes.
 """
 
 import argparse
@@ -254,11 +255,17 @@ def build_prompt(target_repeats):
 
 
 def request_shape():
-    # Unified timing protocol (see methodology.md / test-prompts.md): raw /v1/completions,
-    # n_predict 512, cache_prompt false, ignore_eos true. ignore_eos keeps every pass at a
-    # full 512-token decode window; without it qwen4exp (Flash-Next) stops after 1 token on
-    # this prompt and the 35B moe-cache fork does so rarely (issues.md).
-    return {"n_predict": 512, "cache_prompt": False, "ignore_eos": True}
+    # Unified speed protocol (see methodology.md / test-prompts.md): raw /v1/completions,
+    # n_predict 512, cache_prompt false, ignore_eos true, temperature 0 only. ignore_eos
+    # keeps every pass at a full 512-token decode window; without it qwen4exp (Flash-Next)
+    # stops after 1 token on this prompt and the 35B moe-cache fork does so rarely
+    # (issues.md).
+    return {
+        "n_predict": 512,
+        "cache_prompt": False,
+        "ignore_eos": True,
+        "temperature": 0,
+    }
 
 
 def main():
@@ -296,7 +303,7 @@ def main():
 
     print(
         f"wrote full_prompt.txt ({len(prompt)} chars) + 2 payload JSONs "
-        f"(prompt + request shape only) to {out_dir}",
+        f"(prompt + request shape) to {out_dir}",
         file=sys.stderr,
     )
 

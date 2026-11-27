@@ -30,7 +30,7 @@ Headline numbers these experiments compare against:
 | CTX=long (fp8, 150k, 4 drafts) | 1124 t/s | 113 t/s | ~0.54 | 22289 MiB |
 | CTX=huge (KVarN, 250k, 3 drafts) | 960 t/s | 86 t/s | ~0.58 | 22340 MiB |
 
-Every result below is measured with the same protocol as the model page: timings read from vLLM's own server metrics, single pass, config-served sampling, cold load, and the first request after each boot discarded.
+Every result below is measured with the same protocol as the model page: timings read from vLLM's own server metrics, single pass, config-served sampling (pre-2026-11-27), cold load, and the first request after each boot discarded.
 
 ## Experiments
 
