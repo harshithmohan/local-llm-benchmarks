@@ -1,6 +1,6 @@
 # Qwen3.6-35B-A3B (Rig 2) - recommended configs
 
-Updated: 2026-10-20 · [full experiment log](archive/qwen36-35b-a3b.md) · [methodology](../../methodology.md)
+Updated: 2026-11-27 · [methodology](../../methodology.md)
 
 `UD-IQ4_XS` (`qwen35moe` arch, native ctx 262144, embedded MTP head). Model cards: [unsloth/Qwen3.6-35B-A3B-MTP-GGUF](https://huggingface.co/unsloth/Qwen3.6-35B-A3B-MTP-GGUF) (`UD-*` quants); [byteshape/Qwen3.6-35B-A3B-MTP-GGUF](https://huggingface.co/byteshape/Qwen3.6-35B-A3B-MTP-GGUF) (`IQ4_XS-4.19bpw`).
 
@@ -8,8 +8,8 @@ Updated: 2026-10-20 · [full experiment log](archive/qwen36-35b-a3b.md) · [meth
 
 | Config | ctx | engine | drafter | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| UD-IQ4_XS | 262144 | moe-cache fork | on | 5258 | **189** | 21894 MiB | cache 0 + `--phase-aware-workspace`, `-b/-ub 4096` |
-| UD-IQ4_XS | 524288 | moe-cache fork | on | 4553 | **152.6** | 22616 MiB | YaRN 2x; cache 200 + `--phase-aware-workspace`, `-b/-ub 8192` |
+| UD-IQ4_XS | 262144 | moe-cache fork | on | 4542 | **175.2** | 21460 MiB | cache 0 + `--phase-aware-workspace`, `-b/-ub 4096` |
+| UD-IQ4_XS | 524288 | moe-cache fork | on | 4126 | **146.8** | 21720 MiB | YaRN 2x; cache 200 + `--phase-aware-workspace`, `-b/-ub 8192` |
 
 The native 262144 window runs on GPU, q8_0 KV, no expert cache (with `--phase-aware-workspace` to release prompt-only workspace before decode). The 524288 entry runs YaRN 2x; the window no longer fits on GPU, so the expert cache keeps 200 slots/layer resident.
 
@@ -60,7 +60,7 @@ Real-task timing test of a long-context code-refactor task ([test-prompts.md](..
 
 | Config | ctx | engine | drafter | prompt | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| UD-IQ4_XS | 262144 | moe-cache fork | on | ~60K | 4247 | **146.8** | 21894 MiB | cache 0 + `--phase-aware-workspace`, `-b/-ub 4096` |
-| UD-IQ4_XS | 262144 | moe-cache fork | on | ~120K | 3292 | **115.2** | 21894 MiB | 119293-token prompt; cache 0 + `--phase-aware-workspace`, `-b/-ub 4096` |
-| UD-IQ4_XS | 524288 | moe-cache fork | on | ~60K | 4180 | **145.1** | 22616 MiB | YaRN 2x; cache 200 + `--phase-aware-workspace`, `-b/-ub 8192` |
-| UD-IQ4_XS | 524288 | moe-cache fork | on | ~120K | 3275 | **99.1** | 22616 MiB | 119293-token prompt; YaRN 2x, cache 200 + `--phase-aware-workspace`, `-b/-ub 8192` |
+| UD-IQ4_XS | 262144 | moe-cache fork | on | ~60K | 3717 | **135.2** | 21460 MiB | cache 0 + `--phase-aware-workspace`, `-b/-ub 4096` |
+| UD-IQ4_XS | 262144 | moe-cache fork | on | ~120K | 2889 | **105.9** | 21460 MiB | 119293-token prompt; cache 0 + `--phase-aware-workspace`, `-b/-ub 4096` |
+| UD-IQ4_XS | 524288 | moe-cache fork | on | ~60K | 3487 | **122.2** | 21720 MiB | YaRN 2x; cache 200 + `--phase-aware-workspace`, `-b/-ub 8192` |
+| UD-IQ4_XS | 524288 | moe-cache fork | on | ~120K | 2620 | **93.9** | 21720 MiB | 119293-token prompt; YaRN 2x, cache 200 + `--phase-aware-workspace`, `-b/-ub 8192` |

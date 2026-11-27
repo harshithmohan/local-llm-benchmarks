@@ -2,7 +2,7 @@
 
 How the recommended configs on the model pages were arrived at: which knobs to sweep, in what order, and the rules that decide a winner. This is the tuning layer between two other pages - measurement protocol (request shape, two-pass rule, VRAM, stability check) is in [methodology.md](methodology.md), and the per-engine flag vocabularies are in [engine-notes/](engine-notes/).
 
-Scope: both rigs, every engine. Engine labels are per-row and results are not interchangeable across engines. Representative sweeps live in the model pages and their `archive/<model>.md` logs; this page only states the procedure and the rules. Timing sweeps add `temperature: 0` only; reasoning effort and the rest of sampling stay at the server config. Sweeps recorded before 2026-11-27 used served sampling and are not directly comparable with new temp-0 sweeps.
+Scope: both rigs, every engine. Engine labels are per-row and results are not interchangeable across engines. Representative results live in the model pages; this page only states the procedure and the rules. Timing sweeps add `temperature: 0` only; reasoning effort and the rest of sampling stay at the server config.
 
 ## Sweep order
 
@@ -103,7 +103,7 @@ These exist on every engine (flag names differ; see the equivalence table in Par
 
 [syv-ai/HyperQwen](https://github.com/syv-ai/HyperQwen) container stack, Rig 2. Different config surface and different timing source (Prometheus metrics, not the llama-server `timings`).
 
-- KV modes: fp8 (e.g. 176k) vs KVarN 4/2-bit (e.g. 262k, slower decode). k4v4 stores 2x the V bytes; a g64 group doubles scale overhead - neither buys speed or acceptance. DFlash2 is retired for MTP.
+- KV modes: fp8 vs KVarN 4/2-bit (e.g. 262k, slower decode). k4v4 stores 2x the V bytes; a g64 group doubles scale overhead - neither buys speed or acceptance.
 - `INT8_ACT=int8` is an adopted knob: large prefill gain (+83% short, +39% at 140k) for a ~9-10% decode cost. `INT8_LAYERS=mlp` is smaller; `PREFILL_ATTN=int8` is a no-op.
 - `EMBED_UVA=1` keeps the quantized embedding in pinned host RAM behind a CUDA view: ~1.1 GiB of card memory back for ~2.1 GiB of host RAM and ~20 s of boot. A pool-size knob, not a speed one; it is what pays for the profiles' larger pins.
 - `KVARN_FP16_DEQUANT=1` runs KVarN's fused decode kernels in fp16 (the dots stay fp32): a long-context decode win with prefill, VRAM and acceptance flat - 26-53% measured at ~60-120K across the two models. It is in the compile cache key, so the first boot recompiles once.
@@ -120,7 +120,7 @@ The pack engine ([Strata](engine-notes/strata.md)) runs the same speculative pai
 - `--spec T` is the `--spec-draft-n-max` analogue, and `T >= 2` is structural rather than a tuning choice: a native (IQ) pack refuses to start at `--spec 1`, and `--mtp` is ignored below 2.
 - Sweep `--spec` and `--spec-min-p` together and report both. Because the floor decides how much of the window is used, raising `--spec` at the default `0.0` can cost decode instead of gaining it - the default floor is not automatically the safe value at a wide window.
 
-Measured rows, one model and quant: [Flash-Next archive](models/rig1-3060/archive/qwen38-flash-next.md).
+Measured rows, one model and quant: [Flash-Next model page](models/rig1-3060/qwen38-flash-next.md).
 
 ### Flag equivalence
 

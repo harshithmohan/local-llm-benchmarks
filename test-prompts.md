@@ -18,9 +18,7 @@ The trailing user request inside the prompt:
 >
 > Then explain your choices: why virtualization is required at this scale, where you would move filtering to the server and what contract the API needs (cursor-based pagination, stable sort, total count), how you would avoid re-rendering unchanged rows (memoized row components, stable callbacks, keyed lists), and how the implementation changes if rows have variable height.
 
-Why ~10k: the owner's normal workload is opencode, whose system prompt + tools + project context is ~10k tokens. The previous ~192-token C# / ~155-token React probes did not exercise that prefill regime.
-
-**Retired prompts (2026-09-29).** The two short C#/React timing prompts were retired and replaced by the ~10k opencode session-context prompt. Every timing number recorded before 2026-09-29 on the model pages and archives was measured on the retired prompts and is annotated as such there; those numbers are not directly comparable with the current ~10k prompt.
+Why ~10k: the owner's normal workload is opencode, whose system prompt + tools + project context is ~10k tokens.
 
 ### Long-context refactor (~60K tokens)
 
@@ -34,7 +32,6 @@ Notes for this prompt (request protocol is shared with the 10k prompt and define
 
 - Send the generated `full_prompt.txt` text; only speed is measured - no output-quality passes. Add `temperature: 0`; leave reasoning effort and the rest of sampling at the served/config value.
 - `ignore_eos: true` matters here: some engines emit EOS as the very first token on this prompt over the raw endpoint (stop_type eos, 1 predicted token, empty output) - Flash-Next (qwen4exp) does so even after the trailing closed fence is neutralized with a nonce, and the 35B moe-cache fork does so rarely (issues.md §5). The unified protocol sets it, so every pass decodes the full `n_predict` with real output and normal acceptance.
-- All pre-2026-09-29 long-context numbers used a single-pass, `/v1/chat/completions` protocol and are archived per model page; the conventions are not directly comparable.
 
 ### Long-context refactor, large (~120K tokens)
 
@@ -47,7 +44,7 @@ Not a replacement for the ~10k opencode session-context timing prompt above, and
 ## Notes
 
 - Payload JSONs are built here and POSTed inline - no payload or prompt files on the rigs. The request protocol (endpoint, flags, two-pass, sampling) is defined in [methodology.md](methodology.md) §Measurement methods. Canonical file naming (when a local temp file is convenient): name-per-prompt, `prompt-<name>.json` (`prompt-opencode.json`, `prompt-long-context-35b.json`).
-- Timing-prompt token count (authoritative here): the opencode session context is ~10,117 tokens (Qwen tokenizer; ~44.8 KB of text). It is deliberately large because it matches the owner's real opencode prefill regime - the retired ~192-token C# / ~155-token React probes did not (the old ~308-token figure was an aggregate estimate, not a sum).
+- Timing-prompt token count (authoritative here): the opencode session context is ~10,117 tokens (Qwen tokenizer; ~44.8 KB of text). It is deliberately large because it matches the owner's real opencode prefill regime.
 - Long-context prompt sizes (Qwen tokenizer, recorded through the servers): the ~60K prompt is ~59.8K tokens (~213 KB, `--repeats 79`) and the ~120K prompt ~119.3K tokens (~412 KB, `--repeats 157`). Both are generated, not committed - the generator is `scripts/generate-long-context-prompt.py`.
 - The session-context prompt is non-repetitive by construction (real prompt/tool docs, AGENTS.md, and source files - no repeated sentences) - safe on qwen4exp (Flash-Next) and usable as a stability-check prompt.
 - The 35B-era timing runs used a repetitive prompt ("Explain TCP congestion control in detail." repeated ~110x, ~772 tokens) - valid on qwen35moe, replaced by the non-repetitive timing prompts above after the Flash-Next crash discovery.

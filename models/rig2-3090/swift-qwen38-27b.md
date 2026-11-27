@@ -1,10 +1,10 @@
 # Swift-1.5-Qwen3.8-27B (Rig 2) - recommended configs
 
-Updated: 2026-11-05 · [full experiment log](archive/swift-qwen38-27b.md) · [methodology](../../methodology.md)
+Updated: 2026-11-27 · [methodology](../../methodology.md)
 
 `Swift-1.5-INT4`, the Swift-1.5 fine-tune of Qwen3.8-27B (`qwen35` dense hybrid SSM + attention - only every 4th layer carries full attention, `full_attention_interval=4` - native ctx 262144, embedded MTP head). Dense, not a MoE, so no expert split applies. Served on the same [syv-ai/HyperQwen](https://github.com/syv-ai/HyperQwen) vLLM container (vLLM 0.32.0) as the base model. The served build is `Swift-1.5-INT4-fast`: the port's int8 heads requantized to the same int4-GPTQ `lm_head` and draft head the base build runs, which brings the profile inside the rig's VRAM budget (the step the port skipped - experiment 6 of the port study). Model card: [ukisai/Swift-1.5-Qwen3.8-27b-INT4](https://huggingface.co/ukisai/Swift-1.5-Qwen3.8-27b-INT4). The base `W4A16-AutoRound-fast` quant is a separate model: [qwen38-27b.md](qwen38-27b.md).
 
-Fine-tune port study (checkpoint preparation, not engine tuning): [../../experiments/qwen38-27b-swift-1.5-int4.md](../../experiments/qwen38-27b-swift-1.5-int4.md). Rig and setup: [../../rig2-3090.md](../../rig2-3090.md). Timing rows predate the 2026-11-27 speed protocol and were measured at served sampling; new speed rows add `temperature: 0` only. Do not compare across the boundary.
+Fine-tune port study (checkpoint preparation, not engine tuning): [../../experiments/qwen38-27b-swift-1.5-int4.md](../../experiments/qwen38-27b-swift-1.5-int4.md). Rig and setup: [../../rig2-3090.md](../../rig2-3090.md).
 
 ## Recommended configs
 
@@ -12,8 +12,8 @@ Two contexts: int8 KV at 167936 read by the pth-flash-attn kernel (4 chained MTP
 
 | Config | ctx | engine | drafter | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Swift-1.5-INT4-fast | 167936 | vLLM | on | 2494 | **118.8** | 20674 MiB | `PTH_FA=1` int8 KV; 4 drafts, `MAX_SEQS=4`; pool pinned 6.8 GB (173,207 tokens); `EMBED_UVA=1`; accept 52.9% - measured on this checkpoint 2026-11-05 |
-| Swift-1.5-INT4-fast | 262144 | vLLM | on | 2374 | **97.6** | 21856 MiB | KVarN k4v2 KV, 3 drafts; pool pinned 5.3 GB; `KVARN_FP16_DEQUANT=1`; `EMBED_UVA=1`; accept 58.9% |
+| Swift-1.5-INT4-fast | 167936 | vLLM | on | 1741 | **115.1** | 21036 MiB | `PTH_FA=1` int8 KV; 4 drafts, `MAX_SEQS=4`; pool pinned 6.8 GB (173,207 tokens); `EMBED_UVA=1`; accept 52.9% - measured on this checkpoint 2026-11-27 |
+| Swift-1.5-INT4-fast | 262144 | vLLM | on | 1703 | **90.8** | 21878 MiB | KVarN k4v2 KV, 3 drafts; pool pinned 5.3 GB; `KVARN_FP16_DEQUANT=1`; `EMBED_UVA=1`; accept 53.9% |
 
 All rows are served with `INT8_ACT=int8`.
 
@@ -63,7 +63,7 @@ The real-task long-context refactor prompts ([test-prompts.md](../../test-prompt
 
 | Config | ctx | engine | drafter | prompt | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Swift-1.5-INT4-fast | 167936 | vLLM | on | ~60K | 1821 | **119.2** | 20674 MiB | `PTH_FA=1` int8 KV; accept 65.7% |
-| Swift-1.5-INT4-fast | 167936 | vLLM | on | ~120K | 1328 | **91.9** | 20674 MiB | `PTH_FA=1` int8 KV; accept 59.8% |
-| Swift-1.5-INT4-fast | 262144 | vLLM | on | ~60K | 1821 | **67.8** | 21856 MiB | KVarN k4v2 KV; accept 56.0% |
-| Swift-1.5-INT4-fast | 262144 | vLLM | on | ~120K | 1429 | **53.9** | 21856 MiB | KVarN k4v2 KV; accept 58.9% |
+| Swift-1.5-INT4-fast | 167936 | vLLM | on | ~60K | 1268 | **92.2** | 21036 MiB | `PTH_FA=1` int8 KV; accept 49.7% |
+| Swift-1.5-INT4-fast | 167936 | vLLM | on | ~120K | 965 | **78.5** | 21036 MiB | `PTH_FA=1` int8 KV; accept 48.8% |
+| Swift-1.5-INT4-fast | 262144 | vLLM | on | ~60K | 1283 | **51.3** | 21878 MiB | KVarN k4v2 KV; accept 35.4% |
+| Swift-1.5-INT4-fast | 262144 | vLLM | on | ~120K | 1018 | **45.9** | 21878 MiB | KVarN k4v2 KV; accept 50.1% |

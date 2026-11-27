@@ -1,10 +1,10 @@
 # Qwen3.8-27B (Rig 2) - recommended configs
 
-Updated: 2026-11-05 · [full experiment log](archive/qwen38-27b.md) · [methodology](../../methodology.md)
+Updated: 2026-11-27 · [methodology](../../methodology.md)
 
-`W4A16-AutoRound-fast` (`qwen35` dense hybrid SSM + attention - only every 4th layer carries full attention, `full_attention_interval=4` - native ctx 262144, embedded MTP head). Dense, not a MoE, so no expert split applies. Runs on the [syv-ai/HyperQwen](https://github.com/syv-ai/HyperQwen) vLLM container (vLLM 0.32.0). Model card: [dbirks/Qwen3.8-27B-W4A16-AutoRound](https://huggingface.co/dbirks/Qwen3.8-27B-W4A16-AutoRound); the dense llama.cpp [unsloth/Qwen3.8-27B-GGUF](https://huggingface.co/unsloth/Qwen3.8-27B-GGUF) quant and the DFlash2 profile are archived. The Swift-1.5 fine-tune of this model is a separate model: [swift-qwen38-27b.md](swift-qwen38-27b.md).
+`W4A16-AutoRound-fast` (`qwen35` dense hybrid SSM + attention - only every 4th layer carries full attention, `full_attention_interval=4` - native ctx 262144, embedded MTP head). Dense, not a MoE, so no expert split applies. Runs on the [syv-ai/HyperQwen](https://github.com/syv-ai/HyperQwen) vLLM container (vLLM 0.32.0). Model card: [dbirks/Qwen3.8-27B-W4A16-AutoRound](https://huggingface.co/dbirks/Qwen3.8-27B-W4A16-AutoRound). The Swift-1.5 fine-tune of this model is a separate model: [swift-qwen38-27b.md](swift-qwen38-27b.md).
 
-Low-level knob transferability study: [../../experiments/qwen38-27b-da3dsoul-arc-transfer.md](../../experiments/qwen38-27b-da3dsoul-arc-transfer.md). Rig and setup: [../../rig2-3090.md](../../rig2-3090.md). Timing rows predate the 2026-11-27 speed protocol and were measured at served sampling; new speed rows add `temperature: 0` only. Do not compare across the boundary.
+Low-level knob transferability study: [../../experiments/qwen38-27b-da3dsoul-arc-transfer.md](../../experiments/qwen38-27b-da3dsoul-arc-transfer.md). Rig and setup: [../../rig2-3090.md](../../rig2-3090.md).
 
 ## Recommended configs
 
@@ -12,8 +12,8 @@ Two contexts: int8 KV at 167936 read by the pth-flash-attn kernel (4 chained MTP
 
 | Config | ctx | engine | drafter | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| W4A16-AutoRound-fast | 167936 | vLLM | on | 2604 | **120.4** | 20580 MiB | `PTH_FA=1` int8 KV on the pth-flash-attn kernel; 4 drafts, `MAX_SEQS=4`; pool pinned 6.8 GB (173,207 tokens); `EMBED_UVA=1`; accept 47.7%; 10k timing at 176128, deployed at 167936 |
-| W4A16-AutoRound-fast | 262144 | vLLM | on | 2403 | **101.8** | 21756 MiB | KVarN k4v2 KV, 3 drafts; pool pinned 5.3 GB; `KVARN_FP16_DEQUANT=1`; `EMBED_UVA=1`; accept 60.3% |
+| W4A16-AutoRound-fast | 167936 | vLLM | on | 1769 | **131.8** | 21216 MiB | `PTH_FA=1` int8 KV on the pth-flash-attn kernel; 4 drafts, `MAX_SEQS=4`; pool pinned 6.8 GB (173,207 tokens); `EMBED_UVA=1`; accept 61.1% |
+| W4A16-AutoRound-fast | 262144 | vLLM | on | 1705 | **88.1** | 22018 MiB | KVarN k4v2 KV, 3 drafts; pool pinned 5.3 GB; `KVARN_FP16_DEQUANT=1`; `EMBED_UVA=1`; accept 50.1% |
 
 All rows are served with `INT8_ACT=int8`.
 
@@ -52,7 +52,7 @@ The profile is deployed at **167936**. With `PTH_FA=1` the int8/`CUSTOM` path pl
 
 - Both profiles pin the KV pool by bytes (`EXTRA_ARGS=--kv-cache-memory=...`): `KV_MEM` is not read on the MTP branch, and auto-sizing floats with free desktop memory.
 - Both profiles run `EMBED_UVA=1`: the quantized embedding sits in pinned host RAM behind a CUDA UVA view, which frees ~1.1 GiB of card memory at no decode cost. That free memory is what pays for the larger pools - the deployed int8 pool needs 6.8 GB to boot at 167936.
-- `PTH_FA=1` is refused unless `SPEC=mtp`/`dflash2` with `CTX=long`, and with a KV tier or any of `--attention-backend`/`--kv-cache-dtype`/`--speculative-config` in `EXTRA_ARGS`. It never auto-enables for these profiles: the 8.6 default also requires `DRAFT_TOKENS` unset or 3 and `VISION` off, both of which the served env files contradict, so it is set explicitly.
+- `PTH_FA=1` is refused unless `SPEC=mtp` with `CTX=long`, and with a KV tier or any of `--attention-backend`/`--kv-cache-dtype`/`--speculative-config` in `EXTRA_ARGS`. It never auto-enables for these profiles: the 8.6 default also requires `DRAFT_TOKENS` unset or 3 and `VISION` off, both of which the served env files contradict, so it is set explicitly.
 - `CTX=long` needs `MAX_SEQS=4`: at the default 8 the 4-draft spec buffers push the pool below 167936 and the engine refuses to boot.
 - The KVarN profile serves the model's native 262144; vLLM refuses 290000 unless `VLLM_ALLOW_LONG_MAX_MODEL_LEN=1` (risks NaN beyond native RoPE).
 - vLLM's automatic prefix caching is ON by default in these profiles - the image's `PREFIX_CACHE` env only *adds* `--enable-prefix-caching` (with `--mamba-cache-mode align`), it cannot turn caching off; use `--no-enable-prefix-caching` in `EXTRA_ARGS` for that, as the timing rows do so their recorded pass is cold.
@@ -66,5 +66,7 @@ The real-task long-context refactor prompts ([test-prompts.md](../../test-prompt
 
 | Config | ctx | engine | drafter | prompt | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| W4A16-AutoRound-fast | 262144 | vLLM | on | ~60K | 1877 | **64.0** | 21756 MiB | KVarN k4v2 KV; accept 47.1% |
-| W4A16-AutoRound-fast | 262144 | vLLM | on | ~120K | 1438 | **49.2** | 21758 MiB | KVarN k4v2 KV; accept 49.8% |
+| W4A16-AutoRound-fast | 167936 | vLLM | on | ~60K | 1287 | **131.9** | 21216 MiB | `PTH_FA=1` int8 KV; accept 78.0% |
+| W4A16-AutoRound-fast | 167936 | vLLM | on | ~120K | 978 | **71.0** | 21216 MiB | `PTH_FA=1` int8 KV; accept 40.5% |
+| W4A16-AutoRound-fast | 262144 | vLLM | on | ~60K | 1307 | **73.8** | 22018 MiB | KVarN k4v2 KV; accept 64.2% |
+| W4A16-AutoRound-fast | 262144 | vLLM | on | ~120K | 1013 | **45.4** | 22018 MiB | KVarN k4v2 KV; accept 48.6% |

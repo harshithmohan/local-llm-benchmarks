@@ -9,7 +9,7 @@ Updated: 2026-10-13 · model cards: [Rig 1](../../../models/rig1-3060/qwen36-35b
 
 ## Notes
 
-Both rows are on Crucible v0.1.5 with the suite's pinned C1 ladder (16k → 256k × 5 depths = 35 cells at a 262144 context), so C1 is `/ 35` here and not comparable to the retired v0.1.3 rows, which were scored `/ 77` on Crucible's own 2k → 128k default ladder.
+Both rows are on Crucible v0.1.5 with the suite's pinned C1 ladder (16k → 256k × 5 depths = 35 cells at a 262144 context), so C1 is `/ 35` here and not comparable to the v0.1.3 rows, which were scored `/ 77` on Crucible's own 2k → 128k default ladder.
 
 C1 is at ceiling (35/35) on both rows — no cell fails on either KV type, including the 256k cells, so this comparison can only show degradation, not improvement.
 

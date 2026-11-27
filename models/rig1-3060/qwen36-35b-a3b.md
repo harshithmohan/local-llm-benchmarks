@@ -1,6 +1,6 @@
 # Qwen3.6-35B-A3B (Rig 1) - recommended configs
 
-Updated: 2026-10-20 · [full experiment log](archive/qwen36-35b-a3b.md) · [methodology](../../methodology.md)
+Updated: 2026-11-27 · [methodology](../../methodology.md)
 
 `IQ4_XS-4.19bpw` (`qwen35moe` arch, native ctx 262144, embedded MTP head). Model card: [byteshape/Qwen3.6-35B-A3B-MTP-GGUF](https://huggingface.co/byteshape/Qwen3.6-35B-A3B-MTP-GGUF).
 
@@ -8,8 +8,8 @@ Updated: 2026-10-20 · [full experiment log](archive/qwen36-35b-a3b.md) · [meth
 
 | Config | ctx | engine | drafter | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| IQ4_XS | 262144 | moe-cache fork | on | 2047 | **83.5** | 11526 MiB | cache 80 + `--phase-aware-workspace`, `-b/-ub 6144` |
-| IQ4_XS | 524288 (YaRN 2x) | moe-cache fork | off | 2318 | **59.6** | 11736 MiB | cache 48, `-b/-ub 6144` |
+| IQ4_XS | 262144 | moe-cache fork | on | 2090 | **84.1** | 10746 MiB | cache 80 + `--phase-aware-workspace`, `-b/-ub 6144` |
+| IQ4_XS | 524288 (YaRN 2x) | moe-cache fork | off | 2346 | **58.8** | 11740 MiB | cache 48, `-b/-ub 6144` |
 
 ## Configs
 
@@ -51,9 +51,9 @@ Real-task timing test of a long-context code-refactor task ([test-prompts.md](..
 
 | Config | ctx | engine | drafter | prompt | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| IQ4_XS | 262144 | moe-cache fork | on | ~60K | 1680 | **63.1** | 11530 MiB | cache 80 + phase-aware |
-| IQ4_XS | 262144 | moe-cache fork | on | ~120K | 1314 | **48.1** | 11530 MiB | 119293-token prompt, cache 80 + phase-aware |
-| IQ4_XS | 524288 | moe-cache fork | off | ~60K | 1879 | **41.4** | 11738 MiB | cache 48 |
-| IQ4_XS | 524288 | moe-cache fork | off | ~120K | 1459 | **30.9** | 11740 MiB | 119293-token prompt, cache 48 |
+| IQ4_XS | 262144 | moe-cache fork | on | ~60K | 1776 | **63.0** | 10746 MiB | cache 80 + phase-aware |
+| IQ4_XS | 262144 | moe-cache fork | on | ~120K | 1439 | **47.0** | 10746 MiB | 119293-token prompt, cache 80 + phase-aware |
+| IQ4_XS | 524288 | moe-cache fork | off | ~60K | 1986 | **42.1** | 11740 MiB | cache 48 |
+| IQ4_XS | 524288 | moe-cache fork | off | ~120K | 1600 | **30.8** | 11740 MiB | 119293-token prompt, cache 48 |
 
 Near-full-window check: a ~250K-token prefill completes on both the cache-64 and the cache-80 configs with no OOM (prefill falls to ~830 t/s at the tail); it exceeds the usual timing window, so it is a stability check, not a recorded decode row.

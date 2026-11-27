@@ -1,6 +1,6 @@
 # KAT-Coder-V2.5-Dev (Rig 1) - recommended configs
 
-Updated: 2026-10-20 · [full experiment log](archive/katcoder-v2.5-dev.md) · [methodology](../../methodology.md)
+Updated: 2026-11-27 · [methodology](../../methodology.md)
 
 `APEX-I-Compact` (`qwen35moe`, 41 blocks, 256 experts / 8 active, native ctx 262144, embedded MTP head). Model card: [gbuzhf/KAT-Coder-V2.5-Dev-MTP-GGUF](https://huggingface.co/gbuzhf/KAT-Coder-V2.5-Dev-MTP-GGUF).
 
@@ -8,7 +8,7 @@ Updated: 2026-10-20 · [full experiment log](archive/katcoder-v2.5-dev.md) · [m
 
 | Config | ctx | engine | drafter | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| APEX-I-Compact | 262144 | moe-cache fork | on | 1770 | **72.2** | 11194 MiB | cache 88 + `--phase-aware-workspace`, `-b/-ub 3072` |
+| APEX-I-Compact | 262144 | moe-cache fork | on | 1791 | **71.3** | 10858 MiB | cache 88 + `--phase-aware-workspace`, `-b/-ub 3072` |
 
 ## Configs
 
@@ -38,5 +38,5 @@ Real-task timing test of a long-context code-refactor task ([test-prompts.md](..
 
 | Config | ctx | engine | drafter | prompt | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| APEX-I-Compact | 262144 | moe-cache fork | on | ~60K | 1537 | **55.3** | 11194 MiB | cache 88 + `--phase-aware-workspace`, `-b/-ub 3072` |
-| APEX-I-Compact | 262144 | moe-cache fork | on | ~120K | 1232 | **42.6** | 11194 MiB | 119293-token prompt, cache 88 + `--phase-aware-workspace`, `-b/-ub 3072` |
+| APEX-I-Compact | 262144 | moe-cache fork | on | ~60K | 1625 | **56.2** | 10858 MiB | cache 88 + `--phase-aware-workspace`, `-b/-ub 3072` |
+| APEX-I-Compact | 262144 | moe-cache fork | on | ~120K | 1346 | **46.4** | 10858 MiB | 119293-token prompt, cache 88 + `--phase-aware-workspace`, `-b/-ub 3072` |

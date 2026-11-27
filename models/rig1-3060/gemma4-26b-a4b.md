@@ -1,6 +1,6 @@
 # Gemma4-26B-A4B (Rig 1) - recommended configs
 
-Updated: 2026-10-20 · [full experiment log](archive/gemma4-26b-a4b.md) · [methodology](../../methodology.md)
+Updated: 2026-11-27 · [methodology](../../methodology.md)
 
 `Q4_K_M` (`gemma4` arch, native ctx 262144, MTP draft head). Model card: [HauhauCS/Gemma4-26B-A4B-QAT-Uncensored-HauhauCS-Balanced-MTP](https://huggingface.co/HauhauCS/Gemma4-26B-A4B-QAT-Uncensored-HauhauCS-Balanced-MTP) (`Q4_K_M`).
 
@@ -10,7 +10,7 @@ Updated: 2026-10-20 · [full experiment log](archive/gemma4-26b-a4b.md) · [meth
 
 | Config | ctx | engine | drafter | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Q4_K_M | 32768 | moe-cache fork | on | 1252 | **83.5** | 11370 MiB | chatting (not coding), cache 72, `-b/-ub 1024` |
+| Q4_K_M | 32768 | moe-cache fork | on | 1268 | **78.6** | 11233 MiB | chatting (not coding), cache 72, `-b/-ub 1024` |
 
 ## Configs
 
@@ -36,4 +36,4 @@ Updated: 2026-10-20 · [full experiment log](archive/gemma4-26b-a4b.md) · [meth
 
 ## Long-context refactor benchmark
 
-Not applicable to the 32k chat config (the model is not used for coding here); the non-chat 256k measurement lives in the [archive](archive/gemma4-26b-a4b.md).
+Not applicable to the 32k chat config (the model is not used for coding here).

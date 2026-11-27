@@ -20,11 +20,11 @@ Measured, tuned fork of [Strata](strata.md) by [DevDock-AI/Speedy](https://githu
 ## Serving checks
 
 - Cold-load and `/v1/chat/completions` work on all three entries; `--prompt-cache 0` benchmark runs use `cache_n` 0, `predicted_n` 512 and record the second pass.
-- The 200K UD run reaches 200636 prompt tokens at 1096.5 t/s prefill / 45.8 t/s decode.
+- The 200K UD run reaches 200636 prompt tokens.
 - Serve suite: 1757 tests, one failure + one error, both known non-product (`test_git_update_and_rollback` needs `git`; `IncrementalPrompts.test_turns` at `serve/test_server.py:2071`). llama-swap E2E passes on all three entries, including tool calls and a vision request on the base entry.
 
 ## Measurement
 
-Rows are on the [Qwen3.8-Flash-Next](../models/rig1-3060/qwen38-flash-next.md) and [Swift-1.5-Qwen3.8-Flash-Next](../models/rig1-3060/swift-qwen38-flash-next.md) model pages, measured under the Strata protocol with a derived `--prompt-cache 0` config: two passes, second recorded, `cache_n` 0 and `predicted_n` 512. New speed rows add `temperature: 0` only; reasoning effort and the rest of sampling stay at the served/config value. The rows currently on the model pages predate the 2026-11-27 temp-0 protocol and used the bench config's `reasoning_effort:"none"`; the served default is `high`/xhigh.
+Rows are on the [Qwen3.8-Flash-Next](../models/rig1-3060/qwen38-flash-next.md) and [Swift-1.5-Qwen3.8-Flash-Next](../models/rig1-3060/swift-qwen38-flash-next.md) model pages, measured under the Strata protocol with a derived `--prompt-cache 0` config: two passes, second recorded, `cache_n` 0 and `predicted_n` 512. New speed rows add `temperature: 0` only; reasoning effort and the rest of sampling stay at the served/config value. Bench rows use the served `reasoning_effort` (`high`/xhigh), not a `none` override.
 
 Configs: [Qwen3.8-Flash-Next + Speedy](../models/rig1-3060/qwen38-flash-next.md) and [Swift-1.5-Qwen3.8-Flash-Next + Speedy](../models/rig1-3060/swift-qwen38-flash-next.md).

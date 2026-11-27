@@ -1,15 +1,15 @@
 # Swift-1.5-Qwen3.8-Flash-Next (Rig 1) - recommended configs
 
-Updated: 2026-11-26 · [full experiment log](archive/swift-qwen38-flash-next.md) · [methodology](../../methodology.md) · base model: [qwen38-flash-next.md](qwen38-flash-next.md)
+Updated: 2026-11-27 · [methodology](../../methodology.md) · base model: [qwen38-flash-next.md](qwen38-flash-next.md)
 
-`GSQ-RCO` quant `IQ3_XXS` (75.9 GB, 2 shards: 39.8 GB + 36.2 GB) - the Swift-1.5 fine-tune of Qwen3.8-Flash-Next (`qwen4exp`, native ctx 262144, 512 experts). Same architecture and size as the base model, and it ships **no MTP head**: the base model's MTP head drafts it and is used as-is. Model card: [ukisai/Swift-1.5-Qwen3.8-Flash-Next-GSQ-RCO-GGUF](https://huggingface.co/ukisai/Swift-1.5-Qwen3.8-Flash-Next-GSQ-RCO-GGUF). Served as a pack engine by [Strata](https://github.com/Niko1221/Strata) 0.2.19 and its tuned fork [Speedy](https://github.com/DevDock-AI/Speedy) 0.5.5, from a pack built for this checkpoint alone. Timing rows predate the 2026-11-27 speed protocol and were measured at served sampling; new speed rows add `temperature: 0` only. Do not compare across the boundary.
+`GSQ-RCO` quant `IQ3_XXS` (75.9 GB, 2 shards: 39.8 GB + 36.2 GB) - the Swift-1.5 fine-tune of Qwen3.8-Flash-Next (`qwen4exp`, native ctx 262144, 512 experts). Same architecture and size as the base model, and it ships **no MTP head**: the base model's MTP head drafts it and is used as-is. Model card: [ukisai/Swift-1.5-Qwen3.8-Flash-Next-GSQ-RCO-GGUF](https://huggingface.co/ukisai/Swift-1.5-Qwen3.8-Flash-Next-GSQ-RCO-GGUF). Served as a pack engine by [Strata](https://github.com/Niko1221/Strata) 0.2.19 and its tuned fork [Speedy](https://github.com/DevDock-AI/Speedy) 0.5.5, from a pack built for this checkpoint alone.
 
 ## Recommended configs
 
 | Config | ctx | engine | drafter | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| GSQ-RCO IQ3_XXS | 204800 | Strata | MTP | 1272.8 | **59.1** | 11101 MiB | `--kv int8`, CPU vision encoder, 2990 slots / 4.89 GiB cache |
-| GSQ-RCO IQ3_XXS | 204800 | Speedy | MTP | 1247.8 | **80.1** | 11215 MiB | `--kv int8`, CPU vision encoder |
+| GSQ-RCO IQ3_XXS | 204800 | Strata | MTP | 1267 | **65.0** | 11098 MiB | `--kv int8`, CPU vision encoder, 2990 slots / 4.89 GiB cache |
+| GSQ-RCO IQ3_XXS | 204800 | Speedy | MTP | 1243 | **59.1** | 11252 MiB | `--kv int8`, CPU vision encoder |
 
 ## Configs
 
@@ -75,11 +75,11 @@ Entry env: `STRATA_KEEP_EMPTY_TURNS=1`. Config JSON `env`: `STRATA_ROUTE_TAIL_SK
 
 ## Long-context refactor benchmark
 
-Real-task timing test of a long-context code-refactor task ([test-prompts.md](../../test-prompts.md)): a fixed refactor instruction wraps a deterministically generated Python file of near-identical legacy templates - 79 repeats for the ~60K prompt, 157 for the ~120K one. Same request shape and two-pass rule as the recommended configs ([methodology.md](../../methodology.md) §Measurement methods), against a derived config carrying `--prompt-cache 0`: `/v1/chat/completions` passes; the rows below used no request overrides under the pre-2026-11-27 protocol, while new speed runs add `temperature: 0` only; cold load per prompt, two passes with the second recorded.
+Real-task timing test of a long-context code-refactor task ([test-prompts.md](../../test-prompts.md)): a fixed refactor instruction wraps a deterministically generated Python file of near-identical legacy templates - 79 repeats for the ~60K prompt, 157 for the ~120K one. Same request shape and two-pass rule as the recommended configs ([methodology.md](../../methodology.md) §Measurement methods), against a derived config carrying `--prompt-cache 0`: `/v1/chat/completions` passes; the rows below add `temperature: 0` only; cold load per prompt, two passes with the second recorded.
 
 | Config | ctx | engine | drafter | prompt | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| GSQ-RCO IQ3_XXS | 204800 | Strata | MTP | ~60K | 1252.9 | **59.7** | 11101 MiB | 59802-token prompt, draft 225/346 |
-| GSQ-RCO IQ3_XXS | 204800 | Speedy | MTP | ~60K | 1289.2 | **74.1** | 11215 MiB | 59762-token prompt, draft 328/437 |
-| GSQ-RCO IQ3_XXS | 204800 | Strata | MTP | ~120K | 1196.6 | **57.5** | 11101 MiB | 119344-token prompt, draft 231/389 |
-| GSQ-RCO IQ3_XXS | 204800 | Speedy | MTP | ~120K | 1249.8 | **66.9** | 11215 MiB | 119304-token prompt, draft 312/427 |
+| GSQ-RCO IQ3_XXS | 204800 | Strata | MTP | ~60K | 1248 | **63.1** | 11098 MiB | 59802-token prompt, draft 432/266 |
+| GSQ-RCO IQ3_XXS | 204800 | Speedy | MTP | ~60K | 1284 | **64.0** | 11252 MiB | 59762-token prompt, draft 329/254 |
+| GSQ-RCO IQ3_XXS | 204800 | Strata | MTP | ~120K | 1195 | **62.6** | 11098 MiB | 119344-token prompt, draft 388/263 |
+| GSQ-RCO IQ3_XXS | 204800 | Speedy | MTP | ~120K | 1248 | **68.9** | 11252 MiB | 119304-token prompt, draft 378/300 |

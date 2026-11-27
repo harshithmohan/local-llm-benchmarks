@@ -7,7 +7,7 @@ Benchmark reports for running local LLMs on two consumer GPUs, using three build
 - **Rig 1:** RTX 3060 12GB + i7-12700, 128 GB RAM; gpu-unlock [loaded at boot](https://github.com/Zagitta/gpu-unlock) since 2026-11-06 - hardware and build info in [rig1-3060.md](rig1-3060.md)
 - **Rig 2:** RTX 3090 24GB + Ryzen 7 5700X, 32 GB RAM; GA102 FP/BF16 issue rate unlocked at boot with [gpu-unlock](https://github.com/Zagitta/gpu-unlock) - hardware and build info in [rig2-3090.md](rig2-3090.md)
 
-Rig 1 was first benchmarked 2026-09-10; the engines used on each rig are listed below. Measurement methodology: [methodology.md](methodology.md); per-engine flags: [engine-notes/](engine-notes/). Known issues and gotchas: [issues.md](issues.md). Timing rows add `temperature: 0` only; quality suites keep their recommended/config sampling. Rows currently in these tables predate 2026-11-27 and were measured at served sampling - do not compare them directly with new temp-0 rows.
+Rig 1 was first benchmarked 2026-09-10; the engines used on each rig are listed below. Measurement methodology: [methodology.md](methodology.md); per-engine flags: [engine-notes/](engine-notes/). Known issues and gotchas: [issues.md](issues.md). Timing rows add `temperature: 0` only; quality suites keep their recommended/config sampling.
 
 ## Inference engines
 
@@ -38,43 +38,43 @@ The llama.cpp builds support MTP speculative decode; Strata and Speedy have thei
 - [benchmarks/shoko-logs/](benchmarks/shoko-logs/) - agentic coding benchmark (reproduce the Shoko-WebUI logs-page rewrite — server-side search + infinite-scroll pagination, DSL pass-through, reconnect recovery, cancellation/failure handling — and log download, against a backend API the model must discover itself in a sibling ShokoServer checkout)
 - [benchmarks/crucible/](benchmarks/crucible/) - capability benchmark (Crucible LLM: long-context retrieval, reasoning, structured output)
 
-Each model page carries its full experiment log in the matching `archive/<model>.md` alongside it.
+Each model page carries its current measured rows.
 
 ## Rig 1 results
 
-Headline tables list only usable configs (full context, no rejected/OOM setups); all tested quants, including archived ones, are on the model pages ([Contents](#contents) above). YaRN-extended rows raise context past the native window; each row names its engine.
+Headline tables list only usable configs (full context, no rejected/OOM setups); all current tested quants are on the model pages ([Contents](#contents) above). YaRN-extended rows raise context past the native window; each row names its engine.
 
 | Model | Quant | Engine | Full-ctx support | Prefill t/s | Decode t/s |
 | --- | --- | --- | --- | --- | --- |
-| Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | moe-cache fork | 262144 | 2047 | **83.5** |
-| Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | moe-cache fork | 524288 (YaRN 2x) | 2318 | **59.6** |
-| Qwen3.8-Flash-Next | GSQ-RCO IQ3_XXS + DFlash2 | Strata | 204800 | 1330.2 | **54.9** |
-| Qwen3.8-Flash-Next | GSQ-RCO IQ3_XXS + MTP | Speedy | 262144 | 1252.5 | **74.9** |
-| Qwen3.8-Flash-Next | UD-IQ4_XS + MTP | Speedy | 262144 | 1025.0 | 65.5 |
-| Swift-1.5-Qwen3.8-Flash-Next | GSQ-RCO IQ3_XXS + MTP | Strata | 204800 | 1272.8 | **59.1** |
-| Swift-1.5-Qwen3.8-Flash-Next | GSQ-RCO IQ3_XXS + MTP | Speedy | 204800 | 1247.8 | **80.1** |
-| KAT-Coder-V2.5-Dev | APEX-I-Compact | moe-cache fork | 262144 | 1770 | **72.2** |
-| Gemma4-26B-A4B | Q4_K_M | moe-cache fork | 32768 | 1252 | **83.5** |
-| Cyber-Tiel-Coder-35B-A3B | UD-IQ4_XS | moe-cache fork | 262144 | 2201 | **64.2** |
+| Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | moe-cache fork | 262144 | 2090 | **84.1** |
+| Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | moe-cache fork | 524288 (YaRN 2x) | 2346 | **58.8** |
+| Qwen3.8-Flash-Next | GSQ-RCO IQ3_XXS + DFlash2 | Strata | 204800 | 1334 | **59.7** |
+| Qwen3.8-Flash-Next | GSQ-RCO IQ3_XXS + MTP | Speedy | 262144 | 1245 | **60.7** |
+| Qwen3.8-Flash-Next | UD-IQ4_XS + MTP | Speedy | 262144 | 1022 | 50.8 |
+| Swift-1.5-Qwen3.8-Flash-Next | GSQ-RCO IQ3_XXS + MTP | Strata | 204800 | 1267 | **65.0** |
+| Swift-1.5-Qwen3.8-Flash-Next | GSQ-RCO IQ3_XXS + MTP | Speedy | 204800 | 1243 | **59.1** |
+| KAT-Coder-V2.5-Dev | APEX-I-Compact | moe-cache fork | 262144 | 1791 | **71.3** |
+| Gemma4-26B-A4B | Q4_K_M | moe-cache fork | 32768 | 1268 | **78.6** |
+| Cyber-Tiel-Coder-35B-A3B | UD-IQ4_XS | moe-cache fork | 262144 | 2242 | **60.7** |
 
-All rows here are measured on the 10k opencode session prompt ([test-prompts.md](test-prompts.md)) on the current engine pins (rig pages). These rows predate the 2026-11-27 temp-0 speed protocol. The Gemma4 row is a chat-tuned config - not useful for coding on Rig 1.
+All rows here are measured on the 10k opencode session prompt ([test-prompts.md](test-prompts.md)) on the current engine pins (rig pages). The Gemma4 row is a chat-tuned config - not useful for coding on Rig 1.
 
 ## Rig 2 results
 
-Headline tables list only usable configs (full context, no rejected/OOM setups); all tested quants, including archived ones, are on the model pages ([Contents](#contents) above). YaRN-extended rows raise context past the native window. llama.cpp rows use q8_0 KV under the 22 GB cap; vLLM rows pin their KV pool by bytes to stay under the cap. vLLM rows also run MTP spec decode, so decode moves with the run's draft acceptance ([engine-notes/vllm.md](engine-notes/vllm.md)) - sub-15% decode differences between two vLLM rows are not significant; each row names its engine.
+Headline tables list only usable configs (full context, no rejected/OOM setups); all current tested quants are on the model pages ([Contents](#contents) above). YaRN-extended rows raise context past the native window. llama.cpp rows use q8_0 KV under the 22 GB cap; vLLM rows pin their KV pool by bytes to stay under the cap. vLLM rows also run MTP spec decode, so decode moves with the run's draft acceptance ([engine-notes/vllm.md](engine-notes/vllm.md)) - sub-15% decode differences between two vLLM rows are not significant; each row names its engine.
 
 | Model | Quant | Engine | ctx | Prefill t/s | Decode t/s |
 | --- | --- | --- | --- | --- | --- |
-| Qwen3.6-35B-A3B | UD-IQ4_XS | moe-cache fork | 262144 | 5258 | **189** |
-| Qwen3.6-35B-A3B | UD-IQ4_XS | moe-cache fork | 524288 (YaRN 2x) | 4553 | **152.6** |
-| KAT-Coder-V2.5-Dev | APEX-I-Compact | moe-cache fork | 262144 | 5254 | **155.6** |
-| Qwen3.8-27B | W4A16-AutoRound-fast | vLLM | 167936 | 2604 | **120.4** |
-| Qwen3.8-27B | W4A16-AutoRound-fast | vLLM | 262144 | 2403 | **101.8** |
-| Swift-1.5-Qwen3.8-27B | Swift-1.5-INT4-fast | vLLM | 167936 | 2494 | **118.8** |
-| Swift-1.5-Qwen3.8-27B | Swift-1.5-INT4-fast | vLLM | 262144 | 2374 | **97.6** |
-| Cyber-Tiel-Coder-35B-A3B | UD-Q4_K_XL | moe-cache fork | 262144 | 3766 | **148.9** |
+| Qwen3.6-35B-A3B | UD-IQ4_XS | moe-cache fork | 262144 | 4542 | **175.2** |
+| Qwen3.6-35B-A3B | UD-IQ4_XS | moe-cache fork | 524288 (YaRN 2x) | 4126 | **146.8** |
+| KAT-Coder-V2.5-Dev | APEX-I-Compact | moe-cache fork | 262144 | 4653 | **149.7** |
+| Qwen3.8-27B | W4A16-AutoRound-fast | vLLM | 167936 | 1769 | **131.8** |
+| Qwen3.8-27B | W4A16-AutoRound-fast | vLLM | 262144 | 1705 | **88.1** |
+| Swift-1.5-Qwen3.8-27B | Swift-1.5-INT4-fast | vLLM | 167936 | 1741 | **115.1** |
+| Swift-1.5-Qwen3.8-27B | Swift-1.5-INT4-fast | vLLM | 262144 | 1703 | **90.8** |
+| Cyber-Tiel-Coder-35B-A3B | UD-Q4_K_XL | moe-cache fork | 262144 | 3555 | **151.6** |
 
-All rows here are measured on the 10k opencode session prompt ([test-prompts.md](test-prompts.md)) on the current engine pins (rig pages). These rows predate the 2026-11-27 temp-0 speed protocol.
+All rows here are measured on the 10k opencode session prompt ([test-prompts.md](test-prompts.md)) on the current engine pins (rig pages).
 
 ## Coding benchmark (shoko-logs)
 

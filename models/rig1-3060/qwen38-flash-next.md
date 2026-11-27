@@ -1,8 +1,8 @@
 # Qwen3.8-Flash-Next (Rig 1) - recommended configs
 
-Updated: 2026-11-26 · [full experiment log](archive/qwen38-flash-next.md) · [methodology](../../methodology.md)
+Updated: 2026-11-27 · [methodology](../../methodology.md)
 
-Two pack-engine builds are recommended: Strata 0.2.19 with DFlash2 and Speedy 0.5.5 with MTP. A 4-bit UD-IQ4_XS variant is measured as a slower alternative. Timing rows predate the 2026-11-27 speed protocol and were measured at served sampling; new speed rows add `temperature: 0` only. Do not compare across the boundary.
+Two pack-engine builds are recommended: Strata 0.2.19 with DFlash2 and Speedy 0.5.5 with MTP. A 4-bit UD-IQ4_XS variant is measured as a slower alternative.
 
 `GSQ-RCO` quant `IQ3_XXS` (the served quant: a 75.8 GB 2-shard build of these weights) (`qwen4exp`, native ctx 262144, 512 experts, a separate MTP head from the ggml-org repo - the GSQ-RCO release ships none). 177B total = 125B compute + 51B n-gram embedding table + 4B MTP; 48 layers = 12 x (3 x Gated DeltaNet -> MoE + 1 x Qwen Sparse Attention -> MoE), 10 routed + 1 shared expert per token. Model card: [ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF](https://huggingface.co/ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF) (`GSQ-RCO` quants); MTP head: [ggml-org/Qwen3.8-Flash-Next-GGUF](https://huggingface.co/ggml-org/Qwen3.8-Flash-Next-GGUF).
 
@@ -10,9 +10,9 @@ Two pack-engine builds are recommended: Strata 0.2.19 with DFlash2 and Speedy 0.
 
 | Config | ctx | engine | drafter | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| GSQ-RCO IQ3_XXS | 204800 | Strata | DFlash2 | 1330.2 | **54.9** | 11011 MiB | `--kv int8`, CPU vision encoder, 3147 slots / 5.14 GiB cache |
-| GSQ-RCO IQ3_XXS | 262144 | Speedy | MTP | 1252.5 | **74.9** | 11219 MiB | `--kv int8`, CPU vision encoder |
-| UD-IQ4_XS | 262144 | Speedy | MTP | 1025.0 | **65.5** | 11339 MiB | `--kv int8`, CPU vision encoder |
+| GSQ-RCO IQ3_XXS | 204800 | Strata | DFlash2 | 1334 | **59.7** | 10978 MiB | `--kv int8`, CPU vision encoder, 3147 slots / 5.14 GiB cache |
+| GSQ-RCO IQ3_XXS | 262144 | Speedy | MTP | 1245 | **60.7** | 11252 MiB | `--kv int8`, CPU vision encoder |
+| UD-IQ4_XS | 262144 | Speedy | MTP | 1022 | **50.8** | 11352 MiB | `--kv int8`, CPU vision encoder |
 
 ## Configs
 
@@ -117,13 +117,13 @@ The UD-IQ4_XS shards are the 4-shard `main` build; build the pack from shard 1 w
 
 ## Long-context refactor benchmark
 
-Real-task timing test of a long-context code-refactor task ([test-prompts.md](../../test-prompts.md)): a fixed refactor instruction wraps a deterministically generated Python file of near-identical legacy templates - 79 repeats for the ~60K prompt, 157 for the ~120K one. Same request shape and two-pass rule as the recommended configs ([methodology.md](../../methodology.md) §Measurement methods), against a derived config carrying `--prompt-cache 0`: `/v1/chat/completions` passes; the rows below used no request overrides under the pre-2026-11-27 protocol, while new speed runs add `temperature: 0` only; cold load per prompt, two passes with the second recorded.
+Real-task timing test of a long-context code-refactor task ([test-prompts.md](../../test-prompts.md)): a fixed refactor instruction wraps a deterministically generated Python file of near-identical legacy templates - 79 repeats for the ~60K prompt, 157 for the ~120K one. Same request shape and two-pass rule as the recommended configs ([methodology.md](../../methodology.md) §Measurement methods), against a derived config carrying `--prompt-cache 0`: `/v1/chat/completions` passes; the rows below add `temperature: 0` only; cold load per prompt, two passes with the second recorded.
 
 | Config | ctx | engine | drafter | prompt | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| GSQ-RCO IQ3_XXS | 204800 | Strata | DFlash2 | ~60K | 1280.2 | **56.8** | 11011 MiB | 59802-token prompt, draft 193/337 |
-| GSQ-RCO IQ3_XXS | 262144 | Speedy | MTP | ~60K | 1293.0 | **80.8** | 11219 MiB | 59762-token prompt, draft 347/405 |
-| UD-IQ4_XS | 262144 | Speedy | MTP | ~60K | 1128.1 | **47.8** | 11339 MiB | 59762-token prompt, draft 291/476 |
-| GSQ-RCO IQ3_XXS | 204800 | Strata | DFlash2 | ~120K | 1222.2 | **58.8** | 11011 MiB | 119344-token prompt, draft 231/333 |
-| GSQ-RCO IQ3_XXS | 262144 | Speedy | MTP | ~120K | 1252.7 | **64.1** | 11215 MiB | 119304-token prompt, draft 306/469 |
-| UD-IQ4_XS | 262144 | Speedy | MTP | ~120K | 1120.7 | **46.9** | 11339 MiB | 119304-token prompt, draft ~58% |
+| GSQ-RCO IQ3_XXS | 204800 | Strata | DFlash2 | ~60K | 1276 | **74.1** | 10978 MiB | 59802-token prompt, draft 355/298 |
+| GSQ-RCO IQ3_XXS | 262144 | Speedy | MTP | ~60K | 1281 | **59.4** | 11252 MiB | 59762-token prompt, draft 346/231 |
+| UD-IQ4_XS | 262144 | Speedy | MTP | ~60K | 1125 | **47.0** | 11352 MiB | 59762-token prompt, draft 310/221 |
+| GSQ-RCO IQ3_XXS | 204800 | Strata | DFlash2 | ~120K | 1218 | **62.1** | 10978 MiB | 119344-token prompt, draft 318/244 |
+| GSQ-RCO IQ3_XXS | 262144 | Speedy | MTP | ~120K | 1247 | **55.6** | 11252 MiB | 119304-token prompt, draft 354/219 |
+| UD-IQ4_XS | 262144 | Speedy | MTP | ~120K | 1119 | **49.0** | 11352 MiB | 119304-token prompt, draft 357/262 |

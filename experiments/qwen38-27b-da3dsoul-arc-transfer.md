@@ -1,6 +1,6 @@
 # Qwen3.8-27B on an RTX 3090: testing da3dsoul's Arc-repo experiments
 
-> **Timing-prompt note:** numbers on this page were measured with the retired short C#/React timing prompts (pre-2026-09-29). The current prompt is the single ~10k-token opencode session context ([test-prompts.md](../test-prompts.md)); the two are not directly comparable.
+> **Timing-prompt note:** numbers on this page were measured with the study's earlier short C#/React timing prompts (pre-2026-09-29). The current prompt is the single ~10k-token opencode session context ([test-prompts.md](../test-prompts.md)); the two are not directly comparable.
 
 Transferability study: which of the low-level experiments from [Qwen3.8-vLLM-KVarN-MTP-Arc-Experiments](https://github.com/da3dsoul/Qwen3.8-vLLM-KVarN-MTP-Arc-Experiments) (an Intel Arc Pro B70) hold on a consumer RTX 3090 running the same model under vLLM, one experiment at a time, with measured results.
 
@@ -30,7 +30,7 @@ Headline numbers these experiments compare against:
 | CTX=long (fp8, 150k, 4 drafts) | 1124 t/s | 113 t/s | ~0.54 | 22289 MiB |
 | CTX=huge (KVarN, 250k, 3 drafts) | 960 t/s | 86 t/s | ~0.58 | 22340 MiB |
 
-Every result below is measured with the same protocol as the model page: timings read from vLLM's own server metrics, single pass, config-served sampling (pre-2026-11-27), cold load, and the first request after each boot discarded.
+Every result below is measured with the study's original protocol: timings read from vLLM's own server metrics, single pass, config-served sampling (pre-2026-11-27), cold load, and the first request after each boot discarded.
 
 ## Experiments
 
@@ -82,7 +82,7 @@ The pin is fixed KV bytes, so bit-width does not change the pool at a fixed pin 
   | (d) (c) + `PREFILL_ATTN=int8` | 1,605 | 105.4 | 873 | 21,285 MiB |
 
 Output stayed coherent in every cell; acceptance held (~0.50-0.57 short).
-- **Verdict:** adopt **`INT8_ACT=int8`** — the full default layer set is the biggest prefill win (+83% short, +39% at 140k) and the same as `mlp` on quality trade. Unlike the reference dflash2 numbers, decode here costs ~9-10% (not "unchanged"); on an MTP stack the W4A8 GEMM slightly slows the batch-1 decode path while massively speeding prefill. `PREFILL_ATTN=int8` adds nothing measurable on top (within noise on both short and 140k) — leave it off.
+- **Verdict:** adopt **`INT8_ACT=int8`** — the full default layer set is the biggest prefill win (+83% short, +39% at 140k) and the same as `mlp` on quality trade. Unlike the reference repo's numbers, decode here costs ~9-10% (not "unchanged"); on an MTP stack the W4A8 GEMM slightly slows the batch-1 decode path while massively speeding prefill. `PREFILL_ATTN=int8` adds nothing measurable on top (within noise on both short and 140k) — leave it off.
 - **Caveat:** `INT8_LAYERS` must be `mlp` or the full default; the container's own docs note `mlp|linear_attn` crashes (inductor codegen bug). Also note the container's caveat that the added-token peak may need the pool pin (`EXTRA_ARGS --kv-cache-memory`) to boot — our first cell failed without it.
 
 ### 4. KVarN `g64` / `k4v4` tile variants — no gain, do not adopt
@@ -126,8 +126,6 @@ The container's engine-initialisation claim ("4096 and 8192 do not boot") does n
 | `VLLM_DRAFT_TOPK_TOPP=0` | 110.3 | ~0.503 | disabling truncation: baseline in repeat, and one run emitted garbage tool-call tokens — no gain, occasional correctness hazard |
 
 None beat the defaults. `greedy` drafts are slower at temperature > 0 exactly as the sampler patch documents; `VLLM_DRAFT_TEMP_SCALE` was already reported as no-gain in the patch itself, and this reproduces it. `VLLM_DRAFT_TOPK_TOPP=0` is the only setting that ever posted a faster number (140 t/s on one run) — that run also produced a broken tool-call instead of the answer, and the repeat landed back on baseline, so it is noise plus a quality hazard. **Do not change any of these.**
-
-`int4_per_token_head` KV @256k (`alternative.sh`): experimental, only for the dflash2/off paths — low priority since DFlash2 is retired. Not tested.
 
 ## Not applicable on CUDA / rejected
 

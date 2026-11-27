@@ -40,7 +40,7 @@ Parameter set: <quant> (`<served model id>`), <level> reasoning level, <ctx> ctx
 |---|---|---|---|---|---|---|
 | <quant> | <level> | converged: stage <0\|1\|2> \| not converged | | | ✅ tscheck · ✅ lint · ✅ build | |
 
-> <optional blockquote: retired notice / maintainer correction>
+> <optional blockquote: maintainer correction>
 
 <!-- Multi-level card only — one such block per level, in place of the flat stage sections below (copy their Stage 0–2 bodies and the Summary at the tail, everything demoted to `### `; every section ends with its own Summary):
 

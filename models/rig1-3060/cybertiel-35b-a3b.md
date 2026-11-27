@@ -1,6 +1,6 @@
 # Cyber-Tiel-Coder-35B-A3B (Rig 1) - recommended configs
 
-Updated: 2026-10-27 · [full experiment log](archive/cybertiel-35b-a3b.md) · [methodology](../../methodology.md)
+Updated: 2026-11-27 · [methodology](../../methodology.md)
 
 `UD-IQ4_XS` (`qwen35moe` arch, native ctx 262144, embedded MTP head, 16.9 GiB + 883 MiB BF16 mmproj). Model card: [peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-GGUF-MTP](https://huggingface.co/peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-GGUF-MTP).
 
@@ -8,7 +8,7 @@ Updated: 2026-10-27 · [full experiment log](archive/cybertiel-35b-a3b.md) · [m
 
 | Config | ctx | engine | drafter | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| UD-IQ4_XS | 262144 | moe-cache fork | on | 2201 | **64.2** | 11626 MiB | cache 76 + `--phase-aware-workspace`, `-b/-ub 6144` |
+| UD-IQ4_XS | 262144 | moe-cache fork | on | 2242 | **60.7** | 10842 MiB | cache 76 + `--phase-aware-workspace`, `-b/-ub 6144` |
 
 ## Configs
 
@@ -33,5 +33,5 @@ Real-task timing test of a long-context code-refactor task ([test-prompts.md](..
 
 | Config | ctx | engine | drafter | prompt | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| UD-IQ4_XS | 262144 | moe-cache fork | on | ~60K | 1768 | **52.5** | 11624 MiB | 59751-token prompt, cache 76 + phase-aware |
-| UD-IQ4_XS | 262144 | moe-cache fork | on | ~120K | 1364 | **42.8** | 11624 MiB | 119293-token prompt, cache 76 + phase-aware |
+| UD-IQ4_XS | 262144 | moe-cache fork | on | ~60K | 1888 | **54.6** | 10842 MiB | 59751-token prompt, cache 76 + phase-aware |
+| UD-IQ4_XS | 262144 | moe-cache fork | on | ~120K | 1506 | **42.3** | 10842 MiB | 119293-token prompt, cache 76 + phase-aware |
