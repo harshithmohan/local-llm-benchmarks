@@ -49,15 +49,15 @@ Headline tables list only usable configs (full context, no rejected/OOM setups);
 | Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | moe-cache fork | 262144 | 2090 | **84.1** |
 | Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | moe-cache fork | 524288 (YaRN 2x) | 2346 | **58.8** |
 | Qwen3.8-Flash-Next | GSQ-RCO IQ3_XXS + DFlash2 | Strata | 204800 | 1334 | **59.7** |
-| Qwen3.8-Flash-Next | GSQ-RCO IQ3_XXS + MTP | Speedy | 262144 | 1245 | **60.7** |
-| Qwen3.8-Flash-Next | UD-IQ4_XS + MTP | Speedy | 262144 | 1022 | 50.8 |
+| Qwen3.8-Flash-Next | GSQ-RCO IQ3_XXS + tuned MTP | Speedy | 262144 | 1244 | **66.7** |
+| Qwen3.8-Flash-Next | UD-IQ4_XS + tuned MTP | Speedy | 262144 | 1025 | 50.4 |
 | Swift-1.5-Qwen3.8-Flash-Next | GSQ-RCO IQ3_XXS + MTP | Strata | 204800 | 1267 | **65.0** |
 | Swift-1.5-Qwen3.8-Flash-Next | GSQ-RCO IQ3_XXS + MTP | Speedy | 204800 | 1243 | **59.1** |
 | KAT-Coder-V2.5-Dev | APEX-I-Compact | moe-cache fork | 262144 | 1791 | **71.3** |
 | Gemma4-26B-A4B | Q4_K_M | moe-cache fork | 32768 | 1268 | **78.6** |
 | Cyber-Tiel-Coder-35B-A3B | UD-IQ4_XS | moe-cache fork | 262144 | 2242 | **60.7** |
 
-All rows here are measured on the 10k opencode session prompt ([test-prompts.md](test-prompts.md)) on the current engine pins (rig pages). The Gemma4 row is a chat-tuned config - not useful for coding on Rig 1.
+All rows here are measured on the 10k opencode session prompt ([test-prompts.md](test-prompts.md)) on the current engine pins (rig pages). The Gemma4 row is a chat-tuned config - not useful for coding on Rig 1. The Speedy base and UD-IQ4_XS rows use the tuned coding MTP drafter (`rt-tuned`, English draft vocabulary); Swift uses the stock MTP head.
 
 ## Rig 2 results
 

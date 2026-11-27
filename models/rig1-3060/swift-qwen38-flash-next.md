@@ -77,9 +77,9 @@ Entry env: `STRATA_KEEP_EMPTY_TURNS=1`. Config JSON `env`: `STRATA_ROUTE_TAIL_SK
 
 Real-task timing test of a long-context code-refactor task ([test-prompts.md](../../test-prompts.md)): a fixed refactor instruction wraps a deterministically generated Python file of near-identical legacy templates - 79 repeats for the ~60K prompt, 157 for the ~120K one. Same request shape and two-pass rule as the recommended configs ([methodology.md](../../methodology.md) §Measurement methods), against a derived config carrying `--prompt-cache 0`: `/v1/chat/completions` passes; the rows below add `temperature: 0` only; cold load per prompt, two passes with the second recorded.
 
-| Config | ctx | engine | drafter | prompt | prefill t/s | decode t/s | VRAM | Notes |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| GSQ-RCO IQ3_XXS | 204800 | Strata | MTP | ~60K | 1248 | **63.1** | 11098 MiB | 59802-token prompt, draft 432/266 |
-| GSQ-RCO IQ3_XXS | 204800 | Speedy | MTP | ~60K | 1284 | **64.0** | 11252 MiB | 59762-token prompt, draft 329/254 |
-| GSQ-RCO IQ3_XXS | 204800 | Strata | MTP | ~120K | 1195 | **62.6** | 11098 MiB | 119344-token prompt, draft 388/263 |
-| GSQ-RCO IQ3_XXS | 204800 | Speedy | MTP | ~120K | 1248 | **68.9** | 11252 MiB | 119304-token prompt, draft 378/300 |
+| Config | ctx | engine | drafter | prompt | prefill t/s | decode t/s | VRAM |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| GSQ-RCO IQ3_XXS | 204800 | Strata | MTP | ~60K | 1248 | **63.1** | 11098 MiB |
+| GSQ-RCO IQ3_XXS | 204800 | Speedy | MTP | ~60K | 1284 | **64.0** | 11252 MiB |
+| GSQ-RCO IQ3_XXS | 204800 | Strata | MTP | ~120K | 1195 | **62.6** | 11098 MiB |
+| GSQ-RCO IQ3_XXS | 204800 | Speedy | MTP | ~120K | 1248 | **68.9** | 11252 MiB |
