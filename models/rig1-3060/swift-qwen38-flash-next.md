@@ -2,13 +2,13 @@
 
 Updated: 2026-11-27 · [methodology](../../methodology.md) · base model: [qwen38-flash-next.md](qwen38-flash-next.md)
 
-`GSQ-RCO` quant `IQ3_XXS` (75.9 GB, 2 shards: 39.8 GB + 36.2 GB) - the Swift-1.5 fine-tune of Qwen3.8-Flash-Next (`qwen4exp`, native ctx 262144, 512 experts). Same architecture and size as the base model, and it ships **no MTP head**: the base model's MTP head drafts it and is used as-is. Model card: [ukisai/Swift-1.5-Qwen3.8-Flash-Next-GSQ-RCO-GGUF](https://huggingface.co/ukisai/Swift-1.5-Qwen3.8-Flash-Next-GSQ-RCO-GGUF). Served as a pack engine by [Strata](https://github.com/Niko1221/Strata) 0.2.19 and its tuned fork [Speedy](https://github.com/DevDock-AI/Speedy) 0.5.5, from a pack built for this checkpoint alone.
+`GSQ-RCO` quant `IQ3_XXS` (75.9 GB, 2 shards: 39.8 GB + 36.2 GB) - the Swift-1.5 fine-tune of Qwen3.8-Flash-Next (`qwen4exp`, native ctx 262144, 512 experts). Same architecture and size as the base model, and it ships **no MTP head**: the base model's MTP head drafts it and is used as-is. Model card: [ukisai/Swift-1.5-Qwen3.8-Flash-Next-GSQ-RCO-GGUF](https://huggingface.co/ukisai/Swift-1.5-Qwen3.8-Flash-Next-GSQ-RCO-GGUF). Served as a pack engine by [Strata](https://github.com/Niko1221/Strata) 0.2.22 and its tuned fork [Speedy](https://github.com/DevDock-AI/Speedy) 0.5.5, from a pack built for this checkpoint alone.
 
 ## Recommended configs
 
 | Config | ctx | engine | drafter | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| GSQ-RCO IQ3_XXS | 204800 | Strata | MTP | 1267 | **65.0** | 11098 MiB | `--kv int8`, CPU vision encoder, 2990 slots / 4.89 GiB cache |
+| GSQ-RCO IQ3_XXS | 204800 | Strata | MTP | 1195 | **68.1** | 11108 MiB | `--kv int8`, CPU vision encoder, 2990 slots / 4.89 GiB cache |
 | GSQ-RCO IQ3_XXS | 204800 | Speedy | MTP | 1243 | **59.1** | 11252 MiB | `--kv int8`, CPU vision encoder |
 
 ## Configs
@@ -79,7 +79,7 @@ Real-task timing test of a long-context code-refactor task ([test-prompts.md](..
 
 | Config | ctx | engine | drafter | prompt | prefill t/s | decode t/s | VRAM |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| GSQ-RCO IQ3_XXS | 204800 | Strata | MTP | ~60K | 1248 | **63.1** | 11098 MiB |
+| GSQ-RCO IQ3_XXS | 204800 | Strata | MTP | ~60K | 1253 | **61.4** | 11108 MiB |
 | GSQ-RCO IQ3_XXS | 204800 | Speedy | MTP | ~60K | 1284 | **64.0** | 11252 MiB |
-| GSQ-RCO IQ3_XXS | 204800 | Strata | MTP | ~120K | 1195 | **62.6** | 11098 MiB |
+| GSQ-RCO IQ3_XXS | 204800 | Strata | MTP | ~120K | 1194 | **62.8** | 11108 MiB |
 | GSQ-RCO IQ3_XXS | 204800 | Speedy | MTP | ~120K | 1248 | **68.9** | 11252 MiB |

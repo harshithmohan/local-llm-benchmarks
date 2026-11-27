@@ -48,10 +48,10 @@ Headline tables list only usable configs (full context, no rejected/OOM setups);
 | --- | --- | --- | --- | --- | --- |
 | Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | moe-cache fork | 262144 | 2090 | **84.1** |
 | Qwen3.6-35B-A3B | IQ4_XS-4.19bpw | moe-cache fork | 524288 (YaRN 2x) | 2346 | **58.8** |
-| Qwen3.8-Flash-Next | GSQ-RCO IQ3_XXS + DFlash2 | Strata | 204800 | 1334 | **59.7** |
+| Qwen3.8-Flash-Next | GSQ-RCO IQ3_XXS + DFlash2 | Strata | 204800 | 1334 | **62.5** |
 | Qwen3.8-Flash-Next | GSQ-RCO IQ3_XXS + tuned MTP | Speedy | 262144 | 1244 | **66.7** |
 | Qwen3.8-Flash-Next | UD-IQ4_XS + tuned MTP | Speedy | 262144 | 1025 | 50.4 |
-| Swift-1.5-Qwen3.8-Flash-Next | GSQ-RCO IQ3_XXS + MTP | Strata | 204800 | 1267 | **65.0** |
+| Swift-1.5-Qwen3.8-Flash-Next | GSQ-RCO IQ3_XXS + MTP | Strata | 204800 | 1195 | **68.1** |
 | Swift-1.5-Qwen3.8-Flash-Next | GSQ-RCO IQ3_XXS + MTP | Speedy | 204800 | 1243 | **59.1** |
 | KAT-Coder-V2.5-Dev | APEX-I-Compact | moe-cache fork | 262144 | 1791 | **71.3** |
 | Gemma4-26B-A4B | Q4_K_M | moe-cache fork | 32768 | 1268 | **78.6** |

@@ -2,7 +2,7 @@
 
 Updated: 2026-11-27 · [methodology](../../methodology.md)
 
-Two pack-engine builds are recommended: Strata 0.2.19 with DFlash2 and Speedy 0.5.5 with a tuned MTP drafter. A 4-bit UD-IQ4_XS variant is measured as a slower alternative.
+Two pack-engine builds are recommended: Strata 0.2.22 with DFlash2 and Speedy 0.5.5 with a tuned MTP drafter. A 4-bit UD-IQ4_XS variant is measured as a slower alternative.
 
 `GSQ-RCO` quant `IQ3_XXS` (the served quant: a 75.8 GB 2-shard build of these weights) (`qwen4exp`, native ctx 262144, 512 experts, a separate MTP head from the ggml-org repo - the GSQ-RCO release ships none). 177B total = 125B compute + 51B n-gram embedding table + 4B MTP; 48 layers = 12 x (3 x Gated DeltaNet -> MoE + 1 x Qwen Sparse Attention -> MoE), 10 routed + 1 shared expert per token. Model card: [ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF](https://huggingface.co/ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF) (`GSQ-RCO` quants); MTP head: [ggml-org/Qwen3.8-Flash-Next-GGUF](https://huggingface.co/ggml-org/Qwen3.8-Flash-Next-GGUF).
 
@@ -10,7 +10,7 @@ Two pack-engine builds are recommended: Strata 0.2.19 with DFlash2 and Speedy 0.
 
 | Config | ctx | engine | drafter | prefill t/s | decode t/s | VRAM | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| GSQ-RCO IQ3_XXS | 204800 | Strata | DFlash2 | 1334 | **59.7** | 10978 MiB | `--kv int8`, CPU vision encoder, 3147 slots / 5.14 GiB cache |
+| GSQ-RCO IQ3_XXS | 204800 | Strata | DFlash2 | 1334 | **62.5** | 10986 MiB | `--kv int8`, CPU vision encoder, 3147 slots / 5.14 GiB cache |
 | GSQ-RCO IQ3_XXS | 262144 | Speedy | MTP | 1244 | **66.7** | 11221 MiB | `--kv int8`, CPU vision encoder |
 | UD-IQ4_XS | 262144 | Speedy | MTP | 1025 | **50.4** | 11341 MiB | `--kv int8`, CPU vision encoder |
 
@@ -121,9 +121,9 @@ Real-task timing test of a long-context code-refactor task ([test-prompts.md](..
 
 | Config | ctx | engine | drafter | prompt | prefill t/s | decode t/s | VRAM |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| GSQ-RCO IQ3_XXS | 204800 | Strata | DFlash2 | ~60K | 1276 | **74.1** | 10978 MiB |
+| GSQ-RCO IQ3_XXS | 204800 | Strata | DFlash2 | ~60K | 1294 | **62.4** | 10986 MiB |
 | GSQ-RCO IQ3_XXS | 262144 | Speedy | MTP | ~60K | 1288 | **67.1** | 11221 MiB |
 | UD-IQ4_XS | 262144 | Speedy | MTP | ~60K | 1130 | **52.8** | 11341 MiB |
-| GSQ-RCO IQ3_XXS | 204800 | Strata | DFlash2 | ~120K | 1218 | **62.1** | 10978 MiB |
+| GSQ-RCO IQ3_XXS | 204800 | Strata | DFlash2 | ~120K | 1232 | **59.8** | 10986 MiB |
 | GSQ-RCO IQ3_XXS | 262144 | Speedy | MTP | ~120K | 1253 | **60.9** | 11221 MiB |
 | UD-IQ4_XS | 262144 | Speedy | MTP | ~120K | 1122 | **51.3** | 11341 MiB |
